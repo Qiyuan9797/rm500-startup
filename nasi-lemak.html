@@ -258,6 +258,7 @@ var VEHICLES = {
 var S = null;
 var STEP = 0;
 var STEPS = [];
+var STEP_YEARS = [];
 
 function newGame(name, vk){
   var V = VEHICLES[vk];
@@ -271,17 +272,20 @@ function newGame(name, vk){
     brand: 45,                // 0..100 reputation / demand
     year: 1,
     listed:false, market:null,
+    sstReg:false, hasManager:false, governance:false, succession:false,
+    equipInvest:false, crunch:false,
     flags:{},
     pts:[]                    // debrief lesson bullets
   };
   STEP = 0;
   STEPS = [
     yr1Decision, yr1Event,
-    yr2Decision, yr2Event,
+    yr2Decision, yr2Event, yr2SST,
     yr3Decision, yr3Event,
-    yr4Decision, yr4Event,
+    yr4Decision, yr4Succession, yr4Event,
     yr5Exit
   ];
+  STEP_YEARS = [1,1, 2,2,2, 3,3, 4,4,4, 5];
   document.getElementById('hud').style.display='flex';
   syncHud();
   runStep();
@@ -302,6 +306,9 @@ function chipsBar(){
     + '<span class="chip">⭐ Brand <b>'+Math.round(S.brand)+'</b></span>'
     + '<span class="chip">🧾 You own <b>'+Math.round(S.ownership*100)+'%</b></span>'
     + (S.debts>0?'<span class="chip">💳 Debt <b>'+fmt(S.debts)+'</b></span>':'')
+    + (S.hasManager?'<span class="chip">👔 Managed</span>':'')
+    + (S.succession?'<span class="chip">🧬 Succession</span>':'')
+    + (S.sstReg?'<span class="chip">🧾 SST</span>':'')
     + '</div>';
 }
 
@@ -356,40 +363,54 @@ function renderOutcome(o){
 function pnlBox(p){
   return '<div class="pnl">'
     + '<div class="row"><span>Operating profit ('+S.outlets+' outlet'+(S.outlets>1?'s':'')+')</span><span class="g">'+fmt(p.op)+'</span></div>'
+    + '<div class="row"><span>Rent, wages & overheads</span><span class="r">'+fmt(-p.overhead)+'</span></div>'
     + '<div class="row"><span>Compliance & filing</span><span class="r">'+fmt(-p.comp)+'</span></div>'
+    + (p.sst?'<div class="row"><span>Service tax (SST)</span><span class="r">'+fmt(-p.sst)+'</span></div>':'')
     + '<div class="row"><span>'+(V().corporate?'Corporate tax':'Personal income tax')+'</span><span class="r">'+fmt(-p.tax)+'</span></div>'
-    + (p.interest?'<div class="row"><span>Loan interest</span><span class="r">'+fmt(-p.interest)+'</span></div>':'')
+    + (p.interest?'<div class="row"><span>Loan interest ('+(V().limited?'business':'personal')+')</span><span class="r">'+fmt(-p.interest)+'</span></div>':'')
     + '<div class="row tot"><span>Year '+S.year+' net → cash</span><span>'+fmt(p.net)+'</span></div>'
+    + (p.crunch?'<div class="row" style="color:var(--bad)"><span>⚠️ Emergency borrowing (cash crunch)</span><span>+'+fmt(p.crunch)+' debt</span></div>':'')
     + '</div>';
 }
 
 function advance(){
   STEP++;
   if(STEP >= STEPS.length){ finale(); return; }
-  S.year = Math.floor(STEP/2) + 1;
   runStep();
 }
-function runStep(){ renderScene(STEPS[STEP]()); }
+function runStep(){ S.year = STEP_YEARS[STEP] || S.year; renderScene(STEPS[STEP]()); }
 
-/* ---------- Year-end profit & loss ---------- */
+/* ---------- Year-end profit & loss (harder: overhead, SST, cash crunch) ---------- */
 function yearEnd(){
-  var factor = 0.55 + S.brand/135;                 // brand 100 -> ~1.29
-  var op = Math.round(S.outlets * 26000 * factor);
+  var factor = 0.50 + S.brand/150;                     // brand 100 -> ~1.17 (tighter margins)
+  var op = Math.round(S.outlets * 27000 * factor);
+  var overhead = Math.round(S.outlets * 7000 + 4000);  // rent, wages, utilities
   var comp = V().compliance;
-  var taxable = Math.max(0, op - comp);
+  var sst = S.sstReg ? Math.round(op * 0.04) : 0;      // net service-tax burden once registered
+  var taxable = Math.max(0, op - overhead - comp);
   var tax;
   if(V().corporate){
-    tax = Math.round(taxable * 0.17);              // SME corporate rate (first band)
+    var relief = S.equipInvest ? 0.85 : 1;             // capital allowance on kitchen/equipment
+    tax = Math.round(taxable * 0.17 * relief);
   } else {
     var rate = taxable>100000?0.24 : taxable>50000?0.14 : taxable>20000?0.08 : 0.03;
-    tax = Math.round(taxable * rate);              // personal, progressive
+    tax = Math.round(taxable * rate);
   }
-  var interest = S.debts>0 ? Math.round(S.debts*0.07) : 0;
-  var net = op - comp - tax - interest;
+  var interest = S.debts>0 ? Math.round(S.debts*0.08) : 0;   // 8% on debt
+  var net = op - overhead - comp - sst - tax - interest;
   S.cash += net;
-  // brand drifts toward the mean a little each year
-  S.brand = Math.max(10, Math.min(100, S.brand - 2));
-  return {op:op, comp:comp, tax:tax, interest:interest, net:net};
+  S.brand = Math.max(10, Math.min(100, S.brand - 3));  // demand decays faster now
+
+  // Cash crunch — you went negative and must borrow at a penalty
+  var crunch = 0;
+  if(S.cash < 0){
+    crunch = Math.ceil(-S.cash * 1.15);
+    S.debts += crunch; S.cash = 0; S.crunch = true;
+    note(V().limited
+      ? 'A cash crunch forced emergency borrowing — even a limited company can be wound up if it can\'t pay its debts.'
+      : 'You ran out of cash and borrowed personally at penalty rates — with unlimited liability, insolvency here can mean personal bankruptcy.');
+  }
+  return {op:op, overhead:overhead, comp:comp, sst:sst, tax:tax, interest:interest, net:net, crunch:crunch};
 }
 
 /* ============================================================
@@ -494,27 +515,69 @@ function yr2Event(){
   var claim = 30000;
   var flavor = 'A customer is hospitalised after a bad batch of sambal and sues for '+fmt(claim)+' in damages. This is the moment your choice of liability matters most.';
   var options = [ { t:'Face the claim', h:'See how far it reaches.', go:function(){
-    var ye;
     if(v.limited){
-      var hit = 8000;
+      var hit = 9000;
       S.cash -= hit;
       note('When the lawsuit struck, <b>limited liability</b> capped the damage to the business — your home and savings were untouched.');
-      ye = yearEnd();
       return {tone:'down', delta:fmt(-hit), html:'Your '+v.name+' is a <b>separate legal person</b>. Insurance and the company absorb the claim; your personal assets are ring-fenced. Net exposure '+fmt(hit)+'.',
-        lesson:'This is the whole point of an LLP / Sdn Bhd: the company is liable, <b>not you</b>. Your downside is capped at what\'s in the business.',
-        pnl: ye};
+        lesson:'This is the whole point of an LLP / Sdn Bhd: the company is liable, <b>not you</b>. Your downside is capped at what\'s in the business.'};
     } else {
       var hitU = Math.min(claim, S.cash + 12000); // can push you into personal debt
       S.cash -= hitU;
       if(S.cash < 0){ S.debts += -S.cash; S.cash = 0; }
       note('The lawsuit reached <b>past the business into your personal money</b> — the price of unlimited liability.');
-      ye = yearEnd();
       return {tone:'down', delta:fmt(-hitU), html:'As a '+v.name.toLowerCase()+' you and the business are the <b>same</b> in law. The claim comes after your personal savings — and keeps coming. Exposure '+fmt(hitU)+'.',
-        lesson:'Unlimited liability means one disaster can take your <b>personal</b> assets. A limited vehicle would have capped this.',
-        pnl: ye};
+        lesson:'Unlimited liability means one disaster can take your <b>personal</b> assets. A limited vehicle would have capped this.'};
     }
   }}];
   return { title:'Year 2 · Food-Poisoning Lawsuit', tags:'<span class="tag n">⚖️ Liability</span>', flavor:flavor, options:options };
+}
+
+/* Year 2 close — SST / indirect-tax threshold arrives with scale */
+function yr2SST(){
+  if(S.outlets>=2){
+    S.sstReg = true;
+    return {
+      title:'Year 2 · Crossing the Tax Threshold',
+      tags:'<span class="tag n">🧾 SST</span>',
+      flavor:'With a second outlet, your prepared-food turnover is heading past the RM500,000 <b>service tax</b> registration threshold. Registering isn\'t optional once you cross it — and it applies whatever your vehicle.',
+      options:[
+        { t:'Register for service tax and charge it correctly',
+          h:'Add SST on eligible sales; file returns on time.',
+          go:function(){ S.brand+=2;
+            note('Growth pushed you past the SST threshold — an indirect-tax cost that arrives with scale, whatever the vehicle.');
+            return {tone:'flat', delta:'SST registered', html:'You register for <b>service tax</b>, charge it on eligible sales and remit to Customs. Another filing duty — and a sign you\'ve grown.',
+              lesson:'Indirect tax (SST) is triggered by <b>turnover</b>, not by your entity type. As you scale, tax and compliance multiply — budget for both.',
+              pnl: yearEnd()}; } },
+        { t:'Ignore it and hope nobody notices',
+          h:'Customs penalties are steep.',
+          go:function(){
+            if(chance(0.5)){ S.cash-=18000; S.brand-=6;
+              note('You skipped SST registration and were penalised — indirect-tax non-compliance is expensive and no liability shield stops it.');
+              return {tone:'down', delta:'−RM18,000 penalty', html:'A Customs audit catches the unregistered turnover. Back-tax plus penalties land hard.',
+                lesson:'SST is compulsory above the threshold. Non-compliance risks penalties that <b>no limited-liability shield protects you from</b> — this is tax law, not contract.',
+                pnl: yearEnd()}; }
+            note('You dodged SST this year — a liability quietly accruing in the background.');
+            return {tone:'flat', delta:'Got away with it — for now', html:'No audit this year, but the unregistered liability keeps accruing.',
+              lesson:'Skipping an indirect-tax registration is a ticking clock, not a saving. It usually catches up with interest.',
+              pnl: yearEnd()}; } }
+      ]
+    };
+  }
+  return {
+    title:'Year 2 · Below the Tax Threshold',
+    tags:'<span class="tag n">🧾 SST</span>',
+    flavor:'You stayed lean at one outlet, so turnover sits comfortably below the RM500,000 service-tax threshold — one quiet upside of not scaling.',
+    options:[
+      { t:'Keep the books simple',
+        h:'No SST registration needed yet.',
+        go:function(){
+          note('Staying small kept you under the SST threshold — less tax admin, but also less scale.');
+          return {tone:'flat', delta:'No SST yet', html:'Below the threshold, you skip service-tax registration entirely. Simpler books — the trade-off is you\'ve chosen not to grow this year.',
+            lesson:'Indirect-tax duties scale with turnover. Small can mean simpler — a legitimate strategy, just not a growth one.',
+            pnl: yearEnd()}; } }
+    ]
+  };
 }
 
 /* ============================================================
@@ -526,7 +589,7 @@ function yr3Decision(){
   if(v.equity){
     opts.push({ t:'Take RM150,000 growth investment for equity',
       h:'A private-equity firm buys 25% of your Sdn Bhd to fund a jump to 6 outlets + a central kitchen.',
-      go:function(){ S.cash+=150000; S.ownership*=0.75; S.outlets+=4; S.bizValue+=260000; S.brand+=12; S.flags.raised=true;
+      go:function(){ S.cash+=150000; S.ownership*=0.75; S.outlets+=4; S.bizValue+=260000; S.brand+=12; S.flags.raised=true; S.equipInvest=true;
         note('A Sdn Bhd could sell shares to a PE investor — RM150k of growth capital with no debt. This is how you build toward a listing.');
         return {tone:'up', delta:'+RM150,000 · 6 outlets', html:'You issue new shares for RM150,000. A central kitchen and four more outlets follow. You now own 75% of a much bigger company.',
           lesson:'Equity turns ownership into fuel. You own a <b>smaller slice of a far bigger pie</b> — and you\'re now scaled enough to eye an IPO.'}; } });
@@ -584,29 +647,42 @@ function yr3Event(){
               pnl: yearEnd()}; } }
       ] };
   }
-  // generic opportunity: a viral festival season
-  var good = chance(0.6);
-  return { title:'Year 3 · Hari Raya Rush', tags:'<span class="tag n">🎉 Seasonality</span>',
-    flavor:'The festive season sends demand through the roof. Do you staff up to capture it, or play it safe?',
+  // Management / key-person / governance — the business is straining on one person: you.
+  return {
+    title:'Year 3 · You Can\'t Do It All',
+    tags:'<span class="tag n">👥 Management</span>',
+    flavor:'You open early, close late, and the only copy of the recipe lives in your head. The business now depends entirely on one person — you. How do you manage as it grows?',
     options:[
-      { t:'Hire extra hands and go all-out (−RM6,000)',
-        h:'Capture the surge — if it lands.',
-        go:function(){ S.cash-=6000;
-          if(good){ S.cash+=22000; S.brand+=8;
-            return {tone:'up', delta:'+RM16,000 net', html:'You catch the wave beautifully. Record weeks and a wave of new regulars.',
-              lesson:'Operating leverage: staffing up ahead of real demand multiplies a good season.',
+      { t:'Hire a professional manager + internal controls (−RM20,000)',
+        h:'Delegate operations; put cash-handling and governance controls in place.',
+        go:function(){ S.cash-=20000; S.hasManager=true; S.governance=true; S.brand+=5; S.bizValue+=30000;
+          var extra = v.corporate ? ' As a company you formalise it with a board and a company secretary overseeing compliance.' : ' You document processes and set spending controls, though there\'s no formal board to answer to.';
+          note('You brought in professional management and controls — cutting key-person risk and making the business investable and listable.');
+          return {tone:'up', delta:'Manager hired · governed', html:'A seasoned F&B manager runs daily operations and you finally write the recipe and SOPs down.'+extra,
+            lesson:'A business that depends on one person is fragile <b>and</b> hard to sell or list. Delegation + governance turn a job into a company Bursa would consider.',
+            pnl: yearEnd()}; } },
+      { t:'Systematise with SOPs & shift leads (−RM10,000)',
+        h:'Lighter than a management team, but reduces key-person risk.',
+        go:function(){ S.cash-=10000; S.hasManager=true; S.brand+=3; S.bizValue+=15000;
+          note('You systematised operations so outlets run without you — partial delegation, less overhead.');
+          return {tone:'flat', delta:'Systems in place', html:'Training, checklists and shift leads let outlets run without you hovering — cheaper than a full management layer.',
+            lesson:'Even on a budget, documenting and delegating reduces <b>key-person risk</b> — the first step toward an investable business.',
+            pnl: yearEnd()}; } },
+      { t:'Stay hands-on — you ARE the business',
+        h:'Save the salary, keep total control. But you\'re the single point of failure.',
+        go:function(){
+          if(chance(0.6)){ S.cash-=15000; S.brand-=8; S.flags.keyperson=true;
+            var ln = v.limited ? 'The company kept trading because staff and directors could act for it.' : 'Because a '+v.name.toLowerCase()+' legally <b>is</b> you, no one could sign, bank or contract in your place — everything stalled.';
+            note('Key-person risk hit: you burned out and the business dipped because everything depended on you alone.');
+            return {tone:'down', delta:'−RM15,000 · you burned out', html:'Midway through the year you fall ill for six weeks. '+ln,
+              lesson:'<b>Key-person risk</b>: if the business can\'t run without you, one illness is a crisis — and it caps your value, because buyers and Bursa want a business, not a person.',
               pnl: yearEnd()}; }
           S.brand+=2;
-          return {tone:'down', delta:'−RM6,000', html:'Demand was softer than hoped and the extra wages ate the margin.',
-            lesson:'Scaling costs ahead of demand is a bet — size it to what your cash can absorb.',
-            pnl: yearEnd()}; } },
-      { t:'Run lean, protect the cash',
-        h:'Steady as she goes.',
-        go:function(){ S.brand+=3; S.cash+=6000;
-          return {tone:'flat', delta:'+RM6,000', html:'A solid, unspectacular festive bump with no added risk.',
-            lesson:'Conserving cash is a valid strategy — especially with unlimited liability or heavy debt.',
+          return {tone:'flat', delta:'Held together', html:'You grind through the year on sheer willpower. It holds — this time.',
+            lesson:'Running lean works until it doesn\'t. Betting the business on your own stamina is a risk that compounds as you scale.',
             pnl: yearEnd()}; } }
-    ] };
+    ]
+  };
 }
 
 /* ============================================================
@@ -649,32 +725,97 @@ function yr4Decision(){
     options:opts
   };
 }
-function yr4Event(){
-  // Tax season — corporate vs personal, at scale
+/* Year 4 · Succession — perpetual succession is a defining entity difference */
+function yr4Succession(){
   var v = V();
-  var base = S.outlets * 24000;
-  var tax, txt, lesson;
-  if(v.corporate){
-    tax = Math.round(base * 0.17);
-    txt = 'Your '+v.name+' pays a flat SME <b>corporate</b> rate on its profits, and can retain earnings inside the company to reinvest.';
-    lesson = 'Companies (and LLPs) are taxed on profits at corporate rates and can <b>retain earnings</b> to fund growth — often lighter at scale.';
-  } else {
-    var rate = base>150000?0.26 : base>80000?0.19 : 0.12;
-    tax = Math.round(base * rate);
-    txt = 'As a '+v.name.toLowerCase()+', the whole profit is <b>your personal income</b>, taxed at progressive personal rates — which bite harder as you grow.';
-    lesson = 'Sole props / partnerships are taxed on the owner <b>personally</b>. Simple at small scale, heavier as profits climb.';
+  var opts = [];
+  if(v.key==='sdnbhd'){
+    opts.push({ t:'Shareholders\' agreement + estate plan (−RM8,000)',
+      h:'Decide how shares pass on death or exit; consider a family trust.',
+      go:function(){ S.cash-=8000; S.succession=true; S.bizValue+=40000;
+        note('You planned succession: a company enjoys <b>perpetual succession</b>, and its shares pass by will or trust — the cleanest continuity of any vehicle.');
+        return {tone:'up', delta:'Succession secured', html:'Your Sdn Bhd is a separate legal person with <b>perpetual succession</b>. A shareholders\' agreement and estate plan mean ownership passes cleanly to whomever you choose — the business never skips a beat.',
+          lesson:'Companies don\'t die with their owners. Shares are property you can gift, will or place in trust — and this continuity is exactly what buyers and Bursa want to see.'}; } });
+  } else if(v.key==='llp'){
+    opts.push({ t:'Update the LLP agreement for partner succession (−RM4,000)',
+      h:'Spell out what happens when a partner leaves or dies.',
+      go:function(){ S.cash-=4000; S.succession=true; S.bizValue+=20000;
+        note('Your LLP also has <b>perpetual succession</b> — unlike a conventional partnership, it survives changes of partner.');
+        return {tone:'up', delta:'Continuity secured', html:'An LLP is a separate legal person too. With the agreement updated, it carries on seamlessly when partners change — a key reason the PLT form exists. (To hand equity to outside heirs, a Sdn Bhd\'s shares are simpler still.)',
+          lesson:'LLPs have perpetual succession; conventional partnerships do not. That continuity is a core advantage of the limited forms.'}; } });
+  } else if(v.key==='partnership'){
+    opts.push({ t:'Add survivorship terms to a partnership agreement (−RM3,000)',
+      h:'By default a partnership DISSOLVES when a partner dies. Contract around it.',
+      go:function(){ S.cash-=3000; S.succession=true; S.brand+=2;
+        note('A conventional partnership <b>dissolves on a partner\'s death</b> by default; you papered over it, but it stays fragile.');
+        return {tone:'flat', delta:'Patched', html:'You add survivorship clauses. It helps — but a conventional partnership has <b>no perpetual succession</b> in law, so the firm can still end if the arrangement breaks down.',
+          lesson:'A conventional partnership legally dissolves when a partner dies or leaves, unless the agreement says otherwise. Fragile by default.'}; } });
+    opts.push({ t:'Do nothing — deal with it later',
+      h:'Cheapest now, riskiest later.',
+      go:function(){ note('You left succession unplanned — a partnership can dissolve overnight on a death or fallout, with unlimited liability still hanging over everyone.');
+        return {tone:'down', delta:'Unplanned', html:'You put it off. If a partner dies or walks, the firm can dissolve and assets scramble — and unlimited liability follows each of you.',
+          lesson:'No plan + no perpetual succession = the business can vanish with one exit. This is the partnership\'s hidden weakness.'}; } });
+  } else { // enterprise
+    opts.push({ t:'You want your child to inherit — but legally the business IS you',
+      h:'Learn the hard limit of a sole proprietorship.',
+      go:function(){ note('A sole proprietorship has <b>no perpetual succession</b> — it ends with the owner; the registration lapses and licences don\'t transfer.');
+        return {tone:'down', delta:'Can\'t transfer as-is', html:'Your lawyer explains: a sole proprietorship <b>is</b> you. It can\'t be inherited as a going concern — the SSM registration ends, licences lapse, and your heirs must start a brand-new business and re-apply for everything.',
+          lesson:'Sole proprietorships have <b>no perpetual succession</b>. The business legally ends with the owner — the exact opposite of a company.'}; } });
+    opts.push({ t:'Convert to a Sdn Bhd now for continuity (−RM5,000)',
+      h:'Incorporate late to gain perpetual succession & limited liability.',
+      go:function(){ S.cash-=5000; S.succession=true; S.governance=true; S.bizValue+=25000; S.flags.convertedLate=true;
+        note('You finally incorporated — gaining perpetual succession and limited liability, though years later than a growth-minded founder would have.');
+        return {tone:'up', delta:'Incorporated (late)', html:'You transfer the business into a new Sdn Bhd. Now it\'s a separate legal person that can outlive you, shield your assets, and one day even list — though you\'ve lost years on that path.',
+          lesson:'You can convert <b>up</b> the ladder any time — but doing it early lets a company\'s advantages compound. Late is better than never.'}; } });
   }
-  S.cash -= tax;
+  return {
+    title:'Year 4 · Who Continues After You?',
+    tags:'<span class="tag n">🧬 Succession</span>',
+    flavor:'A health scare makes you think about the future. If something happened to you tomorrow, what becomes of the business — and can your family keep it? The answer is written into your vehicle.',
+    options:opts
+  };
+}
+
+function yr4Event(){
+  var v = V();
+  var base = S.outlets * 26000;
+  if(v.corporate){
+    // A company's profit and your pocket are separate — extracting it is a second tax layer.
+    return {
+      title:'Year 4 · Tax Season (LHDN)',
+      tags:'<span class="tag n">🧾 Taxation</span>',
+      flavor:'Your '+v.name+' pays a flat SME corporate rate and can retain profit to reinvest. But to put money in <b>your own</b> pocket you must extract it — and how you extract it is taxed differently.',
+      options:[
+        { t:'Pay yourself a salary / director\'s fee',
+          h:'Deductible to the company, taxed as your personal income (EPF/SOCSO apply).',
+          go:function(){ var t=Math.round(base*0.11); S.cash-=t;
+            note('You extracted profit as salary — deductible for the company, but taxed as your personal income.');
+            return {tone:'flat', delta:fmt(-t)+' personal tax', html:'A salary is a tax-deductible expense for the company, but it\'s <b>your</b> income at personal rates (plus EPF/SOCSO). Personal tax on it this year: '+fmt(t)+'.',
+              lesson:'A company separates business profit from your pocket. Salary is deductible but personally taxed — one of two extraction routes.',
+              pnl: yearEnd()}; } },
+        { t:'Pay yourself dividends from after-tax profit',
+          h:'Company already paid corporate tax; from 2025 a 2% dividend tax applies above RM100k/yr.',
+          go:function(){ var t=Math.round(Math.max(0, base-100000)*0.02); S.cash-=t;
+            note('You took dividends — from profit the company was already taxed on, now with the 2025 dividend tax on the portion above RM100k.');
+            return {tone:'flat', delta:(t?fmt(-t)+' dividend tax':'No dividend tax'), html:'Dividends come from profit the company <b>already paid corporate tax on</b>. From 2025, individual dividends above RM100k/year carry a 2% dividend tax'+(t?' — '+fmt(t)+' here':' — you\'re under the threshold this year')+'.',
+              lesson:'The company/owner split creates a two-step tax picture (corporate, then dividend). An <b>LLP</b> avoids that second layer — its distributions to partners aren\'t taxed again.',
+              pnl: yearEnd()}; } }
+      ]
+    };
+  }
+  // Sole prop / partnership — one personal layer, heavier at scale.
+  var rate = base>150000?0.26 : base>80000?0.19 : 0.12;
+  var tax = Math.round(base*rate); S.cash -= tax;
   return {
     title:'Year 4 · Tax Season (LHDN)',
     tags:'<span class="tag n">🧾 Taxation</span>',
-    flavor:'The financial year closes and Lembaga Hasil Dalam Negeri wants its share. How you\'re taxed depends on your vehicle.',
+    flavor:'As a '+v.name.toLowerCase()+', the entire profit is simply <b>your personal income</b> — there\'s no company/owner split and no dividends. Simple, but progressive rates bite as profits climb.',
     options:[
-      { t:'Settle the tax bill', h:'Pay what\'s due and close the year.',
+      { t:'Settle your personal income tax', h:'Pay what\'s due and close the year.',
         go:function(){
-          var ye = yearEnd();
-          return {tone:'flat', delta:fmt(-tax)+' tax', html:txt+' This year\'s tax bill: <b>'+fmt(tax)+'</b>.',
-            lesson:lesson, pnl:ye}; } }
+          return {tone:'flat', delta:fmt(-tax)+' personal tax', html:'The whole profit is taxed on you at progressive personal rates — <b>'+fmt(tax)+'</b> this year. You can\'t retain profit inside a separate company or split it as salary vs dividends.',
+            lesson:'One tax layer is simple, but you lose corporate planning tools (retained earnings, salary/dividend mix). At scale, personal rates often exceed the SME corporate rate.',
+            pnl: yearEnd()}; } }
     ]
   };
 }
@@ -684,29 +825,31 @@ function yr4Event(){
    ============================================================ */
 function yr5Exit(){
   var v = V();
-  var canIPO = v.canList && S.outlets>=5 && S.bizValue>=350000;
-  if(canIPO){
+  var bigEnough = v.canList && S.outlets>=5 && S.bizValue>=350000;
+  if(bigEnough){
+    var governed = S.hasManager && S.governance;
+    var aceLock = governed ? null : 'Bursa expects professional management + internal controls — you never put a governance layer in place (Year 3).';
+    var mainMissing = [];
+    if(!governed) mainMissing.push('professional management & governance');
+    if(!S.succession) mainMissing.push('a shareholders’ agreement / succession plan');
+    if(S.bizValue<600000 || S.outlets<7) mainMissing.push('a larger profit track record & scale');
+    var mainLock = mainMissing.length ? ('Main Market needs '+mainMissing.join(', ')+'.') : null;
     return {
       title:'Year 5 · The Bursa Malaysia Opportunity',
       tags:'<span class="tag g">🏛️ Listing</span>',
-      flavor:'Advisers say your Sdn Bhd is ready to go public. You would convert to a <b>Berhad (Bhd)</b> and float shares on Bursa Malaysia — turning private company value into a public-market valuation. Which board do you list on?',
+      flavor:'Advisers say your Sdn Bhd is big enough to consider going public — converting to a <b>Berhad (Bhd)</b> and floating on Bursa Malaysia. But the regulator looks past size at your <b>management, governance and succession</b> too. Which board can you list on?',
       options:[
         { t:'LEAP Market — smallest, fastest, sophisticated investors only',
           h:'Lightest requirements. A modest public premium (~2×) and a smaller raise.',
           go:function(){ return doIPO('LEAP Market', 2.0, 120000); } },
         { t:'ACE Market — growth companies (recommended for your size)',
           h:'Sponsor-driven listing for growth firms. Strong premium (~3.5×) and a solid raise.',
+          locked: aceLock,
           go:function(){ return doIPO('ACE Market', 3.5, 300000); } },
         { t:'Main Market — the big board',
-          h:'Heaviest scrutiny (profit track record, larger size). Top premium (~4.5×) if you qualify.',
-          go:function(){
-            if(S.bizValue < 600000 || S.outlets < 7){
-              S.brand-=2;
-              return {tone:'down', delta:'Not yet eligible', html:'The Main Market wants a larger profit track record and scale than you have this year. The advisers steer you back — you\'d need another year or two of growth first.',
-                lesson:'Listing boards are tiered (LEAP → ACE → Main). You must <b>grow into</b> the bigger board — being a Sdn Bhd is necessary but not automatic.'};
-            }
-            return doIPO('Main Market', 4.5, 500000);
-          } },
+          h:'Heaviest scrutiny: profit track record, scale, governance and continuity. Top premium (~4.5×).',
+          locked: mainLock,
+          go:function(){ return doIPO('Main Market', 4.5, 500000); } },
         { t:'Stay private — sell 100% to a bigger F&B group',
           h:'Skip the listing and take a clean trade-sale exit at private multiples.',
           go:function(){ return tradeSale(1.4); } }
@@ -740,6 +883,7 @@ function yr5Exit(){
 }
 
 function doIPO(market, premium, raise){
+  if(S.succession) premium += 0.3;    // clean continuity earns a valuation premium
   S.listed = true; S.market = market;
   var pre = S.bizValue;
   S.bizValue = Math.round(S.bizValue * premium);
@@ -751,17 +895,24 @@ function doIPO(market, premium, raise){
     tone:'up', delta:'🔔 LISTED on '+market,
     html:'The bell rings. Your company converts to a <b>Berhad</b> and floats on the <b>'+market+'</b>. '
       + 'Public investors value the business at '+fmt(S.bizValue)+' (up from ~'+fmt(pre)+'), and the IPO raises '+fmt(raise)+' in fresh cash. You sell ~30% to the public and keep the rest.',
-    lesson:'This is the payoff of the Sdn Bhd path: a <b>public market</b> re-prices your business far above private multiples and hands you growth capital. No other vehicle reaches here.'
+    lesson:'The payoff of the Sdn Bhd path: a <b>public market</b> re-prices your business far above private multiples and hands you growth capital — and Malaysia charges <b>no capital gains tax</b> on listed shares, so that paper wealth is realised efficiently. No other vehicle reaches here.'
   };
 }
 function tradeSale(mult){
+  // Continuity changes what a buyer will pay for a going concern.
+  if(S.succession) mult += 0.2;
+  else if(!V().limited) mult -= 0.2;   // no perpetual succession + no plan → buyers discount it
+  mult = Math.max(0.6, mult);
   var pre = S.bizValue;
   S.bizValue = Math.round(S.bizValue * mult);
-  note('You exited by <b>trade sale</b> at a private multiple — solid, but well short of a public-market re-rating.');
+  var extra = S.succession
+    ? ' Your succession plan reassured the buyer the business runs without you — they paid up.'
+    : (!V().limited ? ' Because the business is legally tied to you (no perpetual succession), the buyer discounted what they\'d pay.' : '');
+  note('You exited by <b>trade sale</b> at a '+mult.toFixed(1)+'× private multiple — solid, but short of a public-market re-rating.');
   return {
-    tone:'flat', delta:'Sold at '+mult+'× value',
-    html:'You sell the business privately for '+fmt(S.bizValue)+' (a '+mult+'× multiple on ~'+fmt(pre)+' of built-up value). A clean, real exit — just without a listing\'s premium.',
-    lesson:'Private buyers pay private prices. A Bursa listing typically values a business at a <b>higher multiple</b> — but only a company can walk that path.'
+    tone:'flat', delta:'Sold at '+mult.toFixed(1)+'× value',
+    html:'You sell the business privately for '+fmt(S.bizValue)+' (a '+mult.toFixed(1)+'× multiple on ~'+fmt(pre)+' of built-up value).'+extra+' A clean, real exit — just without a listing\'s premium.',
+    lesson:'Private buyers pay private prices, and they pay <b>less</b> for a business that can\'t outlive its owner. A Bursa listing typically values a business at a higher multiple — but only a company can walk that path.'
   };
 }
 
@@ -821,9 +972,16 @@ function debriefHTML(){
   // Fit verdict: did the vehicle match the ambition shown?
   var fit;
   if(S.listed){
-    fit = '✅ <b>Perfect fit.</b> You wanted to scale — and you chose the one vehicle (Sdn Bhd) that can raise equity and list. The ceiling was the sky.';
+    fit = '✅ <b>Perfect fit.</b> You chose the one vehicle that can raise equity and list — then backed it with '
+      + (S.hasManager?'professional management':'hands-on grit')
+      + (S.succession?' and a real succession plan':'')
+      + '. Equity, liability protection, governance and continuity all lined up. The ceiling was the sky.';
   } else if(v.canList){
-    fit = '➖ <b>Right vehicle, more road to run.</b> Your Sdn Bhd <b>could</b> have listed — you simply needed more scale. The pathway was open; you didn\'t reach the top of it this time.';
+    var missing=[];
+    if(!(S.hasManager&&S.governance)) missing.push('management & governance');
+    if(!S.succession) missing.push('a succession plan');
+    if(S.outlets<5||S.bizValue<350000) missing.push('scale');
+    fit = '➖ <b>Right vehicle, unfinished business.</b> Your Sdn Bhd <b>could</b> have listed, but the regulator wants more than size — you were short on <b>'+(missing.join(', ')||'a little more growth')+'</b>. The pathway was open; you didn\'t reach the top this time.';
   } else if(v.key==='llp'){
     fit = '⚠️ <b>Capable, but capped.</b> Your LLP gave you limited liability and credibility, yet to list you\'d have needed to <b>convert to a Sdn Bhd</b> early. Fine for a mid-size chain; wrong if the goal was Bursa.';
   } else {

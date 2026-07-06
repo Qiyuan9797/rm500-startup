@@ -429,99 +429,215 @@ function yearEnd(){
    Many cards also reward earlier choices (insurance-of-structure,
    governance, management, registration) so luck and strategy mix.
    ============================================================ */
+/* Each card reveals a situation, then YOU choose how to act — and your
+   response decides how big the reward or damage is. Many responses also
+   depend on the vehicle / earlier choices, so strategy shapes luck. */
 var FATE_DECK = [
   // ---------- Disasters ----------
-  { em:'🔥', title:'Kitchen Fire', tone:'down', w:3, run:function(){
-      var loss = 8000 + S.outlets*4000; S.cash -= loss; S.brand -= 5;
-      note('A kitchen fire hit your <b>business</b> assets — a reminder that limited liability shields your personal wealth, not the company\'s own equipment from disasters. Insurance does that.');
-      return { delta:fmt(-loss), html:'A grease fire guts one kitchen overnight — equipment and stock gone, partial insurance softening the blow.',
-        lesson:'Liability protection is about lawsuits and debts, <b>not</b> operational losses. Fire, theft and floods are covered by <b>insurance</b>, not your vehicle.' }; } },
-  { em:'⚖️', title:'Slip-and-Fall Lawsuit', tone:'down', w:3, run:function(){
-      if(V().limited){ var h=10000; S.cash-=h;
-        return {delta:fmt(-h), html:'A customer slips and sues. Your company is the defendant — the claim stops at the business.',
-          lesson:'Limited liability again: the company answers, not your home.'}; }
-      var h2=Math.min(28000, S.cash+15000); S.cash-=h2; if(S.cash<0){S.debts+=-S.cash;S.cash=0;}
-      note('A personal-liability lawsuit reached your own assets — the recurring danger of an unlimited-liability vehicle.');
-      return {delta:fmt(-h2), html:'A customer slips and sues <b>you personally</b>. As an unlimited-liability owner, your savings are on the line.',
-        lesson:'One accident, and unlimited liability exposes your personal wealth. A company would have contained it.'}; } },
-  { em:'🌊', title:'Flash Flood', tone:'down', w:2, run:function(){ var l=5000+S.outlets*3000; S.cash-=l; S.brand-=3;
-      return {delta:fmt(-l)+' · Brand −3', html:'A monsoon flood shuts your outlets for two weeks — lost sales and spoiled stock.',
-        lesson:'Pure external risk hits every vehicle equally. Cash reserves are your only real shield here.'}; } },
-  { em:'🧑‍🍳', title:'Head Chef Poached', tone:'down', w:3, run:function(){
-      if(S.hasManager){ S.brand-=2;
-        return {delta:'Brand −2', html:'A rival poaches your head chef — but your systems and documented recipes mean the business barely wobbles.',
-          lesson:'Delegation and SOPs turn key-person risk into a minor bump.'}; }
-      var l=6000+S.outlets*2000; S.cash-=l; S.brand-=7; S.flags.keyperson=true;
-      note('Losing a key person hurt because everything lived in one head — the case for management and documented systems.');
-      return {delta:fmt(-l)+' · Brand −7', html:'Your head chef leaves and takes the know-how. Quality dips while you scramble to recover the recipe.',
-        lesson:'Without systems, people <b>are</b> the business — and they can walk out the door.'}; } },
-  { em:'💸', title:'Cashier Fraud', tone:'down', w:2, run:function(){
-      if(S.governance){
-        return {delta:'Caught early', html:'A cashier skims the takings — but your internal controls flag it within days.',
-          lesson:'Governance and controls are exactly what catch fraud — and what Bursa checks before a listing.'}; }
-      var l=7000+S.outlets*2500; S.cash-=l;
-      note('Staff fraud went undetected because there were no internal controls — governance isn\'t bureaucracy, it protects your cash.');
-      return {delta:fmt(-l), html:'A trusted cashier has been skimming for months. With no controls, nobody noticed.',
-        lesson:'Weak governance is a slow leak. Controls exist for a reason.'}; } },
-  { em:'🏚️', title:'Landlord Triples the Rent', tone:'down', w:2, run:function(){ var l=6000+S.outlets*2000; S.cash-=l;
-      return {delta:fmt(-l), html:'Your flagship\'s landlord triples the rent at renewal. Pay up or relocate — either way it stings.',
-        lesson:'Fixed costs can spike overnight. Location risk is real, whatever your vehicle.'}; } },
-  { em:'📉', title:'Recession Bites', tone:'down', w:2, run:function(){ var l=4000+S.outlets*2500; S.cash-=l; S.brand-=3;
-      return {delta:fmt(-l)+' · Brand −3', html:'An economic slump thins the lunch crowd. Margins compress across every outlet.',
-        lesson:'Macro cycles hit everyone. Well-capitalised, diversified businesses ride them out better.'}; } },
-  { em:'🐀', title:'Pest Shutdown', tone:'down', w:1, run:function(){ var l=4000; S.cash-=l; S.brand-=6;
-      return {delta:fmt(-l)+' · Brand −6', html:'MPSJ shuts an outlet over a pest complaint — a fine, a deep clean, and a hit to your reputation.',
-        lesson:'Hygiene lapses cost money and trust, and no legal structure repairs a reputation.'}; } },
+  { em:'🔥', title:'Kitchen Fire', tone:'down', w:3,
+    situation:'A grease fire guts one of your kitchens overnight — equipment and stock destroyed.',
+    opts:function(){ return [
+      { t:'File the insurance claim & rebuild fast', h:'Insurance covers most; you pay the excess.',
+        go:function(){ var l=4000+S.outlets*1000; S.cash-=l; S.brand-=2;
+          return {tone:'flat', delta:fmt(-l), html:'You were insured, so the insurer covers the bulk. You pay the excess and reopen within weeks.',
+            lesson:'<b>Insurance</b> — not your legal vehicle — is what covers fire, theft and floods. Every serious operator carries it.'}; } },
+      { t:'Rebuild from your own pocket to keep premiums low', h:'Bigger cash hit now, no claim on record.',
+        go:function(){ var l=9000+S.outlets*3000; S.cash-=l;
+          return {tone:'down', delta:fmt(-l), html:'You self-fund the whole rebuild. Painful on cash today, cheaper insurance tomorrow.',
+            lesson:'Self-insuring trades cash for control — fine with deep reserves, dangerous when cash is thin.'}; } },
+      { t:'Shut that outlet for good', h:'Stop the bleeding; lose an outlet.',
+        go:function(){ if(S.outlets>1)S.outlets--; S.bizValue-=40000; S.cash-=1500;
+          return {tone:'down', delta:'−1 outlet', html:'You decide the site isn\'t worth saving and close it. Less to manage — a smaller business.',
+            lesson:'Cutting a losing outlet can be the disciplined move: shrink to strengthen.'}; } }
+    ]; } },
+
+  { em:'⚖️', title:'Slip-and-Fall Lawsuit', tone:'down', w:3,
+    situation:'A customer slips on a wet floor and sues for damages. How you handle it — and your liability — decide the damage.',
+    opts:function(){ var lim=V().limited; return [
+      { t:'Settle quickly and quietly', h:'Pay a moderate sum to make it disappear.',
+        go:function(){ var s=lim?7000:12000; S.cash-=s; if(S.cash<0){S.debts+=-S.cash;S.cash=0;}
+          note(lim?'A lawsuit was contained inside the company — limited liability at work.':'A lawsuit came out of your personal pocket — the price of unlimited liability.');
+          return {tone:'down', delta:fmt(-s), html:'You settle out of court. '+(lim?'The <b>company</b> pays — your personal assets stay clear.':'You pay <b>personally</b> — a sole prop/partnership has no company to stand behind.'),
+            lesson:lim?'Even settling, limited liability keeps the cost inside the business.':'Even a quick settlement comes out of your <b>own</b> pocket under unlimited liability.'}; } },
+      { t:'Fight it in court', h:'A gamble — win and pay little, lose and pay a lot.',
+        go:function(){ if(chance(0.5)){ var c=3000; S.cash-=c;
+            return {tone:'up', delta:fmt(-c), html:'You win. Only legal fees to pay.',
+              lesson:'Standing firm can pay — but it\'s a genuine gamble with your cash (and, if unlimited, your personal assets).'}; }
+          var big=lim?18000:32000; var pay=Math.min(big,S.cash+20000); S.cash-=pay; if(S.cash<0){S.debts+=-S.cash;S.cash=0;}
+          note(lim?'You lost a lawsuit but the company absorbed it — limited liability capped the damage.':'You lost a lawsuit and it reached your personal assets — unlimited liability at its most dangerous.');
+          return {tone:'down', delta:fmt(-pay), html:'You lose. '+(lim?'The company pays the judgment — capped at the business.':'The judgment comes after <b>you personally</b> — savings and all.'),
+            lesson:lim?'Losing hurt, but limited liability capped it to the business.':'A lost case under unlimited liability can take everything you own.'}; } },
+      { t:'Ignore the letter and hope it goes away', h:'The worst move — a default judgment can follow.',
+        go:function(){ var big=lim?16000:30000; var pay=Math.min(big,S.cash+18000); S.cash-=pay; if(S.cash<0){S.debts+=-S.cash;S.cash=0;} S.brand-=4;
+          note('Ignoring legal process led to a default judgment — never leave a lawsuit unanswered.');
+          return {tone:'down', delta:fmt(-pay)+' · Brand −4', html:'A default judgment is entered against you for not responding'+(lim?', enforced against the company.':' — enforced against <b>you personally</b>.'),
+            lesson:'Never ignore legal process. The magnitude of a disaster often depends on how you respond to it.'}; } }
+    ]; } },
+
+  { em:'🌊', title:'Flash Flood', tone:'down', w:2,
+    situation:'A monsoon flood swamps your area. Your outlets could be shut for weeks.',
+    opts:function(){ return [
+      { t:'Invest in flood defences & reopen fast (−RM4,000)', h:'Spend to reopen quickly and protect against next time.',
+        go:function(){ var l=4000+S.outlets*1000; S.cash-=l; S.brand+=2;
+          return {tone:'flat', delta:fmt(-l), html:'Pumps, barriers and a fast clean-up get you trading again in days — and better prepared for the next storm.',
+            lesson:'Spending to reduce downside is often cheaper than the downside itself.'}; } },
+      { t:'Wait it out and reopen when dry', h:'No capex, but weeks of lost sales.',
+        go:function(){ var l=7000+S.outlets*3000; S.cash-=l; S.brand-=3;
+          return {tone:'down', delta:fmt(-l)+' · Brand −3', html:'You wait for the water to recede. Cheaper up front, but weeks of lost revenue and spoiled stock.',
+            lesson:'Doing nothing has a cost too. External shocks hit every vehicle — reserves are your shield.'}; } }
+    ]; } },
+
+  { em:'🧑‍🍳', title:'Head Chef Poached', tone:'down', w:3,
+    situation:'A rival tries to poach your head chef — the person who holds the recipe and runs the kitchen.',
+    opts:function(){ return [
+      { t:'Counter-offer with a raise'+(V().equity?' + share options':'')+' (−RM8,000)', h:'Keep the talent; costs cash'+(V().equity?', but shares help':'')+'.',
+        go:function(){ S.cash-=8000; S.brand+=2;
+          return {tone:'flat', delta:'−RM8,000', html:'You match the offer'+(V().equity?' and sweeten it with share options only a company can grant':'')+'. The chef stays.',
+            lesson:V().equity?'A company can retain key people with <b>equity</b> — a powerful tool a sole prop simply doesn\'t have.':'Retaining talent costs cash when you can\'t offer shares.'}; } },
+      { t:'Let them go and promote from within', h:'Cheap — but only smooth if you built systems.',
+        go:function(){ if(S.hasManager){ S.brand-=1;
+            return {tone:'flat', delta:'Brand −1', html:'Your documented recipes and trained team mean a shift-lead steps up easily. Barely a wobble.',
+              lesson:'Systems and delegation turn key-person risk into a minor bump.'}; }
+          var l=6000+S.outlets*2000; S.cash-=l; S.brand-=7; S.flags.keyperson=true;
+          note('Losing a key person hurt because everything lived in one head — the case for management and documented systems.');
+          return {tone:'down', delta:fmt(-l)+' · Brand −7', html:'With nothing written down, quality collapses while you scramble to recover the recipe.',
+            lesson:'Without systems, people <b>are</b> the business — and they can walk out the door.'}; } }
+    ]; } },
+
+  { em:'💸', title:'Cashier Fraud', tone:'down', w:2,
+    situation:'You suspect a cashier has been skimming the takings.',
+    opts:function(){ return [
+      { t:'Audit the books & install controls (−RM3,000)', h:'Investigate, recover what you can, prevent a repeat.',
+        go:function(){ S.cash-=3000; if(!S.governance){S.governance=true; S.bizValue+=10000;}
+          note('You put internal controls in place after a fraud scare — governance protects cash and is what a listing demands.');
+          return {tone:'flat', delta:'−RM3,000 · controls added', html:'An audit confirms it. You recover some, dismiss the cashier, and put proper cash controls in place.',
+            lesson:'Governance and internal controls are what catch and prevent fraud — and exactly what Bursa checks before a listing.'}; } },
+      { t:'Quietly fire them and move on', h:'Avoid the fuss; absorb the loss and the risk.',
+        go:function(){ var l=7000+S.outlets*2500; S.cash-=l;
+          note('Fraud went unaddressed at the root — with no controls, the next leak is only a matter of time.');
+          return {tone:'down', delta:fmt(-l), html:'You let the cashier go without a fuss and eat the loss. But nothing changes — the control gap is still there.',
+            lesson:'Firing the symptom isn\'t fixing the cause. Weak governance is a slow, recurring leak.'}; } }
+    ]; } },
+
+  { em:'🏚️', title:'Landlord Triples the Rent', tone:'down', w:2,
+    situation:'At renewal, your flagship\'s landlord triples the rent.',
+    opts:function(){ return [
+      { t:'Pay up to keep the prime location', h:'Protect footfall & brand; absorb the cost.',
+        go:function(){ var l=7000+S.outlets*2000; S.cash-=l;
+          return {tone:'down', delta:fmt(-l), html:'You swallow the increase to hold your best-performing spot. Footfall and brand intact.',
+            lesson:'Location can be worth paying up for — but fixed costs that spike squeeze every future year.'}; } },
+      { t:'Negotiate a longer lease on your entity\'s standing', h:'A registered business bargains from strength.',
+        go:function(){ if(V().cred>=2){ var l=3000; S.cash-=l;
+            return {tone:'flat', delta:fmt(-l), html:'As a credible registered '+V().name+', you negotiate a longer lease at a far smaller increase. The landlord values a stable corporate tenant.',
+              lesson:'A registered, credible entity negotiates from strength — even landlords price you on how solid you look.'}; }
+          var l2=5000+S.outlets*1500; S.cash-=l2; S.brand-=2;
+          return {tone:'down', delta:fmt(-l2), html:'As an informal operator you have little leverage. You get a small concession but mostly pay the increase.',
+            lesson:'Credibility is leverage. Informal vehicles negotiate from weakness.'}; } },
+      { t:'Relocate to a cheaper unit', h:'One-off moving cost + brand dip, lower future rent.',
+        go:function(){ var l=8000; S.cash-=l; S.brand-=5; S.bizValue-=10000;
+          return {tone:'down', delta:fmt(-l)+' · Brand −5', html:'You move to a cheaper lot. Costly and disruptive now — regulars take time to follow.',
+            lesson:'Chasing lower costs can cost you customers. Weigh the move against the brand you\'ve built.'}; } }
+    ]; } },
+
+  { em:'📉', title:'Recession Bites', tone:'down', w:2,
+    situation:'An economic slump thins the lunch crowd across all your outlets.',
+    opts:function(){ return [
+      { t:'Discount hard to keep volume', h:'Protect footfall, sacrifice margin.',
+        go:function(){ var l=5000+S.outlets*2500; S.cash-=l; S.brand+=3;
+          return {tone:'down', delta:fmt(-l)+' · Brand +3', html:'Promotions keep the queues alive but crush your margins this year.',
+            lesson:'Buying volume with discounts protects your brand presence — at the cost of profit.'}; } },
+      { t:'Hold prices, cut costs', h:'Protect margin, risk some footfall.',
+        go:function(){ var l=3000+S.outlets*1500; S.cash-=l; S.brand-=3;
+          return {tone:'down', delta:fmt(-l)+' · Brand −3', html:'You trim costs and hold prices. Fewer customers, but healthier margins per sale.',
+            lesson:'Defending margin over volume is the classic downturn trade-off. Neither is free.'}; } }
+    ]; } },
 
   // ---------- Windfalls ----------
-  { em:'📈', title:'You Go Viral — Nationally', tone:'up', w:3, run:function(){ var g=8000+S.outlets*3000; S.cash+=g; S.brand+=18; S.bizValue+=20000;
-      note('A viral moment supercharged demand, brand and value — upside is random too, and capacity captures it.');
-      return {delta:'+'+fmt(g)+' · Brand +18', html:'A food vlogger\'s review explodes. Nationwide queues; delivery orders overflow.',
-        lesson:'The businesses that capture a viral spike are the ones with the capacity to serve it.'}; } },
-  { em:'🌟', title:'Celebrity Drops By', tone:'up', w:2, run:function(){ S.brand+=12; var g=4000+S.outlets*1500; S.cash+=g;
-      return {delta:'+'+fmt(g)+' · Brand +12', html:'A celebrity posts your nasi lemak to millions of followers — free marketing gold.',
-        lesson:'Brand is an asset that compounds, and it costs nothing when luck strikes.'}; } },
-  { em:'💰', title:'Government SME Grant', tone:'up', w:3, run:function(){
-      if(V().cred>=2){ var g=25000; S.cash+=g;
-        note('A registered entity (LLP/Sdn Bhd) qualified for an SME grant — another perk of being a proper, registered business.');
-        return {delta:'+'+fmt(g), html:'As a registered '+V().name+', you qualify for an SME Corp / TEKUN grant — RM25,000 of non-dilutive funding.',
-          lesson:'Grants and incentives favour <b>registered</b> entities. Formality unlocks money informal vehicles can\'t touch.'}; }
-      var g2=6000; S.cash+=g2;
-      note('Most SME grants require a registered company/LLP — as an informal vehicle you only scraped a tiny micro-grant.');
-      return {delta:'+'+fmt(g2), html:'You apply, but most schemes want a registered company or LLP. You scrape a small micro-grant instead.',
-        lesson:'Being unregistered locks you out of most government funding — a quiet cost of staying informal.'}; } },
-  { em:'🤝', title:'Surprise Catering Windfall', tone:'up', w:3, run:function(){ var g=7000+S.outlets*2500; S.cash+=g;
-      return {delta:'+'+fmt(g), html:'A corporate client books you for a month of office catering — easy, high-margin revenue.',
-        lesson:'Opportunities find businesses that are visible and ready to say yes.'}; } },
-  { em:'🏆', title:'Best Nasi Lemak Award', tone:'up', w:2, run:function(){ S.brand+=10; S.bizValue+=25000;
-      return {delta:'Brand +10 · value up', html:'You win a national "Best Nasi Lemak" award — prestige, press, and a bump to your brand value.',
-        lesson:'Intangible brand value is real value: it lifts what your business is worth at exit.'}; } },
-  { em:'🏦', title:'Cheap Refinancing Offer', tone:'up', w:2, run:function(){
-      if(S.debts>0 && V().limited){ var cut=Math.round(S.debts*0.4); S.debts-=cut;
-        return {delta:'−'+fmt(cut)+' debt', html:'Your limited-liability track record earns a cheap refinancing offer — you clear a chunk of expensive debt.',
-          lesson:'Registered, limited entities get better credit terms. A lower cost of capital compounds over time.'}; }
-      if(S.debts>0){ var cut2=Math.round(S.debts*0.15); S.debts-=cut2;
-        return {delta:'−'+fmt(cut2)+' debt', html:'You negotiate a small rate cut on your personal loans. Every bit helps.',
-          lesson:'Unlimited-liability borrowers get thinner terms — the bank prices your personal risk in.'}; }
-      var g=5000; S.cash+=g;
-      return {delta:'+'+fmt(g), html:'With no debt to refinance, the bank extends a cheap working-capital line you dip into.',
-        lesson:'A clean balance sheet is itself an asset — it earns you cheaper money when you want it.'}; } },
-  { em:'🧧', title:'Festive Season Boom', tone:'up', w:3, run:function(){ var g=5000+S.outlets*2500; S.cash+=g; S.brand+=4;
-      return {delta:'+'+fmt(g)+' · Brand +4', html:'Hari Raya / CNY demand goes through the roof — your best season yet.',
-        lesson:'Seasonality is a gift if you have the capacity to catch it.'}; } },
-  { em:'🚇', title:'MRT Station Opens Next Door', tone:'up', w:2, run:function(){ S.brand+=6; S.bizValue+=30000; var g=4000+S.outlets*1500; S.cash+=g;
-      return {delta:'+'+fmt(g)+' · value up', html:'A new MRT station opens beside your flagship. Footfall — and the outlet\'s value — jumps.',
-        lesson:'Location luck can lift asset value overnight. Owning the right spot matters.'}; } },
+  { em:'📈', title:'You Go Viral — Nationally', tone:'up', w:3,
+    situation:'A food vlogger\'s review of your nasi lemak explodes. Demand suddenly far exceeds what you can serve.',
+    opts:function(){ return [
+      { t:'Pour cash into scaling to meet the demand (−RM15,000)', h:'Capture the spike fully — big brand & value gain.',
+        go:function(){ S.cash-=15000; var g=14000+S.outlets*4000; S.cash+=g; S.brand+=22; S.bizValue+=45000;
+          note('You had the cash to scale into a viral spike and captured it fully — capacity turns luck into lasting value.');
+          return {tone:'up', delta:'+'+fmt(g-15000)+' net · Brand +22', html:'You rush in extra staff, stock and a pop-up. The wave is enormous and you ride all of it — new regulars everywhere.',
+            lesson:'Upside is random too — but only businesses with the <b>capacity and capital</b> to serve it capture the full spike.'}; } },
+      { t:'Serve what you can, stay lean', h:'Safe, moderate gain — no risk.',
+        go:function(){ var g=6000+S.outlets*2000; S.cash+=g; S.brand+=10;
+          return {tone:'up', delta:'+'+fmt(g)+' · Brand +10', html:'You serve who you can and turn the rest away politely. A solid, low-risk bump.',
+            lesson:'Playing it safe banks a real gain — you just leave some of the windfall on the table.'}; } },
+      { t:'Hike prices on the hype', h:'Cash now, but you risk the goodwill.',
+        go:function(){ var g=10000+S.outlets*2500; S.cash+=g; S.brand-=6;
+          return {tone:'flat', delta:'+'+fmt(g)+' · Brand −6', html:'You cash in with higher prices. Great this month — but some new fans feel gouged and don\'t return.',
+            lesson:'Squeezing a hype moment for cash can burn the very brand goodwill that created it.'}; } }
+    ]; } },
+
+  { em:'💰', title:'Government SME Grant', tone:'up', w:3,
+    situation:'An SME Corp / TEKUN grant round opens. Whether you qualify — and for how much — depends on your vehicle.',
+    opts:function(){ var reg=V().cred>=2; var amt=reg?25000:6000; return [
+      { t:'Apply, then invest it in a central kitchen', h:'Reinvest for scale (and capital allowances).',
+        go:function(){ S.cash+=amt; S.bizValue+=amt+15000; S.equipInvest=true;
+          note(reg?'A registered entity qualified for a full SME grant and reinvested it — formality unlocks money and tax relief.':'As an informal vehicle you only qualified for a micro-grant — most schemes want a registered company/LLP.');
+          return {tone:'up', delta:'+'+fmt(amt)+' · reinvested', html:(reg?'As a registered '+V().name+' you win the full <b>'+fmt(amt)+'</b> grant':'Most schemes want a registered company/LLP, so you scrape a <b>'+fmt(amt)+'</b> micro-grant')+' and plough it into a shared kitchen — boosting capacity and earning capital allowances.',
+            lesson:'Grants favour <b>registered</b> entities, and reinvesting in equipment earns capital allowances that cut future tax.'}; } },
+      { t:'Apply and bank the cash as reserve', h:'Safety buffer against the next bad card.',
+        go:function(){ S.cash+=amt;
+          note(reg?'A registered entity qualified for a full SME grant.':'As an informal vehicle you only qualified for a small micro-grant.');
+          return {tone:'up', delta:'+'+fmt(amt), html:(reg?'As a registered '+V().name+' you receive the full <b>'+fmt(amt)+'</b>':'You only qualify for a <b>'+fmt(amt)+'</b> micro-grant as an informal operator')+' and keep it as a cash buffer.',
+            lesson:'Being unregistered locks you out of most government funding — a quiet, recurring cost of staying informal.'}; } }
+    ]; } },
+
+  { em:'🤝', title:'Surprise Catering Windfall', tone:'up', w:3,
+    situation:'A corporate client offers a month-long office-catering contract — good money, but it will stretch your kitchen.',
+    opts:function(){ return [
+      { t:'Take it and hire temps to deliver well (−RM4,000)', h:'Protect quality; bank a strong margin.',
+        go:function(){ S.cash-=4000; var g=12000+S.outlets*2500; S.cash+=g; S.brand+=4;
+          return {tone:'up', delta:'+'+fmt(g-4000)+' net · Brand +4', html:'You staff up properly and deliver flawlessly. Great margin and a delighted client who refers others.',
+            lesson:'Spending a little to protect quality on a big order usually pays back many times over.'}; } },
+      { t:'Take it and stretch your current team', h:'Keep all the cash — risk your regular service.',
+        go:function(){ var g=13000+S.outlets*2500; S.cash+=g; S.brand-=5;
+          return {tone:'flat', delta:'+'+fmt(g)+' · Brand −5', html:'You pocket the full fee, but your overworked team lets standards slip at the outlets. Some regulars grumble.',
+            lesson:'Chasing every ringgit of a windfall can quietly damage the core business that feeds you.'}; } },
+      { t:'Decline — you can\'t do it justice now', h:'No cash, but no risk to your reputation.',
+        go:function(){ S.brand+=2;
+          return {tone:'flat', delta:'Brand +2', html:'You politely pass. No windfall — but your regular service stays impeccable and word gets around.',
+            lesson:'Saying no to work you can\'t deliver well protects the asset that matters most: your reputation.'}; } }
+    ]; } },
+
+  { em:'🏆', title:'Best Nasi Lemak Award', tone:'up', w:2,
+    situation:'You win a national "Best Nasi Lemak" award. How hard do you leverage it?',
+    opts:function(){ return [
+      { t:'Launch a PR & marketing blitz (−RM6,000)', h:'Turn the moment into lasting brand value.',
+        go:function(){ S.cash-=6000; S.brand+=16; S.bizValue+=40000;
+          return {tone:'up', delta:'Brand +16 · value up', html:'You milk the award with press, packaging and a campaign. Brand and company value jump well beyond the spend.',
+            lesson:'Intangible brand value is real value — and leveraging a moment compounds it into the price you\'ll fetch at exit.'}; } },
+      { t:'Let it speak for itself', h:'A free, modest brand bump.',
+        go:function(){ S.brand+=8; S.bizValue+=15000;
+          return {tone:'up', delta:'Brand +8', html:'You add a sticker to the window and let word spread naturally. A pleasant, cost-free lift.',
+            lesson:'Even unleveraged, brand is an asset — but you capture more of it when you invest behind the moment.'}; } }
+    ]; } },
 
   // ---------- Mixed / cautionary ----------
-  { em:'🎲', title:'A "Sure-Win" Side Bet', tone:'flat', w:2, run:function(){
-      var stake=10000;
-      if(chance(0.45)){ S.cash+=stake;
-        return {delta:'+'+fmt(stake), html:'A friend\'s "guaranteed" crypto tip actually pays off this time — you double a RM10,000 punt.',
-          lesson:'It worked — but betting business cash on tips is how good businesses die. Don\'t confuse luck with skill.'}; }
-      S.cash-=stake; note('You gambled business cash on a hot tip and lost — never mix speculative bets with operating cash.');
-      return {delta:fmt(-stake), html:'The "sure-win" tip evaporates. RM10,000 of working capital — gone.',
-        lesson:'Speculating with business cash is a disaster waiting to happen. Ring-fence your operating funds.'}; } }
+  { em:'🎲', title:'A "Sure-Win" Side Bet', tone:'flat', w:2,
+    situation:'A friend swears his crypto tip is a guaranteed double. He wants you to put in RM10,000 of business cash.',
+    opts:function(){ return [
+      { t:'Go all in — RM10,000', h:'A real gamble with your working capital.',
+        go:function(){ var stake=10000; if(chance(0.42)){ S.cash+=stake;
+            return {tone:'up', delta:'+'+fmt(stake), html:'It actually pays off this time — you double the punt.',
+              lesson:'It worked — but betting business cash on tips is how good businesses die. Don\'t confuse luck with skill.'}; }
+          S.cash-=stake; note('You gambled business cash on a hot tip and lost — never mix speculation with operating cash.');
+          return {tone:'down', delta:fmt(-stake), html:'The "sure thing" evaporates. RM10,000 of working capital — gone.',
+            lesson:'Speculating with business cash is a disaster waiting to happen. Ring-fence your operating funds.'}; } },
+      { t:'Put in a token RM2,000 for fun', h:'Limit the downside; small stake.',
+        go:function(){ var stake=2000; if(chance(0.42)){ S.cash+=stake;
+            return {tone:'flat', delta:'+'+fmt(stake), html:'A small win on a small stake. Harmless fun this time.',
+              lesson:'Sizing a bet to what you can lose is the whole game — position size beats being "right".'}; }
+          S.cash-=stake;
+          return {tone:'flat', delta:fmt(-stake), html:'You lose the RM2,000 — annoying, but survivable.',
+            lesson:'Because you sized it small, a bad bet is a lesson, not a crisis.'}; } },
+      { t:'Walk away — keep your cash', h:'The disciplined choice.',
+        go:function(){ return {tone:'up', delta:'RM0', html:'You pass. The tip later crashes 80%. Your cash is safe and working in the business.',
+          lesson:'The best response to "guaranteed" returns is usually no response at all.'}; } }
+    ]; } }
 ];
 
 function pickFate(){
@@ -534,23 +650,28 @@ function pickFate(){
   return card;
 }
 
+/* Reveal the drawn card, then let the player choose how to act on it. */
+function cardReveal(card){
+  var kind = card.tone==='down' ? 'Disaster' : card.tone==='up' ? 'Fortune' : 'Fate';
+  return {
+    title:'🎡 The Wheel of Fate — Year '+S.year,
+    tags:'<span class="tag '+(card.tone==='down'?'n':'g')+'">🃏 '+kind+' card</span>',
+    flavor:'<div class="wheel">🎡</div>'
+      + '<div class="fatecard '+card.tone+'"><div class="fk">Fate Card</div>'
+      + '<div class="fem">'+card.em+'</div><div class="ft">'+card.title+'</div></div>'
+      + card.situation + ' <b>How do you respond?</b>',
+    options: card.opts()
+  };
+}
+
 function fateScene(){
   return {
     title:'🎡 The Wheel of Fate — Year '+S.year,
     tags:'<span class="tag g">🃏 Fate Card</span>',
-    flavor:'Business isn\'t only your choices — it\'s what the world throws at you. Spin the wheel and draw this year\'s fate. It might make you… or break you.',
+    flavor:'Business isn\'t only your choices — it\'s what the world throws at you, and how you react to it. Spin the wheel, then <b>decide how to act</b> on the card you draw. Your response sets how big the reward or the damage is.',
     options:[
-      { t:'🎡 Spin the Wheel of Fate', h:'Draw a random card — fortune or disaster.',
-        go:function(){
-          var card = pickFate();
-          var r = card.run();
-          return { tone:card.tone, delta:r.delta,
-            html:'<div class="wheel">🎡</div>'
-               + '<div class="fatecard '+card.tone+'"><div class="fk">Fate Card</div>'
-               + '<div class="fem">'+card.em+'</div><div class="ft">'+card.title+'</div></div>'
-               + r.html,
-            lesson:r.lesson };
-        } }
+      { t:'🎡 Spin the Wheel of Fate', h:'Draw a random event — then choose how to handle it.',
+        go:function(){ return { scene: cardReveal(pickFate()) }; } }
     ]
   };
 }

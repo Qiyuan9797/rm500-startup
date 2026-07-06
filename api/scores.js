@@ -1,44 +1,67 @@
-// Shared leaderboard API for RM500 Startup.
-// Backed by an Upstash Redis (a.k.a. Vercel KV) store via its REST API — no npm deps.
-// Env vars are injected automatically when you connect the store to the project in Vercel.
+// Shared leaderboard API for RM500 Startup — backed by Supabase (Postgres via PostgREST).
+// No npm deps: talks to Supabase's REST API with fetch, using env vars that the
+// Vercel–Supabase integration injects automatically.
+// One-time setup: create the table with the SQL in README.md.
 // Secure-by-default: resetting the board requires an ADMIN_KEY you set yourself.
 
-const REDIS_URL =
-  process.env.KV_REST_API_URL ||
-  process.env.UPSTASH_REDIS_REST_URL ||
-  process.env.REDIS_REST_URL;
-const REDIS_TOKEN =
-  process.env.KV_REST_API_TOKEN ||
-  process.env.UPSTASH_REDIS_REST_TOKEN ||
-  process.env.REDIS_REST_TOKEN;
+const SB_URL =
+  process.env.SUPABASE_URL ||
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.SUPABASE_PROJECT_URL;
 
-const KEY = 'rm500:board';
-const MAX_KEEP = 200; // cap how many entries the store retains
-const TOP_N = 50; // how many we return to the page
+// Service-role key is server-side only (never sent to the browser); it bypasses RLS.
+const SB_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SERVICE_KEY ||
+  process.env.SUPABASE_ANON_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-async function redis(command) {
-  const r = await fetch(REDIS_URL, {
-    method: 'POST',
+const TABLE = process.env.SCORES_TABLE || 'scores';
+const TOP_N = 50;
+const SELECT = 'name,idea,idea_em,structure,struct_em,score,ts';
+
+function rest(path, init) {
+  return fetch(SB_URL.replace(/\/+$/, '') + '/rest/v1/' + path, {
+    ...init,
     headers: {
-      Authorization: 'Bearer ' + REDIS_TOKEN,
+      apikey: SB_KEY,
+      Authorization: 'Bearer ' + SB_KEY,
       'Content-Type': 'application/json',
+      ...(init && init.headers),
     },
-    body: JSON.stringify(command),
   });
-  if (!r.ok) throw new Error('redis http ' + r.status);
-  const j = await r.json();
-  if (j.error) throw new Error(j.error);
-  return j.result;
 }
 
 function clean(s, n) {
   return String(s == null ? '' : s).slice(0, n);
 }
 
+// Map a DB row (snake_case) to the shape the game expects (camelCase).
+function toEntry(row) {
+  return {
+    name: row.name,
+    idea: row.idea,
+    ideaEm: row.idea_em,
+    structure: row.structure,
+    structEm: row.struct_em,
+    score: Number(row.score),
+    ts: Number(row.ts),
+  };
+}
+
+async function topBoard() {
+  const r = await rest(
+    TABLE + '?select=' + SELECT + '&order=score.desc&limit=' + TOP_N
+  );
+  if (!r.ok) throw new Error('supabase select ' + r.status + ' ' + (await r.text()));
+  const rows = await r.json();
+  return rows.map(toEntry);
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
 
-  if (!REDIS_URL || !REDIS_TOKEN) {
+  if (!SB_URL || !SB_KEY) {
     res.status(503).json({ error: 'store_not_configured' });
     return;
   }
@@ -52,7 +75,9 @@ module.exports = async function handler(req, res) {
         res.status(403).json({ error: 'forbidden' });
         return;
       }
-      await redis(['DEL', KEY]);
+      // PostgREST requires a filter to delete; score>=min-int matches every row.
+      const r = await rest(TABLE + '?score=gte.-2147483648', { method: 'DELETE' });
+      if (!r.ok) throw new Error('supabase delete ' + r.status + ' ' + (await r.text()));
       res.status(200).json({ board: [] });
       return;
     }
@@ -66,33 +91,25 @@ module.exports = async function handler(req, res) {
         res.status(400).json({ error: 'bad_score' });
         return;
       }
-      const entry = {
+      const row = {
         name: clean(b.name, 22) || 'Anon',
         idea: clean(b.idea, 40),
-        ideaEm: clean(b.ideaEm, 8),
+        idea_em: clean(b.ideaEm, 8),
         structure: clean(b.structure, 40),
-        structEm: clean(b.structEm, 8),
+        struct_em: clean(b.structEm, 8),
         score: scoreNum,
         ts: Number(b.ts) || Date.now(),
       };
-      await redis(['ZADD', KEY, scoreNum, JSON.stringify(entry)]);
-      // Keep only the top MAX_KEEP (drop the lowest-scoring beyond that).
-      await redis(['ZREMRANGEBYRANK', KEY, 0, -(MAX_KEEP + 1)]);
+      const r = await rest(TABLE, {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify(row),
+      });
+      if (!r.ok) throw new Error('supabase insert ' + r.status + ' ' + (await r.text()));
     }
 
     // ---- Return the top scores (for GET and after a POST) ----
-    const flat = await redis(['ZRANGE', KEY, 0, TOP_N - 1, 'REV', 'WITHSCORES']);
-    const board = [];
-    for (let i = 0; i + 1 < flat.length; i += 2) {
-      try {
-        const e = JSON.parse(flat[i]);
-        e.score = Number(flat[i + 1]);
-        board.push(e);
-      } catch (_) {
-        /* skip malformed */
-      }
-    }
-    res.status(200).json({ board });
+    res.status(200).json({ board: await topBoard() });
   } catch (e) {
     res.status(500).json({ error: String((e && e.message) || e) });
   }

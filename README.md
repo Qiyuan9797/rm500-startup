@@ -36,13 +36,31 @@ vercel --prod          # promote to your public production URL
 
 ## Shared live leaderboard (all devices)
 
-Every finished game posts its score to a **shared** leaderboard that everyone sees, no matter which phone or laptop they played on. It's powered by a tiny serverless function (`api/scores.js`) backed by a free Redis store. If the store is ever unreachable, the game falls back to a this-device-only board so it never breaks.
+Every finished game posts its score to a **shared** leaderboard that everyone sees, no matter which phone or laptop they played on. It's powered by a tiny serverless function (`api/scores.js`) backed by **Supabase** (free Postgres). If the store is ever unreachable, the game falls back to a this-device-only board so it never breaks.
 
-**One-time setup in the Vercel dashboard (~1 min):**
+**One-time setup (~2 min):**
 
-1. Open your project → **Storage** tab → **Create Database** → choose **Upstash for Redis** (a.k.a. KV) → pick the free plan → **Create**.
-2. When prompted, **Connect** it to this project (all environments). This auto-adds the `KV_REST_API_URL` / `KV_REST_API_TOKEN` env vars — the function reads them automatically.
-3. **Redeploy** (Deployments tab → ⋯ → Redeploy, or just `git push`). Done — scores are now shared globally.
+1. **Create the table.** In your Supabase project → **SQL Editor** → **New query** → paste and **Run**:
+
+   ```sql
+   create table if not exists public.scores (
+     id         bigint generated always as identity primary key,
+     name       text not null,
+     idea       text,
+     idea_em    text,
+     structure  text,
+     struct_em  text,
+     score      integer not null,
+     ts         bigint,
+     created_at timestamptz default now()
+   );
+   create index if not exists scores_score_idx on public.scores (score desc);
+   ```
+
+   (The API uses the service-role key, which bypasses row-level security — no RLS policies needed.)
+
+2. **Env vars.** The Vercel–Supabase integration already injects `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` — the function reads them automatically. Nothing to add.
+3. **Redeploy** (Vercel → Deployments → ⋯ → Redeploy, or just `git push`). Done — scores are now shared globally.
 
 **Resetting the board between sessions (host only, optional):**
 

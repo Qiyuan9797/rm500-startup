@@ -40,6 +40,7 @@
   .lead{color:var(--mute);font-size:15px;line-height:1.6}
 
   .scene-title{font-family:Cambria,Georgia,serif;color:var(--navy);font-size:23px;font-weight:800;margin:0 0 6px}
+  .setupstep{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
   .scene-flavor{font-size:15.5px;line-height:1.62;color:var(--ink);white-space:pre-wrap}
   .tagrow{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 14px}
   .tag{font-size:11px;font-weight:700;border-radius:20px;padding:4px 11px;letter-spacing:.4px}
@@ -237,32 +238,76 @@ function chance(p){ return Math.random() < p; }
 var VEHICLES = {
   enterprise: {
     key:'enterprise', em:'🧍', name:'Enterprise', my:'Milik Tunggal · Sole Proprietorship',
-    setup:80, startCash:20000, ownership:1.0,
+    setup:80, startCash:24000, ownership:1.0,
     limited:false, equity:false, canList:false, corporate:false, compliance:20, cred:1,
     sub:'Cheapest, fastest, all yours. But you ARE the business — its debts are your debts.',
     stats:[['Setup ~RM80','st'],['Keep 100%','good'],['Unlimited liability','warn'],['Cannot list','warn']]
   },
   partnership: {
     key:'partnership', em:'🤝', name:'Partnership', my:'Perkongsian · with a co-founder',
-    setup:200, startCash:38000, ownership:0.5,
+    setup:200, startCash:46000, ownership:0.5,
     limited:false, equity:false, canList:false, corporate:false, compliance:80, cred:1,
     sub:'You + a partner pool cash, so you start with more. But you share profits — and unlimited liability for each other.',
     stats:[['Pooled RM38k','good'],['You own 50%','st'],['Unlimited & shared','warn'],['Cannot list','warn']]
   },
   llp: {
     key:'llp', em:'🛡️', name:'LLP (PLT)', my:'Perkongsian Liabiliti Terhad',
-    setup:800, startCash:19200, ownership:1.0,
+    setup:800, startCash:27000, ownership:1.0,
     limited:true, equity:false, canList:false, corporate:true, compliance:300, cred:2,
     sub:'A modern hybrid: limited liability like a company, light compliance like a partnership. Credible — but to list you must first convert to Sdn Bhd.',
     stats:[['Setup ~RM800','st'],['Limited liability','good'],['Low compliance','good'],['Convert to list','warn']]
   },
   sdnbhd: {
     key:'sdnbhd', em:'🏢', name:'Sdn Bhd', my:'Sendirian Berhad · Private Limited',
-    setup:2000, startCash:18000, ownership:1.0,
+    setup:2000, startCash:31000, ownership:1.0,
     limited:true, equity:true, canList:true, corporate:true, compliance:1200, cred:3,
     sub:'A separate legal person. Costs more to run (secretary, audit), but it can ISSUE SHARES to investors — and is the only vehicle on the road to a Bursa listing.',
     stats:[['Setup ~RM2k','st'],['Limited liability','good'],['Can raise equity','good'],['→ IPO pathway','good']]
   }
+};
+
+/* ---------- Setup choices: location, pricing, licensing ---------- */
+var LOCATIONS = {
+  street:    { key:'street', em:'🏙️', name:'High-footfall street corner', my:'Busy PJ / KL roadside lot',
+    cost:4000, rent:1.0, demand:1.05, brand:4, biz:8000,
+    sub:'Steady walk-in trade and balanced costs — a dependable all-rounder.',
+    stats:[['Rent · medium','st'],['Footfall · high','good'],['Balanced','st']] },
+  mall:      { key:'mall', em:'🏬', name:'Shopping-mall lot', my:'Aircon crowds & prestige',
+    cost:12000, rent:1.7, demand:1.30, brand:9, biz:24000,
+    sub:'Premium address and heavy footfall — but punishing rent that bites in bad months.',
+    stats:[['Rent · very high','warn'],['Footfall · high','good'],['Prestige +','good']] },
+  transit:   { key:'transit', em:'🚇', name:'LRT/MRT commuter hub', my:'Grab-and-go volume',
+    cost:7000, rent:1.2, demand:1.20, brand:5, biz:12000,
+    sub:'Huge volume and fast turnover with smaller tickets — pairs well with value pricing.',
+    stats:[['Rent · high','st'],['Volume · very high','good'],['Fast turnover','st']] },
+  heartland: { key:'heartland', em:'🏘️', name:'Neighborhood shoplot', my:'Loyal regulars',
+    cost:2000, rent:0.6, demand:0.85, brand:3, biz:4000,
+    sub:'Cheap and low-risk with loyal regulars — but a limited ceiling.',
+    stats:[['Rent · low','good'],['Footfall · modest','warn'],['Low risk','good']] }
+};
+var PRICING = {
+  premium:  { key:'premium', em:'💎', name:'Premium / artisanal', my:'RM15 signature sets',
+    yield:1.18, brand:6, recession:1.6,
+    sub:'Fat margins and a strong brand — but fragile when wallets tighten.',
+    stats:[['Margin · high','good'],['Volume · low','warn'],['Recession-fragile','warn']] },
+  balanced: { key:'balanced', em:'⚖️', name:'Balanced everyday', my:'RM8–10 a plate',
+    yield:1.0, brand:2, recession:1.0,
+    sub:'A dependable middle path that suits most locations.',
+    stats:[['Margin · medium','st'],['Volume · medium','st'],['Steady','good']] },
+  value:    { key:'value', em:'🪙', name:'Value / high-volume', my:'RM4–5, sell a lot',
+    yield:0.9, brand:3, recession:0.6,
+    sub:'Thin margins but resilient, mass-market volume — downturn-proof.',
+    stats:[['Margin · low','warn'],['Volume · high','good'],['Recession-proof','good']] }
+};
+var LICENSING = {
+  full:  { key:'full', em:'✅', name:'Full licences + Halal + insurance', my:'JAKIM halal, premise & signboard, cover',
+    cost:6000, halal:true, insured:true, brand:5,
+    sub:'Costs more up front, but unlocks big contracts (many require halal) and softens fate\'s disasters.',
+    stats:[['−RM6,000','st'],['Halal cert','good'],['Insured','good'],['Contract-ready','good']] },
+  basic: { key:'basic', em:'📋', name:'Basic licence only', my:'The minimum to open',
+    cost:1000, halal:false, insured:false, brand:0,
+    sub:'Cheap now — but no halal cert (a smaller market) and no insurance when fate strikes.',
+    stats:[['−RM1,000','good'],['No halal','warn'],['Uninsured','warn']] }
 };
 
 /* ---------- Game state ---------- */
@@ -273,21 +318,28 @@ var STEP_YEARS = [];
 
 function newGame(name, vk){
   var V = VEHICLES[vk];
+  var L = LOCATIONS[pendingLoc] || LOCATIONS.street;
+  var P = PRICING[pendingPrice] || PRICING.balanced;
+  var Lic = LICENSING[pendingLicense] || LICENSING.basic;
   S = {
     name:name, vk:vk,
-    cash: V.startCash - V.setup,
+    loc:L.key, price:P.key, license:Lic.key,
+    cash: V.startCash - V.setup - L.cost - Lic.cost,
     debts: 0,
-    bizValue: 40000,          // goodwill of one working outlet
+    bizValue: 40000 + L.biz,          // goodwill of one working outlet + location value
     ownership: V.ownership,
     outlets: 1,
-    brand: 45,                // 0..100 reputation / demand
+    brand: 45 + L.brand + P.brand + Lic.brand,   // 0..100 reputation / demand
     year: 1,
+    rentFactor:L.rent, demandFactor:L.demand, priceYield:P.yield, recSens:P.recession,
+    halal:Lic.halal, insured:Lic.insured,
     listed:false, market:null,
     sstReg:false, hasManager:false, governance:false, succession:false,
     equipInvest:false, crunch:false, fateDrawn:[],
     flags:{},
     pts:[]                    // debrief lesson bullets
   };
+  S.brand = Math.max(10, Math.min(100, S.brand));
   STEP = 0;
   STEPS = [
     yr1Decision, fateScene, yr1Event,
@@ -317,6 +369,10 @@ function chipsBar(){
     + '<span class="chip">⭐ Brand <b>'+Math.round(S.brand)+'</b></span>'
     + '<span class="chip">🧾 You own <b>'+Math.round(S.ownership*100)+'%</b></span>'
     + (S.debts>0?'<span class="chip">💳 Debt <b>'+fmt(S.debts)+'</b></span>':'')
+    + (S.loc?'<span class="chip">'+LOCATIONS[S.loc].em+' '+(S.loc==='heartland'?'Heartland':S.loc==='mall'?'Mall':S.loc==='transit'?'Transit':'Street')+'</span>':'')
+    + (S.price?'<span class="chip">'+PRICING[S.price].em+' '+(S.price.charAt(0).toUpperCase()+S.price.slice(1))+'</span>':'')
+    + (S.halal?'<span class="chip">✅ Halal</span>':'')
+    + (S.insured?'<span class="chip">🛡️ Insured</span>':'')
     + (S.hasManager?'<span class="chip">👔 Managed</span>':'')
     + (S.succession?'<span class="chip">🧬 Succession</span>':'')
     + (S.sstReg?'<span class="chip">🧾 SST</span>':'')
@@ -394,8 +450,8 @@ function runStep(){ S.year = STEP_YEARS[STEP] || S.year; renderScene(STEPS[STEP]
 /* ---------- Year-end profit & loss (harder: overhead, SST, cash crunch) ---------- */
 function yearEnd(){
   var factor = 0.50 + S.brand/150;                     // brand 100 -> ~1.17 (tighter margins)
-  var op = Math.round(S.outlets * 27000 * factor);
-  var overhead = Math.round(S.outlets * 7000 + 4000);  // rent, wages, utilities
+  var op = Math.round(S.outlets * 27000 * factor * (S.demandFactor||1) * (S.priceYield||1));
+  var overhead = Math.round(S.outlets * 7000 * (S.rentFactor||1) + 4000);  // rent scales with location
   var comp = V().compliance;
   var sst = S.sstReg ? Math.round(op * 0.04) : 0;      // net service-tax burden once registered
   var taxable = Math.max(0, op - overhead - comp);
@@ -437,10 +493,14 @@ var FATE_DECK = [
   { em:'🔥', title:'Kitchen Fire', tone:'down', w:3,
     situation:'A grease fire guts one of your kitchens overnight — equipment and stock destroyed.',
     opts:function(){ return [
-      { t:'File the insurance claim & rebuild fast', h:'Insurance covers most; you pay the excess.',
-        go:function(){ var l=4000+S.outlets*1000; S.cash-=l; S.brand-=2;
-          return {tone:'flat', delta:fmt(-l), html:'You were insured, so the insurer covers the bulk. You pay the excess and reopen within weeks.',
-            lesson:'<b>Insurance</b> — not your legal vehicle — is what covers fire, theft and floods. Every serious operator carries it.'}; } },
+      { t:(S.insured?'File the insurance claim & rebuild fast':'Rebuild — but you have no insurance'), h:(S.insured?'Insurance covers most; you pay the excess.':'You chose basic licensing, so there\'s no cover — you eat the loss.'),
+        go:function(){ if(S.insured){ var l=4000+S.outlets*1000; S.cash-=l; S.brand-=2;
+            return {tone:'flat', delta:fmt(-l), html:'Because you took full licensing <b>with insurance</b>, the insurer covers the bulk. You pay the excess and reopen within weeks.',
+              lesson:'<b>Insurance</b> — not your legal vehicle — is what covers fire, theft and floods. That setup choice just paid for itself.'}; }
+          var l2=11000+S.outlets*3500; S.cash-=l2; S.brand-=4;
+          note('An uninsured fire wiped out equipment you had to replace from cash — the basic-licence saving cost you many times over.');
+          return {tone:'down', delta:fmt(-l2), html:'You skipped insurance at setup, so the full rebuild comes out of your own cash. A brutal, avoidable hit.',
+            lesson:'Going uninsured to save a little at setup is a false economy — one disaster dwarfs the premium you skipped.'}; } },
       { t:'Rebuild from your own pocket to keep premiums low', h:'Bigger cash hit now, no claim on record.',
         go:function(){ var l=9000+S.outlets*3000; S.cash-=l;
           return {tone:'down', delta:fmt(-l), html:'You self-fund the whole rebuild. Painful on cash today, cheaper insurance tomorrow.',
@@ -455,10 +515,10 @@ var FATE_DECK = [
     situation:'A customer slips on a wet floor and sues for damages. How you handle it — and your liability — decide the damage.',
     opts:function(){ var lim=V().limited; return [
       { t:'Settle quickly and quietly', h:'Pay a moderate sum to make it disappear.',
-        go:function(){ var s=lim?7000:12000; S.cash-=s; if(S.cash<0){S.debts+=-S.cash;S.cash=0;}
+        go:function(){ var s=lim?7000:12000; if(S.insured) s=Math.round(s*0.5); S.cash-=s; if(S.cash<0){S.debts+=-S.cash;S.cash=0;}
           note(lim?'A lawsuit was contained inside the company — limited liability at work.':'A lawsuit came out of your personal pocket — the price of unlimited liability.');
-          return {tone:'down', delta:fmt(-s), html:'You settle out of court. '+(lim?'The <b>company</b> pays — your personal assets stay clear.':'You pay <b>personally</b> — a sole prop/partnership has no company to stand behind.'),
-            lesson:lim?'Even settling, limited liability keeps the cost inside the business.':'Even a quick settlement comes out of your <b>own</b> pocket under unlimited liability.'}; } },
+          return {tone:'down', delta:fmt(-s), html:'You settle out of court. '+(lim?'The <b>company</b> pays — your personal assets stay clear.':'You pay <b>personally</b> — a sole prop/partnership has no company to stand behind.')+(S.insured?' Your liability insurance covers half.':''),
+            lesson:lim?'Even settling, limited liability keeps the cost inside the business'+(S.insured?' — and insurance shrinks it further.':'.'):'Even a quick settlement comes out of your <b>own</b> pocket under unlimited liability'+(S.insured?', though insurance softens it.':'.')}; } },
       { t:'Fight it in court', h:'A gamble — win and pay little, lose and pay a lot.',
         go:function(){ if(chance(0.5)){ var c=3000; S.cash-=c;
             return {tone:'up', delta:fmt(-c), html:'You win. Only legal fees to pay.',
@@ -482,9 +542,9 @@ var FATE_DECK = [
           return {tone:'flat', delta:fmt(-l), html:'Pumps, barriers and a fast clean-up get you trading again in days — and better prepared for the next storm.',
             lesson:'Spending to reduce downside is often cheaper than the downside itself.'}; } },
       { t:'Wait it out and reopen when dry', h:'No capex, but weeks of lost sales.',
-        go:function(){ var l=7000+S.outlets*3000; S.cash-=l; S.brand-=3;
-          return {tone:'down', delta:fmt(-l)+' · Brand −3', html:'You wait for the water to recede. Cheaper up front, but weeks of lost revenue and spoiled stock.',
-            lesson:'Doing nothing has a cost too. External shocks hit every vehicle — reserves are your shield.'}; } }
+        go:function(){ var l=7000+S.outlets*3000; if(S.insured) l=Math.round(l*0.65); S.cash-=l; S.brand-=3;
+          return {tone:'down', delta:fmt(-l)+' · Brand −3', html:'You wait for the water to recede. Cheaper up front, but weeks of lost revenue and spoiled stock.'+(S.insured?' Business-interruption cover refunds some of the lost trade.':''),
+            lesson:'Doing nothing has a cost too. External shocks hit every vehicle — reserves'+(S.insured?' and insurance':'')+' are your shield.'}; } }
     ]; } },
 
   { em:'🧑‍🍳', title:'Head Chef Poached', tone:'down', w:3,
@@ -540,16 +600,16 @@ var FATE_DECK = [
     ]; } },
 
   { em:'📉', title:'Recession Bites', tone:'down', w:2,
-    situation:'An economic slump thins the lunch crowd across all your outlets.',
-    opts:function(){ return [
+    situation:function(){ return S.price==='premium'?'An economic slump thins the lunch crowd — and your <b>premium</b> pricing is exactly what belt-tightening customers cut first.':S.price==='value'?'An economic slump thins the lunch crowd — but your <b>value</b> pricing is what cash-strapped diners trade <i>down</i> to.':'An economic slump thins the lunch crowd across all your outlets.'; },
+    opts:function(){ var rs=S.recSens||1; return [
       { t:'Discount hard to keep volume', h:'Protect footfall, sacrifice margin.',
-        go:function(){ var l=5000+S.outlets*2500; S.cash-=l; S.brand+=3;
-          return {tone:'down', delta:fmt(-l)+' · Brand +3', html:'Promotions keep the queues alive but crush your margins this year.',
-            lesson:'Buying volume with discounts protects your brand presence — at the cost of profit.'}; } },
+        go:function(){ var l=Math.round((5000+S.outlets*2500)*rs); S.cash-=l; S.brand+=3;
+          return {tone:'down', delta:fmt(-l)+' · Brand +3', html:'Promotions keep the queues alive but crush margins this year.'+(rs>1.2?' Premium positioning makes the downturn bite harder.':rs<0.8?' Your value model holds up remarkably well.':''),
+            lesson:'Buying volume with discounts protects presence at the cost of profit — and a premium brand suffers most when wallets close.'}; } },
       { t:'Hold prices, cut costs', h:'Protect margin, risk some footfall.',
-        go:function(){ var l=3000+S.outlets*1500; S.cash-=l; S.brand-=3;
-          return {tone:'down', delta:fmt(-l)+' · Brand −3', html:'You trim costs and hold prices. Fewer customers, but healthier margins per sale.',
-            lesson:'Defending margin over volume is the classic downturn trade-off. Neither is free.'}; } }
+        go:function(){ var l=Math.round((3000+S.outlets*1500)*rs); S.cash-=l; S.brand-=3;
+          return {tone:'down', delta:fmt(-l)+' · Brand −3', html:'You trim costs and hold prices. Fewer customers, healthier margins per sale.'+(rs<0.8?' Value pricing keeps enough diners coming.':''),
+            lesson:'Defending margin over volume is the classic downturn trade-off — and your <b>pricing strategy</b> decides how painful the slump is.'}; } }
     ]; } },
 
   // ---------- Windfalls ----------
@@ -637,12 +697,47 @@ var FATE_DECK = [
       { t:'Walk away — keep your cash', h:'The disciplined choice.',
         go:function(){ return {tone:'up', delta:'RM0', html:'You pass. The tip later crashes 80%. Your cash is safe and working in the business.',
           lesson:'The best response to "guaranteed" returns is usually no response at all.'}; } }
+    ]; } },
+
+  { em:'📦', title:'Key Supplier Collapses', tone:'down', w:2,
+    situation:'Your main rice-and-coconut supplier goes bust overnight. Prices spike and stock runs short.',
+    opts:function(){ return [
+      { t:'Pay a premium for emergency supply', h:'Protect quality and your brand.',
+        go:function(){ var l=4000+S.outlets*2000; S.cash-=l;
+          return {tone:'down', delta:fmt(-l), html:'You source at a premium to keep the sambal exactly right. Costly, but the food never dips.',
+            lesson:'Supply-chain shocks are inevitable at scale. Paying to protect quality guards the brand you built.'}; } },
+      { t:'Switch to a cheaper substitute', h:'Save cash, risk the taste.',
+        go:function(){ S.brand-=7;
+          return {tone:'down', delta:'Brand −7', html:'A cheaper supplier keeps costs down — but regulars notice the taste isn\'t quite the same.',
+            lesson:'Cutting input quality to save cash can quietly erode the very thing customers came for.'}; } }
+    ]; } },
+
+  // ---------- Conditional risk: only for those who raised equity ----------
+  { em:'🥊', title:'Investor Dispute', tone:'down', w:6, when:function(){ return S.flags.raised; },
+    situation:'The investor who took equity and a board seat when you raised capital now clashes with you — they want to slash quality for short-term profit, and hint at replacing you as CEO.',
+    opts:function(){ return [
+      { t:'Buy back their stake at a premium to regain control', h:'Priced at ~fair value + premium — a heavy cash strain.',
+        go:function(){ var c=Math.round(S.bizValue*0.28); S.cash-=c; if(S.cash<0){S.debts+=-S.cash;S.cash=0;} S.ownership=Math.min(1,S.ownership/0.75);
+          note('You bought your investor out at a premium to regain control — equity is easy to take and dear to unwind, and the cash strain can be brutal.');
+          return {tone:'down', delta:fmt(-c)+' cash', html:'You buy back their 25% at a premium of '+fmt(c)+'. You own the whole company again — but the cash drain is severe, often forcing debt.',
+            lesson:'Buying an investor out costs roughly what their stake is <b>worth</b> — which balloons as your company grows. Equity taken cheaply in Year 3 is dear to reverse in Year 5.'}; } },
+      { t:'Concede — let them steer', h:'Keep the cash, lose direction and brand.',
+        go:function(){ S.brand-=12; S.bizValue-=Math.round(S.bizValue*0.12);
+          note('You lost control to your investor — the founder\'s dilemma when equity is sold without protections.');
+          return {tone:'down', delta:'Brand −12 · value hit', html:'You bow to their cost-cutting. Quality and brand slip, the business is worth less — and it\'s no longer really yours.',
+            lesson:'Sell equity without protections and you can be steered, even ousted. Control is traded away a slice at a time.'}; } },
+      { t:'Settle it via your shareholders\' agreement', h:'Only if you signed one (Year-4 succession step).',
+        locked:(S.succession ? null : 'You never signed a shareholders\' agreement (the Year-4 succession choice) — there\'s no framework to resolve this cheaply.'),
+        go:function(){ var c=8000; S.cash-=c;
+          note('A shareholders\' agreement turned an investor dispute into a clause — governance is what makes equity safe.');
+          return {tone:'flat', delta:fmt(-c), html:'Your shareholders\' agreement spells out decision rights, reserved matters and a fair exit. The dispute settles quickly and cleanly.',
+            lesson:'A <b>shareholders\' agreement</b> turns an investor fight from a crisis into a clause. This is exactly why you sort governance <i>before</i> you raise.'}; } }
     ]; } }
 ];
 
 function pickFate(){
-  var pool = FATE_DECK.filter(function(c){ return S.fateDrawn.indexOf(c.title)<0; });
-  if(!pool.length) pool = FATE_DECK.slice();
+  var pool = FATE_DECK.filter(function(c){ return S.fateDrawn.indexOf(c.title)<0 && (!c.when || c.when()); });
+  if(!pool.length) pool = FATE_DECK.filter(function(c){ return !c.when || c.when(); });
   var total=0; for(var i=0;i<pool.length;i++) total+=pool[i].w;
   var r=Math.random()*total, acc=0, card=pool[pool.length-1];
   for(var j=0;j<pool.length;j++){ acc+=pool[j].w; if(r<=acc){ card=pool[j]; break; } }
@@ -653,13 +748,14 @@ function pickFate(){
 /* Reveal the drawn card, then let the player choose how to act on it. */
 function cardReveal(card){
   var kind = card.tone==='down' ? 'Disaster' : card.tone==='up' ? 'Fortune' : 'Fate';
+  var sit = (typeof card.situation==='function') ? card.situation() : card.situation;
   return {
     title:'🎡 The Wheel of Fate — Year '+S.year,
     tags:'<span class="tag '+(card.tone==='down'?'n':'g')+'">🃏 '+kind+' card</span>',
     flavor:'<div class="wheel">🎡</div>'
       + '<div class="fatecard '+card.tone+'"><div class="fk">Fate Card</div>'
       + '<div class="fem">'+card.em+'</div><div class="ft">'+card.title+'</div></div>'
-      + card.situation + ' <b>How do you respond?</b>',
+      + sit + ' <b>How do you respond?</b>',
     options: card.opts()
   };
 }
@@ -854,8 +950,8 @@ function yr3Decision(){
       h:'A private-equity firm buys 25% of your Sdn Bhd to fund a jump to 6 outlets + a central kitchen.',
       go:function(){ S.cash+=150000; S.ownership*=0.75; S.outlets+=4; S.bizValue+=260000; S.brand+=12; S.flags.raised=true; S.equipInvest=true;
         note('A Sdn Bhd could sell shares to a PE investor — RM150k of growth capital with no debt. This is how you build toward a listing.');
-        return {tone:'up', delta:'+RM150,000 · 6 outlets', html:'You issue new shares for RM150,000. A central kitchen and four more outlets follow. You now own 75% of a much bigger company.',
-          lesson:'Equity turns ownership into fuel. You own a <b>smaller slice of a far bigger pie</b> — and you\'re now scaled enough to eye an IPO.'}; } });
+        return {tone:'up', delta:'+RM150,000 · 6 outlets', html:'You issue new shares for RM150,000. A central kitchen and four more outlets follow. You now own 75% of a much bigger company — and your investor takes a <b>board seat</b>.',
+          lesson:'Equity turns ownership into fuel — but it isn\'t free money. Your investor is now a part-owner with real power. Sort a <b>shareholders\' agreement</b> (the succession step) or a dispute later could get ugly.'}; } });
     opts.push({ t:'Grow slowly on your own cash instead',
       h:'Keep 100% control, but stay small and unlisted-in-practice.',
       go:function(){ S.outlets+=1; S.bizValue+=45000; S.brand+=6; S.cash-=15000;
@@ -954,13 +1050,26 @@ function yr3Event(){
 function yr4Decision(){
   var v = V();
   var opts = [];
-  if(v.cred>=3){ // sdnbhd
+  if(v.cred>=3 && S.halal){ // sdnbhd with halal cert — full contract
     opts.push({ t:'Win the supermarket ready-meal contract (+RM200,000/yr)',
-      h:'A national grocer wants your nasi lemak on its shelves. They require audited accounts + a registered company + liability cover — which you have.',
+      h:'A national grocer wants your nasi lemak on its shelves. They require audited accounts, a registered company, liability cover — and halal certification. You have it all.',
       go:function(){ S.cash+=120000; S.bizValue+=300000; S.brand+=14; S.flags.contract=true;
-        note('Your Sdn Bhd\'s audited accounts and limited liability won a contract a smaller vehicle simply couldn\'t sign.');
-        return {tone:'up', delta:'+RM120,000 · major contract', html:'You sign a RM200,000/year supply deal. The buyer\'s procurement team is satisfied by your company accounts and insurance. Revenue and company value jump.',
-          lesson:'Big corporate buyers demand a <b>credible, audited company</b>. The Sdn Bhd form unlocks deals informal vehicles can\'t reach.'}; } });
+        note('Your Sdn Bhd\'s audited accounts, insurance and <b>halal certification</b> won a contract a smaller or uncertified business couldn\'t sign.');
+        return {tone:'up', delta:'+RM120,000 · major contract', html:'You sign a RM200,000/year supply deal. Procurement is satisfied by your company accounts, insurance and <b>halal cert</b>. Revenue and company value jump.',
+          lesson:'Big corporate buyers demand a <b>credible, audited, halal-certified company</b>. The right vehicle <i>and</i> the right licences unlock deals others can\'t reach.'}; } });
+  } else if(v.cred>=3 && !S.halal){ // sdnbhd but no halal — blocked at the last hurdle
+    opts.push({ t:'Chase the supermarket contract',
+      h:'You have the company — but do you have the certification they demand?',
+      go:function(){ S.brand-=2;
+        note('You lost the national contract for lack of <b>halal certification</b> — the right vehicle isn\'t enough if you skipped the licence that unlocks the market.');
+        return {tone:'down', delta:'Blocked · no halal cert', html:'Procurement loves your company accounts — then asks for your <b>JAKIM halal certificate</b>. You chose basic licensing back at setup and don\'t have it. They award the deal to a certified rival.',
+          lesson:'A great vehicle still needs the right <b>licences</b>. Halal certification is the key that opens Malaysia\'s biggest F&B buyers — a setup choice that echoes for years.'}; } });
+    opts.push({ t:'Rush a halal certification now (−RM12,000)',
+      h:'Late and pricey, but salvage a smaller deal.',
+      go:function(){ S.cash-=12000; S.halal=true; S.cash+=40000; S.bizValue+=90000; S.brand+=6; S.flags.contract=true;
+        note('You scrambled for halal certification late — recovering part of the deal, but at a premium and after losing ground.');
+        return {tone:'flat', delta:'−RM12,000 then +RM40,000', html:'You fast-track JAKIM certification at a rush premium and salvage a reduced first-year order. Doing it at setup would have been far cheaper.',
+          lesson:'You <i>can</i> fix a missing licence later — but always dearer than getting it right at the start.'}; } });
   } else if(v.cred===2){ // llp
     opts.push({ t:'Win a smaller supply deal (+RM70,000/yr)',
       h:'Your LLP is credible enough for a regional buyer, though not the national grocer\'s full programme.',
@@ -1325,7 +1434,7 @@ function home(){
   app.innerHTML = '<div class="card">'
     + '<p class="lead"><b>You\'ve perfected the family nasi lemak recipe.</b> Everyone says you should sell it. So you will — but first, the question nobody at the pasar asks: <b>what kind of business will you be?</b></p>'
     + '<p class="lead" style="margin-top:10px">The same recipe, run through four different <b>business vehicles</b>, leads to four very different fates over five years. One path can end on the Bursa Malaysia trading floor. Others can\'t — by law. Build the most net worth, and learn <b>why the vehicle decides the ceiling.</b></p>'
-    + '<p class="lead" style="margin-top:10px">🎡 And each year you\'ll <b>spin the Wheel of Fate</b> — a random card, fire or fortune, just like real business. The right vehicle even changes how hard each blow lands.</p>'
+    + '<p class="lead" style="margin-top:10px">First you\'ll set your strategy — <b>vehicle, location, pricing and licences</b> — then trade for five years. 🎡 Each year you also <b>spin the Wheel of Fate</b>: a random card, fire or fortune, and <b>you choose how to respond</b>. The right setup even changes how hard each blow lands.</p>'
     + '<div class="nav"><button class="btn ghost" onclick="showBoard(true)">🏆 Leaderboard</button><button class="btn gold" onclick="enterName()">Start cooking →</button></div>'
     + '</div>';
   window.scrollTo(0,0);
@@ -1357,7 +1466,46 @@ function chooseVehicle(){
     + '<div class="nav"><button class="btn ghost" onclick="enterName()">← Back</button><span></span></div></div>';
   window.scrollTo(0,0);
 }
-function startWith(k){ newGame(pendingName, k); }
+var pendingVehicle='', pendingLoc='', pendingPrice='', pendingLicense='';
+
+/* Generic setup picker (location / price / licence share the card grid). */
+function setupGrid(step, title, lead, cfg, setter, backFn){
+  var cards = Object.keys(cfg).map(function(k){
+    var C=cfg[k];
+    var stats=(C.stats||[]).map(function(s){return '<span class="st '+(s[1]||'')+'">'+s[0]+'</span>';}).join('');
+    return '<div class="pick" onclick="'+setter+'(\''+k+'\')">'
+      + '<div class="em">'+C.em+'</div>'
+      + '<h3>'+C.name+'</h3><div class="my">'+C.my+'</div>'
+      + '<div class="sub">'+C.sub+'</div>'
+      + '<div class="stats">'+stats+'</div></div>';
+  }).join('');
+  app.innerHTML = '<div class="card"><div class="setupstep">Setup · step '+step+' of 4</div>'
+    + '<h2 class="scene-title">'+title+'</h2>'
+    + '<p class="lead">'+lead+'</p>'
+    + '<div class="grid">'+cards+'</div>'
+    + '<div class="nav"><button class="btn ghost" onclick="'+backFn+'()">← Back</button><span></span></div></div>';
+  window.scrollTo(0,0);
+}
+
+function startWith(k){ pendingVehicle=k; chooseLocation(); }
+function chooseLocation(){
+  setupGrid(2, 'Where do you open?',
+    'Location shapes everything downstream: <b>rent</b> (your biggest fixed cost), <b>footfall</b> (your demand), and the prestige of your brand. A mall roars with traffic but the rent can sink a bad month; the heartland is cheap and safe but has a lower ceiling.',
+    LOCATIONS, 'setLoc', 'chooseVehicle');
+}
+function setLoc(k){ pendingLoc=k; choosePrice(); }
+function choosePrice(){
+  setupGrid(3, 'Your pricing strategy',
+    'How you price sets your <b>margin vs volume</b> — and how you weather a downturn. Premium earns more per plate but empties fast in a recession; value earns little per plate but is nearly recession-proof. Match it to your location and vehicle.',
+    PRICING, 'setPrice', 'chooseLocation');
+}
+function setPrice(k){ pendingPrice=k; chooseLicense(); }
+function chooseLicense(){
+  setupGrid(4, 'Licences & certification',
+    'The legal basics to trade — and a strategic fork. <b>Full licensing</b> adds JAKIM <b>halal</b> certification (which many corporate and supermarket buyers <i>require</i>) and <b>insurance</b> that softens fate\'s disasters. <b>Basic</b> is cheaper today but locks you out of those deals and leaves you exposed.',
+    LICENSING, 'setLicense', 'choosePrice');
+}
+function setLicense(k){ pendingLicense=k; newGame(pendingName, pendingVehicle); }
 
 home();
 </script>

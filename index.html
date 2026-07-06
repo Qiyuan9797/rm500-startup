@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>RM500 Startup — The Structure Survival Game</title>
+<style>
+  :root{
+    --navy:#1E2761; --navy2:#2B3A73; --blue:#3C5AA6; --ice:#CADCFC; --ice2:#E8EFFB;
+    --gold:#C9A227; --gold2:#E4C04B; --ink:#1B2440; --mute:#6B7488; --white:#fff;
+    --good:#1f8a54; --bad:#c0392b; --paper:#FBFCFF;
+    --shadow:0 12px 34px rgba(15,20,45,.22);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",Calibri,Arial,sans-serif;color:var(--ink);
+    background:radial-gradient(1200px 600px at 50% -10%,#33407a 0%,#1E2761 40%,#141B3D 100%);
+    min-height:100vh;padding:22px 14px 70px}
+  .wrap{max-width:860px;margin:0 auto}
+  header.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .brand .kick{color:var(--gold);font-weight:700;letter-spacing:3px;font-size:11px}
+  .brand h1{margin:2px 0 0;color:#fff;font-family:Cambria,Georgia,serif;font-size:25px;font-weight:800}
+  .brand h1 span{color:var(--gold2)}
+  .hud{display:flex;gap:8px;align-items:center}
+  .hud .money{background:rgba(255,255,255,.08);border:1px solid rgba(202,220,252,.28);border-radius:14px;padding:8px 16px;text-align:center;color:#fff}
+  .hud .money .n{font-size:24px;font-weight:800;line-height:1;color:var(--gold2)}
+  .hud .money .l{font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ice);margin-top:3px}
+  .hud .round{background:rgba(255,255,255,.06);border-radius:12px;padding:8px 12px;color:var(--ice);font-size:12px;text-align:center;min-width:66px}
+  .hud .round b{display:block;color:#fff;font-size:16px}
+
+  .card{background:var(--paper);border-radius:20px;box-shadow:var(--shadow);padding:28px;animation:pop .3s ease}
+  @keyframes pop{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .lead{color:var(--mute);font-size:15px;line-height:1.6}
+
+  .scene-title{font-family:Cambria,Georgia,serif;color:var(--navy);font-size:23px;font-weight:800;margin:0 0 6px}
+  .scene-flavor{font-size:15.5px;line-height:1.62;color:var(--ink);white-space:pre-wrap}
+  .tagrow{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 14px}
+  .tag{font-size:11px;font-weight:700;border-radius:20px;padding:4px 11px;letter-spacing:.4px}
+  .tag.n{background:var(--ice2);color:var(--navy)}
+  .tag.g{background:#FBF1CE;color:#8a6d10}
+
+  .opts{display:grid;gap:11px;margin-top:18px}
+  .opt{border:2px solid #E1E7F5;border-radius:14px;padding:14px 17px;cursor:pointer;background:#fff;transition:.14s}
+  .opt:hover{border-color:var(--blue);background:#F5F9FF;transform:translateX(3px)}
+  .opt .t{font-weight:700;font-size:15px}
+  .opt .h{font-size:12.5px;color:var(--mute);margin-top:3px;line-height:1.45}
+
+  .outcome{border-radius:14px;padding:16px 18px;margin-top:16px;font-size:14.5px;line-height:1.6;animation:pop .3s ease}
+  .outcome.up{background:#E9F6EE;border:1px solid #b8e2c8}
+  .outcome.down{background:#FDECEA;border:1px solid #f2c4bc}
+  .outcome.flat{background:var(--ice2);border:1px solid #cdd9f0}
+  .outcome .delta{font-weight:800;font-size:16px}
+  .outcome .lesson{margin-top:9px;padding-top:9px;border-top:1px dashed rgba(0,0,0,.15);font-size:13px;color:var(--navy)}
+  .outcome .lesson b{color:var(--gold)}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+  @media(max-width:620px){.grid{grid-template-columns:1fr}}
+  .pick{border:2px solid var(--ice);background:#fff;border-radius:16px;padding:18px;cursor:pointer;transition:.16s}
+  .pick:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:var(--shadow)}
+  .pick .em{font-size:30px}
+  .pick h3{margin:6px 0 4px;color:var(--navy);font-size:18px}
+  .pick .sub{color:var(--mute);font-size:12.5px;line-height:1.5}
+  .pick .stats{margin-top:9px;display:flex;flex-wrap:wrap;gap:6px}
+  .pick .st{font-size:10.5px;font-weight:700;background:var(--ice2);color:var(--navy);border-radius:8px;padding:3px 8px}
+
+  .nav{display:flex;justify-content:space-between;gap:10px;margin-top:22px;align-items:center}
+  button.btn{border:0;border-radius:11px;padding:12px 22px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit}
+  .btn.primary{background:var(--navy);color:#fff}.btn.primary:hover{background:var(--blue)}
+  .btn.gold{background:var(--gold);color:var(--navy)}.btn.gold:hover{background:var(--gold2)}
+  .btn.ghost{background:#fff;color:var(--navy);border:1.5px solid var(--ice)}.btn.ghost:hover{border-color:var(--blue)}
+  input.name{width:100%;padding:13px 15px;border:2px solid var(--ice);border-radius:12px;font-size:16px;font-family:inherit;margin-top:8px}
+  input.name:focus{outline:none;border-color:var(--gold)}
+
+  .journal{margin-top:18px;border-top:1px solid #E1E7F3;padding-top:12px}
+  .journal h4{margin:0 0 8px;color:var(--mute);font-size:11px;letter-spacing:2px;text-transform:uppercase}
+  .jrow{font-size:12.5px;color:var(--ink);padding:4px 0;border-bottom:1px dotted #E1E7F3;display:flex;justify-content:space-between;gap:10px}
+  .jrow .d{font-weight:800}.jrow .d.up{color:var(--good)}.jrow .d.down{color:var(--bad)}
+
+  /* end screen */
+  .finalscore{text-align:center;padding:6px 0}
+  .finalscore .big{font-family:Cambria,Georgia,serif;font-size:46px;font-weight:800;color:var(--navy);line-height:1}
+  .finalscore .big.neg{color:var(--bad)}
+  .finalscore .verdict{font-size:16px;color:var(--mute);margin-top:6px}
+  .medal{font-size:34px}
+  .debrief{background:#FCF7E6;border:1px solid #EBDCA6;border-radius:14px;padding:16px 18px;margin-top:16px;font-size:14px;line-height:1.6}
+  .debrief h4{margin:0 0 8px;color:var(--navy)}
+  .debrief ul{margin:8px 0 0;padding-left:18px}.debrief li{margin:5px 0}
+  .debrief .ideal{margin-top:10px;padding-top:10px;border-top:1px dashed #d9c78c}
+
+  table.lb{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:10px}
+  table.lb th,table.lb td{padding:9px 10px;text-align:left;border-bottom:1px solid #E7ECF6}
+  table.lb th{color:var(--mute);font-size:11px;letter-spacing:1px;text-transform:uppercase}
+  table.lb tr.me{background:#FBF1CE}
+  table.lb td.sc{font-weight:800;text-align:right}
+  .foot{color:var(--ice);text-align:center;font-size:11.5px;margin-top:26px;line-height:1.6}
+  .foot b{color:var(--gold2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="kick">MUCHEN CORPORATE SERVICES · BUSINESS SURVIVAL GAME</div>
+      <h1>RM<span>500</span> Startup</h1>
+    </div>
+    <div class="hud" id="hud" style="display:none">
+      <div class="round" id="roundBox">Round<b id="roundN">1</b></div>
+      <div class="money"><div class="n" id="moneyN">RM500</div><div class="l">On hand</div></div>
+    </div>
+  </header>
+
+  <div id="app"></div>
+
+  <div class="foot">
+    A training simulation — not financial or legal advice. Structure effects are simplified from the entity
+    comparison in <b>“Business Essentials — What Directors Need to Know.”</b><br>
+    Leaderboard is saved in this browser only. Verify real-world specifics against current SSM / Companies Act 2016 rules.
+  </div>
+</div>
+
+<script>
+/* ===================== ENGINE START (pure logic, no DOM) ===================== */
+var RNG = Math.random;
+
+var STRUCTURES = {
+  sole:        { key:"sole", em:"🧍", name:"Sole Proprietorship", setup:30,  limited:false, equity:false, cred:1, compliance:20,
+                 needsPartners:false, agreementFee:0, partnerOpts:[0],
+                 sub:"You + business are one. Cheapest, simplest — and the only structure your RM500 can start solo. But nothing separates your money from the firm's.",
+                 stats:["Setup RM30","Solo — RM500 covers it","Unlimited liability","No shares"] },
+  partnership: { key:"partnership", em:"🤝", name:"Conventional Partnership", setup:60, limited:false, equity:false, cred:1, compliance:40,
+                 needsPartners:true, agreementFee:300, partnerOpts:[1,2],
+                 sub:"Two or more owners pool money. Cheap and simple — but every partner is personally liable for the others' mistakes.",
+                 stats:["Setup RM60","Needs co-founders","Joint & several liability","No shares"] },
+  llp:         { key:"llp", em:"🛡️", name:"LLP", setup:150, limited:true, equity:false, cred:2, compliance:400,
+                 needsPartners:true, agreementFee:350, partnerOpts:[1,2],
+                 sub:"Limited liability with lighter compliance than a company. By law it needs 2+ partners — so you'll pool capital with co-founders.",
+                 stats:["Setup RM150","Needs 2+ partners","Limited liability","No shares"] },
+  sdnbhd:      { key:"sdnbhd", em:"🏢", name:"Sdn Bhd", setup:1010, limited:true, equity:true, cred:3, compliance:800,
+                 needsPartners:true, agreementFee:400, partnerOpts:[2,3],
+                 sub:"A real company: limited liability, can issue shares, credible to banks & big clients. Setup alone is RM1,010 — far beyond your RM500, so you MUST bring co-investors.",
+                 stats:["Setup RM1,010","Can't afford solo","Can raise equity","Compliance heavy"] },
+};
+
+var IDEAS = {
+  nasi:    { key:"nasi", em:"🍛", name:"Nasi Lemak Stall", risk:"high", growth:"low",
+             blurb:"Everyone loves your sambal. Steady cash — but food means real safety and liability risk." },
+  thrift:  { key:"thrift", em:"🛍️", name:"Online Thrift Store", risk:"low", growth:"high",
+             blurb:"Low risk, endlessly scalable. To go big you'll need platform deals and capital." },
+  repair:  { key:"repair", em:"🔧", name:"Phone Repair Kiosk", risk:"high", growth:"low",
+             blurb:"Good margins fixing screens — but one fried motherboard and an angry customer can sink you." },
+  design:  { key:"design", em:"🎨", name:"Freelance Design Studio", risk:"low", growth:"high",
+             blurb:"Low overhead, high ceiling. The best clients are corporates who only hire registered vendors." },
+  tuition: { key:"tuition", em:"📚", name:"Tuition Service", risk:"low", growth:"low",
+             blurb:"Reliable, low-risk, community-based. Small and steady — not built to scale." },
+};
+
+function newState(name, structKey, ideaKey, numPartners, hasAgreement){
+  var st = STRUCTURES[structKey];
+  numPartners = numPartners || 0;
+  var pool = 500 * (1 + numPartners);                         // everyone brings RM500
+  var agrFee = (st.needsPartners && hasAgreement) ? st.agreementFee : 0;
+  var money = pool - st.setup - agrFee;                       // shared business working capital
+  return { name:name, structKey:structKey, ideaKey:ideaKey,
+           numPartners:numPartners, hasAgreement:!!hasAgreement, ownership:1/(1+numPartners),
+           money:money, debts:0, bizValue:0, personalHit:0, personalDebt:0,
+           round:0, flags:{}, log:[] };
+}
+function businessNet(s){ return s.money - s.debts + s.bizValue; }
+function score(s){
+  var st = STRUCTURES[s.structKey]; var bn = businessNet(s); var own = s.ownership; var base;
+  if(st.limited) base = Math.max(-500, Math.round(own*bn));                 // limited: lose at most your stake…
+  else if(s.structKey==="partnership") base = Math.round(bn>=0 ? own*bn : bn); // joint & several: upside shared, downside full
+  else base = Math.round(bn);                                              // sole: 100% owner, fully exposed
+  return base - Math.round(s.personalDebt||0);                             // …but personal/loan-shark debt pierces everything
+}
+function fmt(n){ n=Math.round(n); return (n<0?"−RM":"RM")+Math.abs(n).toLocaleString("en-US"); }
+function fmtDelta(n){ n=Math.round(n); if(n===0) return "±RM0"; return (n>0?"+RM":"−RM")+Math.abs(n).toLocaleString("en-US"); }
+
+/* liability-aware loss: limited structures shield personal/family money */
+function liabilityLoss(s, amount){
+  var st = STRUCTURES[s.structKey];
+  if(st.limited){
+    var lost = Math.max(0, Math.min(s.money, amount));
+    s.money -= lost;
+    return { lost:lost, shielded:true, forgiven:amount-lost };
+  } else {
+    var prev = s.money;
+    s.money -= amount;
+    var personal = amount - Math.max(0, prev);   // how much reached past the business
+    if(personal>0) s.personalHit += personal;
+    return { lost:amount, shielded:false, personal:Math.max(0,personal) };
+  }
+}
+
+/* Each stage: render(s)->{title,tags,flavor,options:[{t,h}]}; resolve(s,idx)->{tone,html,lesson} */
+var STAGES = [
+  /* R1 — LAUNCH */
+  { id:"launch",
+    render:function(s){ var I=IDEAS[s.ideaKey];
+      return { title:"Opening Month",
+        flavor:"Your "+I.name.toLowerCase()+" is finally open. The first month sets your reputation. How hard do you push?",
+        options:[
+          {t:"Play it steady",h:"Serve who comes. Low risk, modest takings."},
+          {t:"Spend RM150 on marketing",h:"Go loud. Big upside if it lands — wasted cash if it flops."}
+        ]};},
+    resolve:function(s,idx){
+      if(idx===1){
+        if(s.money<150){ return {tone:"flat", html:"You reach for RM150 to advertise — but you don't have it after incorporation costs. You scrape by on word of mouth instead. <b>+RM120</b>.", set:function(){s.money+=120;s.bizValue+=60;}, lesson:"A heavier structure left you thin on working capital. Cash runway matters as much as protection."}; }
+        s.money-=150;
+        if(RNG()>0.4){ return {tone:"up", html:"The posts blow up — queues out the door. Marketing paid off. Net <b>+RM350</b> after the RM150 spend.", set:function(){s.money+=500;s.bizValue+=180;}, lesson:"Bold bets can pay — but only because you could afford to lose the RM150."}; }
+        return {tone:"down", html:"The campaign fizzles. You spent RM150 and made only RM120 back. Net <b>−RM30</b>.", set:function(){s.money+=120;s.bizValue+=40;}, lesson:"Marketing is a gamble; without a cash buffer a flop hurts."};
+      }
+      return {tone:"up", html:"A calm, solid start. Regulars begin to form. <b>+RM200</b>.", set:function(){s.money+=200;s.bizValue+=120;}, lesson:"Steady footing keeps your options open."};
+    }},
+
+  /* R2 — THE BIG CLIENT (credibility + growth gated) */
+  { id:"bigclient",
+    render:function(s){
+      return { title:"The Big Client",
+        flavor:"A larger buyer — a corporate office / online marketplace — wants a regular vendor. They ask who they'd be contracting with.",
+        options:[
+          {t:"Pitch hard to win the contract",h:"Chase the bigger money."},
+          {t:"Skip it — focus on everyday customers",h:"Stay in your lane."}
+        ]};},
+    resolve:function(s,idx){
+      var st=STRUCTURES[s.structKey], I=IDEAS[s.ideaKey];
+      if(idx===0){
+        if(st.cred>=2 && I.growth==="high"){ return {tone:"up", html:"You present as a registered "+st.name+". They sign a supply contract on the spot. <b>+RM1,400</b> in value.", set:function(){s.money+=700;s.bizValue+=700;s.flags.bigClient=true;}, lesson:"Being a proper registered entity <b>unlocked</b> a client a sole trader couldn't reach."}; }
+        if(I.growth==="high"){ s.money-=100; return {tone:"down", html:"They ask for your company registration and liability cover. As a "+st.name.toLowerCase()+" you can't give them the assurance they need — they sign a competitor. You're out RM100 in pitch costs.", set:function(){s.flags.missedBigClient=true;}, lesson:"For a growth business, the <b>wrong (too-simple) structure cost you the deal.</b>"}; }
+        return {tone:"flat", html:"Turns out they wanted bulk volume you can't supply. You pick up a small one-off instead. <b>+RM150</b>.", set:function(){s.money+=150;s.bizValue+=60;}, lesson:"Not every business needs big contracts — a small, local operation shouldn't over-build its structure to chase them."};
+      }
+      var g = I.growth==="high" ? 80 : 220;
+      return {tone: I.growth==="high"?"flat":"up", html:"You double down on everyday customers. <b>+RM"+g+"</b>.", set:function(){s.money+=g;s.bizValue+= (I.growth==='high'?40:150);}, lesson: I.growth==="high" ? "Focus is fine — but a scalable business leaves money on the table without reach." : "For a steady local business, loyal regulars beat chasing whales."};
+    }},
+
+  /* FIRST HIRE */
+  { id:"firsthire",
+    render:function(s){ return { title:"Your First Hire",
+      flavor:"Demand is outgrowing what you can do alone. You could take on your first employee to grow — but hiring brings duties: a proper contract, EPF and SOCSO, and the Employment Act.",
+      options:[{t:"Hire a helper (−RM300 this season)",h:"More capacity — and real employer responsibilities."},{t:"Stay lean, do it yourself",h:"No wage bill, but you're the bottleneck."}]};},
+    resolve:function(s,idx){
+      if(idx===0){ s.money-=300; s.flags.hired=true;
+        if(RNG()>0.35){ return {tone:"up", html:"Your helper frees you up to grow the business. <b>+RM650</b> in value.", set:function(){s.bizValue+=650;}, lesson:"Employing people scales you up — but you now owe EPF, SOCSO and Employment Act duties. Get the contract right."}; }
+        return {tone:"flat", html:"The extra hand helps modestly. <b>+RM250</b> value.", set:function(){s.bizValue+=250;}, lesson:"Hiring adds capacity and statutory duties (EPF, SOCSO, contracts) — budget for both."}; }
+      return {tone:"flat", html:"You keep doing it all yourself. No wage bill, but your time is capped.", set:function(){s.bizValue+=90;}, lesson:"Staying lean avoids employer obligations — fine early, limiting later."};
+    }},
+
+  /* R3 — DISASTER (liability gated; severity by idea risk) */
+  { id:"disaster",
+    render:function(s){ var I=IDEAS[s.ideaKey];
+      var txt = ({
+        nasi:"A customer claims they fell violently ill after eating at your stall and demands compensation.",
+        repair:"You accidentally kill the motherboard on a customer's RM-expensive phone. They're furious and threaten to sue.",
+        thrift:"A buyer alleges an item was fake and files a chargeback + public complaint demanding a big refund.",
+        design:"A client claims your artwork infringed someone's copyright and wants damages.",
+        tuition:"A parent demands a full refund and threatens a claim over 'unsatisfactory' results."
+      })[s.ideaKey];
+      return { title:"Disaster Strikes", flavor:txt+"\n\nThe claim lands on your desk. This is where your structure earns its keep — or doesn't.",
+        options:[{t:"Face the claim →",h:"See what it costs you."}]};},
+    resolve:function(s,idx){
+      var I=IDEAS[s.ideaKey], st=STRUCTURES[s.structKey];
+      var base = I.risk==="high" ? 3200 : 650;
+      var claim = Math.round(base * (0.8 + RNG()*0.5));
+      var r = liabilityLoss(s, claim);
+      if(r.shielded){
+        s.flags.lawsuitShielded=true;
+        var extra = r.forgiven>0 ? " Your business absorbs "+fmt(r.lost)+"; the remaining "+fmt(r.forgiven)+" <b>cannot</b> touch your family's savings." : "";
+        return {tone:"down", html:"The claim is "+fmt(claim)+". Because you have <b>limited liability</b>, creditors can only reach the business."+extra, lesson:"<b>Limited liability protected your family.</b> The most it can lose is what's in the business."};
+      } else {
+        s.flags.lawsuitPersonal = (r.personal>0);
+        s.flags.familyDebt = Math.max(s.flags.familyDebt||0, r.personal>0? -Math.min(0,s.money):0);
+        var msg = r.personal>0
+          ? "The claim is "+fmt(claim)+". Your business can't cover it, so it reaches <b>past the firm into your family's RM500 and beyond</b> — you're now "+fmt(s.money)+"."
+          : "The claim is "+fmt(claim)+". It wipes most of your cash.";
+        return {tone:"down", html:msg, lesson: r.personal>0 ? "<b>Unlimited liability</b> just put your family in debt. A shield (LLP/Sdn Bhd) would have capped the loss." : "You survived — but with unlimited liability, a bigger claim could have reached your personal assets."};
+      }
+    }},
+
+  /* LOAN SHARK — cashflow crunch */
+  { id:"loanshark",
+    render:function(s){ var st=STRUCTURES[s.structKey];
+      var opts=[{t:"Take the Along's RM2,000 cash — no questions asked",h:"Instant money… at a terrifying price."}];
+      if(st.cred>=2) opts.push({t:"Arrange a bank overdraft (RM1,500 now, repay RM1,800)",h:"Legit finance — your registered entity qualifies."});
+      opts.push({t:"Tough it out — no new debt",h:"Slow and safe."});
+      return { title:"Cashflow Crunch",
+        flavor:"Money's tight. A smiling ‘Along’ (loan shark) offers RM2,000 in cash today — no forms, no credit check."
+          +(st.cred>=2 ? " Your bank also offers a small overdraft, because you’re a registered "+st.name+"." : " No bank will touch an unregistered "+st.name+" for fast cash."),
+        options:opts };},
+    resolve:function(s,idx){
+      var st=STRUCTURES[s.structKey], hasBank=st.cred>=2;
+      if(idx===0){ s.money+=2000; s.flags.shark=true;
+        return {tone:"down", html:"You pocket <b>RM2,000</b> in cash — but you now owe the Along <b>RM3,500</b>, and these people don’t care about company law.", lesson:"Loan sharks (and any personal guarantee) <b>ignore your corporate veil</b> — they come after <b>you</b>. This is the trap of having no access to real finance."}; }
+      if(hasBank && idx===1){ s.money+=1500; s.debts+=1800; s.flags.bankLine=true;
+        return {tone:"flat", html:"The bank extends a <b>RM1,500 overdraft</b> to your registered entity — documented, repayable at RM1,800.", lesson:"A credible structure unlocks <b>legitimate</b> finance — the safe alternative to a loan shark."}; }
+      return {tone:"up", html:"You grit your teeth and avoid new debt. Lean, but clean.", set:function(){s.bizValue+=60;}, lesson:"Avoiding predatory debt is almost always the right call."};
+    }},
+
+  /* R4 — MONEY & GROWTH (equity gated) */
+  { id:"funding",
+    render:function(s){ var st=STRUCTURES[s.structKey], I=IDEAS[s.ideaKey];
+      if(st.equity && I.growth==="high"){
+        return { title:"The Angel Investor", flavor:"An angel investor loves your scalable "+I.name.toLowerCase()+". She offers RM4,000 — for shares in your company.",
+          options:[{t:"Issue shares, take the RM4,000",h:"Fuel to grow; you give up some ownership."},{t:"Bootstrap — keep 100% ownership",h:"Slower, but all yours."}]};
+      }
+      if(!st.equity){
+        return { title:"Need Capital to Grow", flavor:"You want to expand, but you have no shares to sell. The only route is a personal bank loan — in your own name.",
+          options:[{t:"Take a personal loan (RM1,500 now, repay RM1,900)",h:"Growth, but the debt is personally yours."},{t:"Grow only from profits",h:"No debt, slower path."}]};
+      }
+      return { title:"No Investors Bite", flavor:"You're a company — but investors want businesses that scale, and yours is a steady local operation. You'll grow from profit.",
+        options:[{t:"Reinvest your profits →",h:"Slow and steady."}]};
+    },
+    resolve:function(s,idx){
+      var st=STRUCTURES[s.structKey], I=IDEAS[s.ideaKey];
+      if(st.equity && I.growth==="high"){
+        if(idx===0){ return {tone:"up", html:"You issue shares and bank the angel's <b>RM4,000</b>. Rocket fuel.", set:function(){s.money+=4000;s.bizValue+=1500;s.flags.investor=true;}, lesson:"<b>Only a company can sell equity.</b> This is the single biggest advantage of a Sdn Bhd for a growth business."}; }
+        return {tone:"flat", html:"You keep every share. Prouder, poorer, slower. <b>+RM300</b> value.", set:function(){s.bizValue+=300;s.flags.bootstrap=true;}, lesson:"Bootstrapping is valid — but you left real growth capital on the table."};
+      }
+      if(!st.equity){
+        if(idx===0){ return {tone:"flat", html:"The bank lends to <b>you personally</b> — your name on the line, not a company's. RM1,500 in, RM1,900 to repay.", set:function(){s.money+=1500;s.debts+=1900;s.flags.loan=true;}, lesson:"With no shares to sell, growth means <b>personal debt</b>. A company could have raised equity instead."}; }
+        return {tone:"flat", html:"You skip the debt and grow slowly from profit.", set:function(){s.bizValue+=150;}, lesson:"Safe — but limited structures cap how fast you can scale."};
+      }
+      return {tone:"flat", html:"You reinvest profits. Modest, steady growth. <b>+RM200</b> value.", set:function(){s.bizValue+=200;}, lesson:"A company is overkill if the business can't attract investors — you carry the cost without the upside."};
+    }},
+
+  /* PARTNER ARGUMENT (multi-founder) / solo grind */
+  { id:"argument",
+    render:function(s){
+      if(s.numPartners>0){
+        return { title:"A Clash of Visions",
+          flavor:"You and your co-founder"+(s.numPartners>1?'s':'')+" disagree hard on direction — reinvest vs pay yourselves, grow fast vs stay steady.\n\n"
+            +(s.hasAgreement ? "Luckily, your agreement sets out how decisions get made." : "With nothing in writing, it’s a shouting match."),
+          options:[{t:"Push through the disagreement →",h:"See how it resolves."}]};
+      }
+      return { title:"The Lonely Grind",
+        flavor:"Running everything alone is wearing you down. Push harder, or ease off to protect yourself?",
+        options:[{t:"Push through — grind it out",h:"More output, risk of burnout."},{t:"Pace yourself",h:"Steadier, slightly slower."}]};
+    },
+    resolve:function(s,idx){
+      if(s.numPartners>0){
+        if(s.hasAgreement){ return {tone:"flat", html:"Your agreement’s decision rules break the deadlock fast. You align and move on. <b>+RM200</b> value.", set:function(){s.bizValue+=200;s.flags.alignedByAgreement=true;}, lesson:"A good agreement isn’t only for disasters — it stops <b>everyday</b> disagreements from stalling the business."}; }
+        s.money-=250; s.flags.argueDrag=true;
+        return {tone:"down", html:"With no agreed process, the argument drags on for weeks. Momentum and <b>RM250</b> are lost to the standoff.", lesson:"Without decision rules in writing, ordinary disagreements become <b>expensive deadlocks</b>."};
+      }
+      if(idx===0){ if(RNG()>0.5){ return {tone:"up", html:"The extra hours pay off. <b>+RM300</b> value.", set:function(){s.bizValue+=300;}, lesson:"Solo hustle works — until it doesn’t. Watch for burnout."}; }
+        s.money-=150; return {tone:"down", html:"You burn out and make sloppy mistakes. <b>−RM150</b>.", lesson:"A one-person business has a single point of failure: you."}; }
+      return {tone:"flat", html:"You pace yourself and stay sharp. <b>+RM120</b> value.", set:function(){s.bizValue+=120;}, lesson:"Sustainable beats heroic."};
+    }},
+
+  /* LOAN-SHARK COLLECTOR / bank repayment */
+  { id:"collector",
+    render:function(s){
+      if(s.flags.shark) return { title:"The Collector Calls", flavor:"The Along’s men are at your door. The RM3,500 is due — and they’re not interested in excuses, or in whose name the business is registered.", options:[{t:"Face the collectors →",h:"Pay the price."}]};
+      if(s.flags.bankLine) return { title:"Loan Repayment", flavor:"Your bank overdraft falls due. Orderly, on paper, exactly as agreed.", options:[{t:"Settle up →",h:"No drama."}]};
+      return { title:"A Bullet Dodged", flavor:"A fellow trader who borrowed from a loan shark is being hounded — assets seized, threats at all hours. You’re quietly glad you stayed clean.", options:[{t:"Count your blessings →",h:"Onward."}]};
+    },
+    resolve:function(s,idx){
+      if(s.flags.shark){
+        var owed=3500, pay=Math.min(Math.max(0,s.money),owed); s.money-=pay; var short=owed-pay; if(short>0) s.personalDebt+=short;
+        s.flags.sharkPain=(short>0);
+        return {tone:"down", html:"They take everything the business has ("+fmt(pay)+")"+(short>0?" and come after <b>you personally</b> for the rest ("+fmt(short)+") — limited liability means nothing to them.":", and finally leave you alone.")+"", lesson:"Illegal lenders <b>bypass every protection</b> a good structure gives you. The only safe move was never to borrow from them."};
+      }
+      if(s.flags.bankLine) return {tone:"flat", html:"You repay the overdraft as scheduled. Your credit record even improves.", lesson:"Legitimate, documented finance is predictable — that’s the whole point."};
+      return {tone:"up", html:"No debt, no drama. Your caution paid off. <b>+RM80</b> value.", set:function(){s.bizValue+=80;}, lesson:"Sometimes the best financial decision is the loan you <b>didn’t</b> take."};
+    }},
+
+  /* R5 — COMPLIANCE SEASON (structure gated) */
+  { id:"compliance",
+    render:function(s){ var st=STRUCTURES[s.structKey];
+      if(st.limited){
+        return { title:"Compliance Season (SSM)", flavor:"As a "+st.name+", the law requires annual filings — annual return, financial statements"+(st.key==="sdnbhd"?", a company secretary, possibly an audit":"")+". The bill is <b>"+fmt(st.compliance)+"</b>.",
+          options:[{t:"File everything properly (pay "+fmt(st.compliance)+")",h:"Clean record, no risk."},{t:"Skip the filings to save cash",h:"Keep the money now… gamble on later."}]};
+      }
+      return { title:"Compliance Season (SSM)", flavor:"As a "+st.name+", there's no annual return to lodge — just a small business renewal of about RM20. One quiet perk of staying simple.",
+        options:[{t:"Renew and move on →",h:"Cheap and easy."}]};
+    },
+    resolve:function(s,idx){
+      var st=STRUCTURES[s.structKey];
+      if(st.limited){
+        if(idx===0){ s.money-=st.compliance; return {tone:"flat", html:"Filed and clean. That cost <b>"+fmt(st.compliance)+"</b> — the price of protection and credibility.", set:function(){s.flags.compliant=true;}, lesson:"Limited liability isn't free: every year it costs real compliance money."}; }
+        return {tone:"down", html:"You pocket the "+fmt(st.compliance)+"… but your annual return is now overdue. The clock is ticking at SSM.", set:function(){s.flags.skipped=true;}, lesson:"Skipping SSM filings is a <b>time bomb</b> — see what happens next."};
+      }
+      s.money-=20; return {tone:"up", html:"Renewed for <b>RM20</b>. No annual return, no audit, no secretary. Simple and cheap.", lesson:"For a tiny, low-risk business, a light structure saves a fortune in compliance."};
+    }},
+
+  /* R6 — OPERATIONS / PARTNER TWIST */
+  { id:"ops",
+    render:function(s){
+      if(s.numPartners>0){
+        return { title:"The Co-Founder Fallout",
+          flavor:"Tension boils over with your co-founder"+(s.numPartners>1?'s':'')+". Money's gone missing and everyone remembers the profit split differently.\n\n"
+            +(s.hasAgreement ? "Time to open that agreement you all signed." : "There's nothing in writing to fall back on."),
+          options:[{t:"Face the fallout →",h:"See how it plays out."}]};
+      }
+      return { title:"Grow the Operation", flavor:"Business is ticking along. A chance to upgrade your equipment/inventory for RM400 could lift your capacity — or you can hold your cash.",
+        options:[{t:"Invest RM400 in the upgrade",h:"Costs cash now, may pay off."},{t:"Keep the cash buffer",h:"Stay liquid, no upside."}]};
+    },
+    resolve:function(s,idx){
+      var st=STRUCTURES[s.structKey];
+      if(s.numPartners>0){
+        if(s.hasAgreement){
+          s.money-=100; s.flags.disputeResolved=true;
+          return {tone:"flat", html:"The dispute flares — but your <b>written agreement</b> spells out the profit split, decision rights and exit terms. It's settled cleanly for RM100 in advice.", lesson:"A signed agreement turns a business-ending fight into a footnote. <b>This is why you always paper the deal.</b>"};
+        }
+        if(!st.limited){
+          var r=liabilityLoss(s,1200); s.flags.disputeUgly=true;
+          return {tone:"down", html:"With <b>nothing in writing</b>, a partner runs up debts and walks. Because partners are <b>jointly &amp; severally liable</b>, the full RM1,200 lands on <b>you</b> — and there are no agreed exit terms to enforce.", lesson:"No agreement + unlimited liability = you personally absorb your partner's mess."};
+        }
+        s.money-=500; s.bizValue=Math.round(s.bizValue*0.6); s.flags.disputeUgly=true;
+        return {tone:"down", html:"With <b>no shareholders'/partnership agreement</b>, the split turns into a deadlock. Lawyers, a forced buy-out and lost momentum cost you RM500 and wipe out much of the business's value.", lesson:"Limited liability protects your <b>personal</b> assets — but with no agreement you can still lose the <b>business</b> to a dispute."};
+      }
+      if(idx===0){
+        s.money-=400;
+        if(RNG()>0.4){ return {tone:"up", html:"The upgrade pays off — faster service, more sales. <b>+RM800</b> value.", set:function(){s.bizValue+=800;}, lesson:"Reinvestment compounds when the timing's right."}; }
+        return {tone:"flat", html:"The upgrade helps a little, but demand is flat. <b>+RM250</b> value.", set:function(){s.bizValue+=250;}, lesson:"Not every reinvestment lands — keep some buffer."};
+      }
+      return {tone:"flat", html:"You hold your cash. Boring, but resilient.", set:function(){s.bizValue+=60;}, lesson:"Liquidity is its own kind of safety."};
+    }},
+
+  /* TAX SEASON (structure-differentiated) */
+  { id:"tax",
+    render:function(s){ return { title:"Tax Season", flavor:"The taxman comes for everyone — but how you’re taxed depends on your structure.", options:[{t:"File your taxes →",h:"See the bill."}]};},
+    resolve:function(s,idx){
+      var st=STRUCTURES[s.structKey], profit=Math.max(0,s.money);
+      if(st.limited){ var t=Math.round(profit*0.12); s.money-=t; return {tone:"flat", html:"As a company/LLP you pay <b>"+fmt(t)+"</b> in entity-level tax on profits — and any money you draw out is taxed again personally.", lesson:"Companies are taxed as <b>separate entities</b>: plan for tax on profits AND on dividends/salary you take out."}; }
+      var t2=Math.round(profit*0.09); s.money-=t2; return {tone:"flat", html:"As a "+st.name+", the profit is <b>your</b> personal income — you pay <b>"+fmt(t2)+"</b> at your individual rate.", lesson:"Sole props and partnerships are taxed on the owner personally — simpler, and often lighter at small scale."};
+    }},
+
+  /* R7 — SSM RECKONING + ECONOMY */
+  { id:"reckoning",
+    render:function(s){ return { title:"Year-End Reckoning", flavor:"The year closes out. Regulators, the economy, and your earlier choices all come home to roost.",
+        options:[{t:"Face the music →",h:"Tally the year."}]};},
+    resolve:function(s,idx){
+      var st=STRUCTURES[s.structKey], I=IDEAS[s.ideaKey]; var parts=[]; var lessons=[];
+      if(s.flags.skipped){
+        s.money-=1500; s.bizValue=Math.round(s.bizValue*0.7); s.flags.strikeOff=true;
+        parts.push("SSM issues a <b>compound</b> for your unfiled annual return and moves to <b>strike your entity off the register</b>. Fighting it costs RM1,500 and dents your business value.");
+        lessons.push("Skipped SSM filings trigger compounds and strike-off — the risk you took in Round 5.");
+      }
+      if(st.limited && I.growth==="low" && I.risk==="low"){
+        s.money-=400; s.flags.overkill=true;
+        parts.push("Running a "+st.name+" over a small, low-risk business means compliance overhead keeps <b>bleeding your thin margins</b> (−RM400).");
+        lessons.push("An over-heavy structure is its own mistake: you pay for protection and credibility you don't need.");
+      }
+      var swing=Math.round((RNG()*600)-200); s.money+=swing;
+      parts.push("The economy swings your way "+(swing>=0?"a little (+":"against you (−")+"RM"+Math.abs(swing)+").");
+      return {tone: (s.flags.strikeOff?"down":"flat"), html:parts.join(" "), lesson: lessons.length? lessons.join(" ") : "Every year brings surprises — a buffer helps you ride them out."};
+    }},
+
+  /* R8 — FINAL SEASON */
+  { id:"final",
+    render:function(s){ return { title:"The Final Season", flavor:"One last push. Your accumulated reputation, assets and structure decide how strong you finish.",
+        options:[{t:"Close out the year →",h:"Reveal your result."}]};},
+    resolve:function(s,idx){
+      var st=STRUCTURES[s.structKey], I=IDEAS[s.ideaKey];
+      var payoff=Math.round((s.bizValue*0.4 + st.cred*120 + (I.growth==="high"?200:120)) * (0.85+RNG()*0.35));
+      s.money+=payoff;
+      return {tone:"up", html:"Final-season earnings from everything you built: <b>+"+fmt(payoff)+"</b>.", lesson:"Your business value and credibility converted into real cash at the finish."};
+    }},
+];
+
+function idealStructure(ideaKey){
+  var I=IDEAS[ideaKey];
+  if(I.risk==="high" && I.growth==="high") return {key:"sdnbhd", label:"Sdn Bhd", why:"high risk AND high growth need both a liability shield and the ability to raise capital."};
+  if(I.risk==="high" && I.growth==="low")  return {key:"llp", label:"LLP (or Sdn Bhd)", why:"a risky but small business needs limited-liability protection without the full weight of a company."};
+  if(I.risk==="low" && I.growth==="high")  return {key:"sdnbhd", label:"Sdn Bhd", why:"a scalable business needs credibility with big clients and access to equity funding."};
+  return {key:"sole", label:"Sole Proprietorship", why:"a small, low-risk, low-growth business is best kept cheap and simple — heavier structures just add cost."};
+}
+/* ===================== ENGINE END ===================== */
+
+/* ---------------- UI LAYER ---------------- */
+var S=null, stageIdx=0, awaiting=false;
+var app=document.getElementById('app');
+
+function money(){ document.getElementById('moneyN').textContent=fmt(S.money); document.getElementById('roundN').textContent=Math.min(stageIdx+1,STAGES.length)+" / "+STAGES.length; }
+
+function home(){
+  S=null; document.getElementById('hud').style.display='none';
+  app.innerHTML='<div class="card">'
+    +'<p class="lead"><b>Your family just handed you the last RM500 they have.</b> No safety net, no second chance. You want to build something. The idea is the easy part — the choice that quietly decides whether you thrive or lose your family\'s money is the one nobody teaches you: <b>what legal structure do you start with?</b></p>'
+    +'<p class="lead" style="margin-top:10px">Play through one year of decisions and disasters. At the end, your net worth goes on the leaderboard. Whoever reads their business best — and picks the right structure for it — wins.</p>'
+    +'<div class="nav"><button class="btn ghost" onclick="showBoard(true)">🏆 Leaderboard</button><button class="btn gold" onclick="enterName()">Start with RM500 →</button></div>'
+    +'</div>';
+}
+
+function enterName(){
+  app.innerHTML='<div class="card"><h2 class="scene-title">Before we begin…</h2>'
+    +'<p class="lead">What\'s your name, founder? (This is how you\'ll appear on the leaderboard.)</p>'
+    +'<input class="name" id="nm" maxlength="22" placeholder="e.g. Aisha, Team Blue, Desk 3" />'
+    +'<div class="nav"><button class="btn ghost" onclick="home()">← Back</button><button class="btn primary" onclick="chooseIdea()">Next →</button></div></div>';
+  var el=document.getElementById('nm'); el.focus(); el.addEventListener('keydown',function(e){if(e.key==="Enter")chooseIdea();});
+}
+var pendingName="";
+function chooseIdea(){
+  var v=(document.getElementById('nm')?document.getElementById('nm').value:"").trim();
+  if(document.getElementById('nm')){ if(!v){document.getElementById('nm').focus();return;} pendingName=v; }
+  app.innerHTML='<div class="card"><h2 class="scene-title">Pick your hustle</h2>'
+    +'<p class="lead">Each idea carries a different mix of <b>risk</b> (chance of a costly disaster) and <b>growth</b> (how much scale and big-client potential it has). This shapes which structure will serve you best.</p>'
+    +'<div class="grid">'+Object.keys(IDEAS).map(function(k){var I=IDEAS[k];
+        return '<div class="pick" onclick="pickIdea(\''+k+'\')"><div class="em">'+I.em+'</div><h3>'+I.name+'</h3>'
+          +'<div class="sub">'+I.blurb+'</div><div class="stats"><span class="st">Risk: '+I.risk+'</span><span class="st">Growth: '+I.growth+'</span></div></div>';
+      }).join('')+'</div>'
+    +'<div class="nav"><button class="btn ghost" onclick="enterName()">← Back</button><span></span></div></div>';
+}
+var pendingIdea="";
+function pickIdea(k){ pendingIdea=k; chooseStructure(); }
+
+function chooseStructure(){
+  var I=IDEAS[pendingIdea];
+  app.innerHTML='<div class="card"><h2 class="scene-title">Choose your legal structure</h2>'
+    +'<p class="lead">This is the big one. It decides your starting cash (setup costs come out of your RM500), whether your family\'s money is protected when disaster hits, whether you can raise money, and how much you\'ll pay to stay compliant. Choose for <b>'+I.em+' '+I.name+'</b> (risk: '+I.risk+', growth: '+I.growth+').</p>'
+    +'<div class="grid">'+Object.keys(STRUCTURES).map(function(k){var st=STRUCTURES[k];
+        var badge = st.needsPartners ? ('Setup '+fmt(st.setup)+' · needs co-founders') : ('Solo start cash '+fmt(500-st.setup));
+        return '<div class="pick" onclick="pickStruct(\''+k+'\')"><div class="em">'+st.em+'</div><h3>'+st.name+'</h3>'
+          +'<div class="sub">'+st.sub+'</div><div class="stats"><span class="st">'+badge+'</span>'
+          +st.stats.map(function(x){return '<span class="st">'+x+'</span>';}).join('')+'</div></div>';
+      }).join('')+'</div>'
+    +'<div class="nav"><button class="btn ghost" onclick="chooseIdea()">← Back</button><span></span></div></div>';
+}
+var pendingStruct="", pendingPartners=0;
+function pickStruct(k){
+  pendingStruct=k;
+  if(STRUCTURES[k].needsPartners){ choosePartners(); }
+  else { S=newState(pendingName,k,pendingIdea,0,false); startPlay(); }
+}
+function startPlay(){ stageIdx=0; awaiting=false; document.getElementById('hud').style.display='flex'; money(); renderStage(); }
+
+function choosePartners(){
+  var st=STRUCTURES[pendingStruct];
+  app.innerHTML='<div class="card"><h2 class="scene-title">Find your co-founders</h2>'
+    +'<p class="lead">RM500 alone can\'t stand up a '+st.name+' — setup runs <b>'+fmt(st.setup)+'</b>'
+    +(st.key==="sdnbhd"?', far beyond your RM500':'')+', and it needs more than one owner. You pool capital with co-founders who each put in <b>RM500</b>. More co-founders = more cash to trade with, but a smaller slice of the business for you.</p>'
+    +'<div class="opts">'+st.partnerOpts.map(function(n){
+        var pool=500*(1+n); var own=Math.round(100/(1+n));
+        return '<div class="opt" onclick="setPartners('+n+')"><div class="t">'+n+' co-founder'+(n>1?'s':'')+' &nbsp;·&nbsp; pool '+fmt(pool)+'</div><div class="h">You\'d own '+own+'% of the business. Pooled capital before setup: '+fmt(pool)+'.</div></div>';
+      }).join('')+'</div>'
+    +'<div class="nav"><button class="btn ghost" onclick="chooseStructure()">← Back</button><span></span></div></div>';
+}
+function setPartners(n){ pendingPartners=n; chooseAgreement(); }
+
+function chooseAgreement(){
+  var st=STRUCTURES[pendingStruct]; var pool=500*(1+pendingPartners);
+  var withCap=pool-st.setup-st.agreementFee, noCap=pool-st.setup;
+  app.innerHTML='<div class="card"><h2 class="scene-title">Do you sign an agreement?</h2>'
+    +'<p class="lead">Before you take everyone\'s money, decide how you\'ll run things together. A '+(st.equity?"shareholders&#39;":"partnership")+' agreement fixes the profit split, decision rights and what happens if someone wants out — but it costs <b>'+fmt(st.agreementFee)+'</b> to draft now. Skip it and you keep the cash… and hope you never fall out.</p>'
+    +'<div class="opts">'
+    +'<div class="opt" onclick="setAgreement(true)"><div class="t">✍️ Sign a proper agreement (−'+fmt(st.agreementFee)+')</div><div class="h">Working capital after setup: '+fmt(withCap)+'. Protects you if disputes arise later.</div></div>'
+    +'<div class="opt" onclick="setAgreement(false)"><div class="t">🤞 Skip it — a handshake will do</div><div class="h">Working capital after setup: '+fmt(noCap)+'. Cheaper now, dangerous if things go wrong.</div></div>'
+    +'</div>'
+    +'<div class="nav"><button class="btn ghost" onclick="choosePartners()">← Back</button><span></span></div></div>';
+}
+function setAgreement(v){ S=newState(pendingName,pendingStruct,pendingIdea,pendingPartners,v); startPlay(); }
+
+function renderStage(){
+  awaiting=false;
+  var stage=STAGES[stageIdx]; var v=stage.render(S); var I=IDEAS[S.ideaKey], st=STRUCTURES[S.structKey];
+  money();
+  var html='<div class="card">'
+    +'<div class="tagrow"><span class="tag n">'+st.em+' '+st.name+'</span><span class="tag g">'+I.em+' '+I.name+'</span>'
+      +(S.numPartners>0 ? '<span class="tag n">You own '+Math.round(S.ownership*100)+'% · '+(S.hasAgreement?'agreement ✍️':'no agreement 🤞')+'</span>' : '')+'</div>'
+    +'<h2 class="scene-title">'+v.title+'</h2>'
+    +'<div class="scene-flavor">'+v.flavor+'</div>'
+    +'<div class="opts" id="opts">'+v.options.map(function(o,i){
+        return '<div class="opt" onclick="choose('+i+')"><div class="t">'+o.t+'</div>'+(o.h?'<div class="h">'+o.h+'</div>':'')+'</div>';
+      }).join('')+'</div>'
+    + journalHTML()
+    +'</div>';
+  app.innerHTML=html;
+}
+function journalHTML(){
+  if(!S.log.length) return '';
+  return '<div class="journal"><h4>Your story so far</h4>'+S.log.map(function(e){
+    return '<div class="jrow"><span>'+e.title+'</span><span class="d '+(e.delta>0?'up':(e.delta<0?'down':''))+'">'+(e.delta===0?'':fmtDelta(e.delta))+'</span></div>';
+  }).join('')+'</div>';
+}
+
+function choose(idx){
+  if(awaiting) return; awaiting=true;
+  var stage=STAGES[stageIdx];
+  var before=S.money;
+  var r=stage.resolve(S, idx);
+  if(r.set) r.set();
+  var delta=Math.round(S.money-before);
+  S.log.push({title:STAGES[stageIdx].render(S).title, delta:delta});
+  money();
+  // render outcome then Next
+  var toneClass = r.tone==='up'?'up':(r.tone==='down'?'down':'flat');
+  var deltaTxt = delta!==0 ? '<div class="delta">'+fmtDelta(delta)+' &nbsp;·&nbsp; On hand: '+fmt(S.money)+'</div>' : '<div class="delta">On hand: '+fmt(S.money)+'</div>';
+  var last=stageIdx>=STAGES.length-1;
+  app.querySelector('#opts').outerHTML =
+    '<div class="outcome '+toneClass+'">'+deltaTxt+'<div style="margin-top:6px">'+r.html+'</div>'
+    +(r.lesson?'<div class="lesson"><b>💡 Lesson:</b> '+r.lesson+'</div>':'')+'</div>'
+    +'<div class="nav"><span></span><button class="btn '+(last?'gold':'primary')+'" onclick="'+(last?'endGame()':'nextStage()')+'">'+(last?'See my result 🏁':'Continue →')+'</button></div>';
+}
+function nextStage(){ stageIdx++; renderStage(); }
+
+/* ---------- END GAME + LEADERBOARD ---------- */
+function endGame(){
+  var final=score(S);
+  var entry={name:S.name, idea:IDEAS[S.ideaKey].name, ideaEm:IDEAS[S.ideaKey].em, structure:STRUCTURES[S.structKey].name, structEm:STRUCTURES[S.structKey].em, score:final, ts:Date.now()};
+  var board=loadBoard(); board.push(entry); board.sort(function(a,b){return b.score-a.score;});
+  saveBoard(board);
+  var rank=board.findIndex(function(e){return e.ts===entry.ts;})+1;
+  document.getElementById('hud').style.display='none';
+  var medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
+  var neg = final<0;
+  var verdict = neg ? "You ended in the red — the business took your family's money down with it." :
+    final>=6000 ? "Outstanding — you built real wealth from RM500." :
+    final>=2500 ? "Solid — a healthy, surviving business." :
+    final>=500 ? "You made it through, modestly ahead." : "You survived, but barely broke even.";
+
+  app.innerHTML='<div class="card">'
+    +'<div class="finalscore">'+(medal?'<div class="medal">'+medal+'</div>':'')
+    +'<div style="color:var(--mute);font-size:13px;letter-spacing:1px;text-transform:uppercase">'+S.name+'\'s final net worth</div>'
+    +'<div class="big'+(neg?' neg':'')+'">'+fmt(final)+'</div>'
+    +'<div class="verdict">'+verdict+' &nbsp;·&nbsp; Rank #'+rank+' of '+board.length+'</div></div>'
+    + debriefHTML(final)
+    + '<h4 style="margin:22px 0 0;color:var(--navy);font-family:Cambria,Georgia,serif">🏆 Leaderboard</h4>'
+    + boardTable(board, entry.ts)
+    +'<div class="nav"><button class="btn ghost" onclick="resetBoard()">Reset board</button><button class="btn gold" onclick="home()">Play again →</button></div>'
+    +'</div>';
+}
+
+function debriefHTML(final){
+  var f=S.flags, I=IDEAS[S.ideaKey], st=STRUCTURES[S.structKey], ideal=idealStructure(S.ideaKey);
+  var pts=[];
+  if(f.lawsuitShielded) pts.push("When the lawsuit hit, your <b>limited liability shielded your family's money</b> — only the business was exposed.");
+  if(f.lawsuitPersonal) pts.push("The lawsuit reached <b>past the business into your family's savings</b> because you had <b>unlimited liability</b>. A shield would have capped the loss.");
+  if(f.bigClient) pts.push("Being a registered entity <b>won you the big client</b> a sole trader couldn't land.");
+  if(f.missedBigClient) pts.push("You <b>lost the big client</b> because your structure was too informal for a corporate buyer.");
+  if(f.investor) pts.push("You <b>raised RM4,000 in equity</b> — something only a company (Sdn Bhd) can do.");
+  if(f.loan) pts.push("With no shares to sell, you grew by taking on <b>personal debt</b>.");
+  if(f.disputeResolved) pts.push("When the co-founders clashed, your <b>signed agreement</b> settled it cheaply — the RM"+STRUCTURES[S.structKey].agreementFee+" you spent up front paid for itself many times over.");
+  if(f.disputeUgly) pts.push("You went in on a handshake, and the co-founder fallout had <b>no agreement</b> to fall back on — a costly, avoidable mess.");
+  if(f.sharkPain) pts.push("Borrowing from a loan shark was the fatal mistake — they <b>bypassed your limited liability</b> and came after you personally.");
+  else if(f.shark) pts.push("You danced with a loan shark and it dragged you down — informal debt ignores every legal protection a structure gives you.");
+  if(f.bankLine) pts.push("Your registered entity let you raise <b>legitimate</b> bank finance instead of predatory debt — a real structural advantage.");
+  if(f.argueDrag) pts.push("Everyday disagreements became costly deadlocks because nothing was written down.");
+  if(f.alignedByAgreement) pts.push("Your agreement's decision rules kept ordinary disputes from stalling the business.");
+  if(f.hired) pts.push("You took on staff to grow — which also meant taking on EPF, SOCSO and Employment Act duties.");
+  if(f.strikeOff) pts.push("Skipping your SSM filings led to a <b>compound and strike-off threat</b> — an expensive, avoidable mistake.");
+  if(f.overkill) pts.push("Your structure was <b>heavier than the business needed</b>, and compliance costs quietly ate your margins.");
+  if(S.numPartners>0) pts.push("With "+S.numPartners+" co-founder"+(S.numPartners>1?'s':'')+" you owned <b>"+Math.round(S.ownership*100)+"%</b> — more capital to start with, but a smaller slice of the final result.");
+  if(!pts.length) pts.push("You navigated the year without a defining structural moment — a calm run.");
+
+  var matched = st.key===ideal.key || (ideal.key==="sdnbhd"&&st.key==="sdnbhd") ;
+  // treat LLP as acceptable where ideal says "LLP (or Sdn Bhd)"
+  var idealOk = (ideal.key===st.key) || (ideal.label.indexOf("LLP")>=0 && (st.key==="llp"||st.key==="sdnbhd"));
+  var fitLine = idealOk
+    ? "✅ <b>Good fit.</b> A "+st.name+" suited a "+I.name.toLowerCase()+" ("+I.risk+" risk, "+I.growth+" growth)."
+    : "⚠️ <b>Mismatch.</b> For a "+I.name.toLowerCase()+" ("+I.risk+" risk, "+I.growth+" growth), the stronger choice was a <b>"+ideal.label+"</b> — because "+ideal.why;
+
+  return '<div class="debrief"><h4>What your structure did to your year</h4><ul>'
+    + pts.map(function(p){return '<li>'+p+'</li>';}).join('')
+    + '</ul><div class="ideal">'+fitLine+'</div></div>';
+}
+
+function boardTable(board, myTs){
+  var rows=board.slice(0,12).map(function(e,i){
+    var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    return '<tr class="'+(e.ts===myTs?'me':'')+'"><td>'+medal+'</td><td>'+e.name+'</td><td>'+e.structEm+' '+e.structure+'</td><td>'+e.ideaEm+'</td><td class="sc">'+fmt(e.score)+'</td></tr>';
+  }).join('');
+  return '<table class="lb"><tr><th>#</th><th>Founder</th><th>Structure</th><th>Biz</th><th style="text-align:right">Net worth</th></tr>'+rows+'</table>';
+}
+function loadBoard(){ try{return JSON.parse(localStorage.getItem('rm500_leaderboard')||'[]');}catch(e){return [];} }
+function saveBoard(b){ try{localStorage.setItem('rm500_leaderboard', JSON.stringify(b.slice(0,50)));}catch(e){} }
+function resetBoard(){ if(confirm('Clear the leaderboard for everyone on this browser?')){ saveBoard([]); showBoard(true);} }
+function showBoard(fromHome){
+  var board=loadBoard();
+  document.getElementById('hud').style.display='none';
+  app.innerHTML='<div class="card"><h2 class="scene-title">🏆 Leaderboard</h2>'
+    +(board.length? boardTable(board,-1) : '<p class="lead">No games played yet. Be the first founder on the board.</p>')
+    +'<div class="nav"><button class="btn ghost" onclick="resetBoard()">Reset board</button><button class="btn gold" onclick="home()">'+(fromHome?'← Back':'Play')+'</button></div></div>';
+}
+
+home();
+</script>
+</body>
+</html>

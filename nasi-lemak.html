@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#141B3D"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>Nasi Lemak Empire — The Business Vehicle Game</title>
+<style>
+  :root{
+    --navy:#1E2761; --navy2:#2B3A73; --blue:#3C5AA6; --ice:#CADCFC; --ice2:#E8EFFB;
+    --gold:#C9A227; --gold2:#E4C04B; --ink:#1B2440; --mute:#6B7488; --white:#fff;
+    --good:#1f8a54; --bad:#c0392b; --paper:#FBFCFF;
+    --shadow:0 12px 34px rgba(15,20,45,.22);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;font-family:"Segoe UI",Calibri,Arial,sans-serif;color:var(--ink);
+    background:radial-gradient(1200px 600px at 50% -10%,#33407a 0%,#1E2761 40%,#141B3D 100%);
+    background-attachment:fixed;-webkit-tap-highlight-color:transparent;
+    min-height:100vh;min-height:100dvh;
+    padding:22px 14px 70px;
+    padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+  .wrap{max-width:860px;margin:0 auto}
+  header.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .brand .kick{color:var(--gold);font-weight:700;letter-spacing:3px;font-size:11px}
+  .brand h1{margin:2px 0 0;color:#fff;font-family:Cambria,Georgia,serif;font-size:25px;font-weight:800}
+  .brand h1 span{color:var(--gold2)}
+  .hud{display:flex;gap:8px;align-items:center}
+  .hud .money{background:rgba(255,255,255,.08);border:1px solid rgba(202,220,252,.28);border-radius:14px;padding:8px 16px;text-align:center;color:#fff}
+  .hud .money .n{font-size:24px;font-weight:800;line-height:1;color:var(--gold2)}
+  .hud .money .l{font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ice);margin-top:3px}
+  .hud .round{background:rgba(255,255,255,.06);border-radius:12px;padding:8px 12px;color:var(--ice);font-size:12px;text-align:center;min-width:66px}
+  .hud .round b{display:block;color:#fff;font-size:16px}
+
+  .card{background:var(--paper);border-radius:20px;box-shadow:var(--shadow);padding:28px;animation:pop .3s ease}
+  @keyframes pop{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .lead{color:var(--mute);font-size:15px;line-height:1.6}
+
+  .scene-title{font-family:Cambria,Georgia,serif;color:var(--navy);font-size:23px;font-weight:800;margin:0 0 6px}
+  .scene-flavor{font-size:15.5px;line-height:1.62;color:var(--ink);white-space:pre-wrap}
+  .tagrow{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 14px}
+  .tag{font-size:11px;font-weight:700;border-radius:20px;padding:4px 11px;letter-spacing:.4px}
+  .tag.n{background:var(--ice2);color:var(--navy)}
+  .tag.g{background:#FBF1CE;color:#8a6d10}
+
+  .opts{display:grid;gap:11px;margin-top:18px}
+  .opt{border:2px solid #E1E7F5;border-radius:14px;padding:14px 17px;cursor:pointer;background:#fff;transition:.14s;-webkit-user-select:none;user-select:none}
+  .opt:hover{border-color:var(--blue);background:#F5F9FF;transform:translateX(3px)}
+  .opt:active{border-color:var(--blue);background:#EDF3FF;transform:scale(.99)}
+  .opt.dis{opacity:.6;cursor:not-allowed;background:#F4F5F9}
+  .opt.dis:hover{border-color:#E1E7F5;background:#F4F5F9;transform:none}
+  .opt .t{font-weight:700;font-size:15px}
+  .opt .h{font-size:12.5px;color:var(--mute);margin-top:3px;line-height:1.45}
+  .opt .lock{font-size:11px;font-weight:700;color:var(--bad);margin-top:5px}
+
+  .outcome{border-radius:14px;padding:16px 18px;margin-top:16px;font-size:14.5px;line-height:1.6;animation:pop .3s ease}
+  .outcome.up{background:#E9F6EE;border:1px solid #b8e2c8}
+  .outcome.down{background:#FDECEA;border:1px solid #f2c4bc}
+  .outcome.flat{background:var(--ice2);border:1px solid #cdd9f0}
+  .outcome .delta{font-weight:800;font-size:16px}
+  .outcome .lesson{margin-top:9px;padding-top:9px;border-top:1px dashed rgba(0,0,0,.15);font-size:13px;color:var(--navy)}
+  .outcome .lesson b{color:var(--gold)}
+
+  .pnl{margin-top:12px;background:#fff;border:1px solid #E1E7F3;border-radius:12px;padding:12px 14px;font-size:13px}
+  .pnl .row{display:flex;justify-content:space-between;padding:3px 0}
+  .pnl .row.tot{border-top:1px solid #E7ECF6;margin-top:4px;padding-top:6px;font-weight:800;color:var(--navy)}
+  .pnl .g{color:var(--good)} .pnl .r{color:var(--bad)}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+  @media(max-width:620px){.grid{grid-template-columns:1fr}}
+  .pick{border:2px solid var(--ice);background:#fff;border-radius:16px;padding:18px;cursor:pointer;transition:.16s;-webkit-user-select:none;user-select:none}
+  .pick:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:var(--shadow)}
+  .pick:active{border-color:var(--gold);transform:scale(.99);box-shadow:var(--shadow)}
+  .pick .em{font-size:30px}
+  .pick h3{margin:6px 0 2px;color:var(--navy);font-size:18px}
+  .pick .my{color:var(--mute);font-size:11.5px;font-style:italic;margin-bottom:4px}
+  .pick .sub{color:var(--mute);font-size:12.5px;line-height:1.5}
+  .pick .stats{margin-top:9px;display:flex;flex-wrap:wrap;gap:6px}
+  .pick .st{font-size:10.5px;font-weight:700;background:var(--ice2);color:var(--navy);border-radius:8px;padding:3px 8px}
+  .pick .st.warn{background:#FDECEA;color:#a5301f}
+  .pick .st.good{background:#E9F6EE;color:#1c6b41}
+
+  .nav{display:flex;justify-content:space-between;gap:10px;margin-top:22px;align-items:center}
+  button.btn{border:0;border-radius:11px;padding:12px 22px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+  button.btn:active{transform:scale(.97)}
+  .btn.primary{background:var(--navy);color:#fff}.btn.primary:hover{background:var(--blue)}
+  .btn.gold{background:var(--gold);color:var(--navy)}.btn.gold:hover{background:var(--gold2)}
+  .btn.ghost{background:#fff;color:var(--navy);border:1.5px solid var(--ice)}.btn.ghost:hover{border-color:var(--blue)}
+  input.name{width:100%;padding:13px 15px;border:2px solid var(--ice);border-radius:12px;font-size:16px;font-family:inherit;margin-top:8px}
+  input.name:focus{outline:none;border-color:var(--gold)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+  .chip{font-size:11.5px;font-weight:700;background:var(--ice2);color:var(--navy);border-radius:9px;padding:5px 10px}
+  .chip b{color:var(--blue)}
+
+  /* end screen */
+  .finalscore{text-align:center;padding:6px 0}
+  .finalscore .big{font-family:Cambria,Georgia,serif;font-size:46px;font-weight:800;color:var(--navy);line-height:1}
+  .finalscore .big.neg{color:var(--bad)}
+  .finalscore .verdict{font-size:16px;color:var(--mute);margin-top:6px}
+  .medal{font-size:34px}
+  .debrief{background:#FCF7E6;border:1px solid #EBDCA6;border-radius:14px;padding:16px 18px;margin-top:16px;font-size:14px;line-height:1.6}
+  .debrief h4{margin:0 0 8px;color:var(--navy)}
+  .debrief ul{margin:8px 0 0;padding-left:18px}.debrief li{margin:5px 0}
+  .debrief .ideal{margin-top:10px;padding-top:10px;border-top:1px dashed #d9c78c}
+
+  .breakdown{background:#fff;border:1px solid #E1E7F3;border-radius:12px;padding:14px 16px;margin-top:14px;font-size:13.5px}
+  .breakdown .row{display:flex;justify-content:space-between;padding:4px 0}
+  .breakdown .row.tot{border-top:1.5px solid #E7ECF6;margin-top:5px;padding-top:8px;font-weight:800;font-size:15px;color:var(--navy)}
+
+  /* pathway ladder */
+  .ladder{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+  .rung{display:flex;align-items:center;gap:11px;border:1.5px solid #E7ECF6;border-radius:12px;padding:11px 13px;background:#fff;position:relative}
+  .rung .rem{font-size:22px;flex-shrink:0}
+  .rung .rt{font-weight:800;color:var(--navy);font-size:14px}
+  .rung .rs{font-size:12px;color:var(--mute);line-height:1.4;margin-top:1px}
+  .rung.here{border-color:var(--gold);background:#FBF6E4;box-shadow:0 4px 14px rgba(201,162,39,.18)}
+  .rung.reach{border-color:#bfe0cc;background:#F1FAF4}
+  .rung .badge{position:absolute;top:-9px;right:11px;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:20px}
+  .rung.here .badge{background:var(--gold);color:#fff}
+  .rung.reach .badge{background:var(--good);color:#fff}
+  .rung .arrow{color:var(--mute);font-weight:800}
+
+  .ipo{background:linear-gradient(135deg,#1E2761,#3C5AA6);color:#fff;border-radius:16px;padding:20px;text-align:center;margin-top:6px}
+  .ipo .k{color:var(--gold2);font-weight:800;letter-spacing:3px;font-size:11px;text-transform:uppercase}
+  .ipo .b{font-family:Cambria,Georgia,serif;font-size:34px;font-weight:800;margin:6px 0}
+  .ipo .s{font-size:13px;color:var(--ice)}
+
+  table.lb{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.lb th,table.lb td{padding:9px 10px;text-align:left;border-bottom:1px solid #E7ECF6}
+  table.lb th{color:var(--mute);font-size:11px;letter-spacing:1px;text-transform:uppercase}
+  table.lb tr.me{background:#FBF1CE}
+  table.lb td.sc{font-weight:800;text-align:right}
+  .lbwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px}
+  .foot{color:var(--ice);text-align:center;font-size:11.5px;margin-top:26px;line-height:1.6}
+  .foot b{color:var(--gold2)} .foot a{color:var(--gold2);text-decoration:none}
+
+  @media(hover:none){
+    .opt:hover{border-color:#E1E7F5;background:#fff;transform:none}
+    .pick:hover{border-color:var(--ice);transform:none;box-shadow:none}
+    .btn.primary:hover{background:var(--navy)}
+    .btn.gold:hover{background:var(--gold)}
+    .btn.ghost:hover{border-color:var(--ice)}
+  }
+  @media(max-width:560px){
+    body{padding:0 12px 60px;
+      padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+    header.top{position:sticky;top:0;z-index:30;flex-wrap:nowrap;align-items:center;
+      margin:0 -12px 14px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));
+      background:rgba(20,27,61,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+      border-bottom:1px solid rgba(202,220,252,.16)}
+    .brand .kick{font-size:9px;letter-spacing:1.5px;line-height:1.25}
+    .brand h1{font-size:20px}
+    .hud{flex-shrink:0}
+    .hud .money{padding:6px 12px}
+    .hud .money .n{font-size:19px}
+    .hud .round{padding:6px 9px;min-width:52px;font-size:11px}
+    .hud .round b{font-size:14px}
+    .card{padding:20px 17px;border-radius:16px}
+    .scene-title{font-size:21px}
+    .scene-flavor{font-size:15px}
+    .lead{font-size:14.5px}
+    .grid{gap:11px;margin-top:16px}
+    .pick{padding:15px}
+    .pick .em{font-size:26px}
+    .pick h3{font-size:16.5px}
+    .nav{gap:8px;margin-top:18px}
+    button.btn{flex:1;padding:14px 14px;font-size:14.5px;min-height:48px}
+    .nav>span:empty{display:none}
+    input.name{padding:14px 15px}
+    table.lb{font-size:12.5px}
+    table.lb th,table.lb td{padding:8px 7px}
+    .finalscore .big{font-size:40px}
+  }
+  @media(max-width:360px){
+    .brand h1{font-size:18px}
+    .hud .money .n{font-size:17px}
+    .card{padding:17px 14px}
+    .scene-title{font-size:19px}
+    button.btn{padding:13px 10px;font-size:14px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="kick">MUCHEN CORPORATE SERVICES · BUSINESS VEHICLE GAME</div>
+      <h1>Nasi Lemak <span>Empire</span></h1>
+    </div>
+    <div class="hud" id="hud" style="display:none">
+      <div class="round" id="roundBox">Year<b id="yearN">1</b></div>
+      <div class="money"><div class="n" id="moneyN">RM0</div><div class="l">Cash on hand</div></div>
+    </div>
+  </header>
+
+  <div id="app"></div>
+
+  <div class="foot">
+    A training simulation — not financial or legal advice. Entity effects are simplified for gameplay and reflect
+    Malaysian vehicles (SSM / Companies Act 2016 / LLP Act 2012 / Bursa Malaysia listing).<br>
+    Also try the <a href="/">RM500 Startup</a> game. Verify real-world specifics against current rules.
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   NASI LEMAK EMPIRE — choose a business vehicle, survive 5 years,
+   build the most net worth. Teaches the nature of each entity and
+   the pathway to a Bursa Malaysia listing.
+   ============================================================ */
+
+var app = document.getElementById('app');
+function fmt(n){
+  n = Math.round(n);
+  var s = Math.abs(n).toLocaleString('en-MY');
+  return (n<0?'−RM':'RM') + s;
+}
+function rand(a,b){ return a + Math.random()*(b-a); }
+function chance(p){ return Math.random() < p; }
+
+/* ---------- The four vehicles ---------- */
+var VEHICLES = {
+  enterprise: {
+    key:'enterprise', em:'🧍', name:'Enterprise', my:'Milik Tunggal · Sole Proprietorship',
+    setup:80, startCash:20000, ownership:1.0,
+    limited:false, equity:false, canList:false, corporate:false, compliance:20, cred:1,
+    sub:'Cheapest, fastest, all yours. But you ARE the business — its debts are your debts.',
+    stats:[['Setup ~RM80','st'],['Keep 100%','good'],['Unlimited liability','warn'],['Cannot list','warn']]
+  },
+  partnership: {
+    key:'partnership', em:'🤝', name:'Partnership', my:'Perkongsian · with a co-founder',
+    setup:200, startCash:38000, ownership:0.5,
+    limited:false, equity:false, canList:false, corporate:false, compliance:80, cred:1,
+    sub:'You + a partner pool cash, so you start with more. But you share profits — and unlimited liability for each other.',
+    stats:[['Pooled RM38k','good'],['You own 50%','st'],['Unlimited & shared','warn'],['Cannot list','warn']]
+  },
+  llp: {
+    key:'llp', em:'🛡️', name:'LLP (PLT)', my:'Perkongsian Liabiliti Terhad',
+    setup:800, startCash:19200, ownership:1.0,
+    limited:true, equity:false, canList:false, corporate:true, compliance:300, cred:2,
+    sub:'A modern hybrid: limited liability like a company, light compliance like a partnership. Credible — but to list you must first convert to Sdn Bhd.',
+    stats:[['Setup ~RM800','st'],['Limited liability','good'],['Low compliance','good'],['Convert to list','warn']]
+  },
+  sdnbhd: {
+    key:'sdnbhd', em:'🏢', name:'Sdn Bhd', my:'Sendirian Berhad · Private Limited',
+    setup:2000, startCash:18000, ownership:1.0,
+    limited:true, equity:true, canList:true, corporate:true, compliance:1200, cred:3,
+    sub:'A separate legal person. Costs more to run (secretary, audit), but it can ISSUE SHARES to investors — and is the only vehicle on the road to a Bursa listing.',
+    stats:[['Setup ~RM2k','st'],['Limited liability','good'],['Can raise equity','good'],['→ IPO pathway','good']]
+  }
+};
+
+/* ---------- Game state ---------- */
+var S = null;
+var STEP = 0;
+var STEPS = [];
+
+function newGame(name, vk){
+  var V = VEHICLES[vk];
+  S = {
+    name:name, vk:vk,
+    cash: V.startCash - V.setup,
+    debts: 0,
+    bizValue: 40000,          // goodwill of one working outlet
+    ownership: V.ownership,
+    outlets: 1,
+    brand: 45,                // 0..100 reputation / demand
+    year: 1,
+    listed:false, market:null,
+    flags:{},
+    pts:[]                    // debrief lesson bullets
+  };
+  STEP = 0;
+  STEPS = [
+    yr1Decision, yr1Event,
+    yr2Decision, yr2Event,
+    yr3Decision, yr3Event,
+    yr4Decision, yr4Event,
+    yr5Exit
+  ];
+  document.getElementById('hud').style.display='flex';
+  syncHud();
+  runStep();
+}
+
+function syncHud(){
+  document.getElementById('yearN').textContent = S.year + ' / 5';
+  document.getElementById('moneyN').textContent = fmt(S.cash);
+}
+function V(){ return VEHICLES[S.vk]; }
+function note(t){ if(S.pts.indexOf(t)<0) S.pts.push(t); }
+
+/* ---------- Rendering ---------- */
+function chipsBar(){
+  return '<div class="chips">'
+    + '<span class="chip">'+V().em+' <b>'+V().name+'</b></span>'
+    + '<span class="chip">🏪 Outlets <b>'+S.outlets+'</b></span>'
+    + '<span class="chip">⭐ Brand <b>'+Math.round(S.brand)+'</b></span>'
+    + '<span class="chip">🧾 You own <b>'+Math.round(S.ownership*100)+'%</b></span>'
+    + (S.debts>0?'<span class="chip">💳 Debt <b>'+fmt(S.debts)+'</b></span>':'')
+    + '</div>';
+}
+
+function renderScene(sc){
+  syncHud();
+  var opts = sc.options.map(function(o,i){
+    if(o.locked){
+      return '<div class="opt dis"><div class="t">'+o.t+'</div>'
+        + (o.h?'<div class="h">'+o.h+'</div>':'')
+        + '<div class="lock">🔒 '+o.locked+'</div></div>';
+    }
+    return '<div class="opt" onclick="choose('+i+')"><div class="t">'+o.t+'</div>'
+      + (o.h?'<div class="h">'+o.h+'</div>':'') + '</div>';
+  }).join('');
+  window.__opts = sc.options;
+  app.innerHTML = '<div class="card">'
+    + '<h2 class="scene-title">'+sc.title+'</h2>'
+    + (sc.tags?'<div class="tagrow">'+sc.tags+'</div>':'')
+    + '<div class="scene-flavor">'+sc.flavor+'</div>'
+    + chipsBar()
+    + '<div class="opts">'+opts+'</div>'
+    + '</div>';
+  window.scrollTo(0,0);
+}
+
+function choose(i){
+  var o = window.__opts[i];
+  if(o.locked) return;
+  var r = o.go();
+  if(r && r.scene){ renderScene(r.scene); return; }
+  renderOutcome(r);
+}
+
+function renderOutcome(o){
+  syncHud();
+  var pnl = o.pnl ? pnlBox(o.pnl) : '';
+  var last = (STEP >= STEPS.length-1);
+  app.innerHTML = '<div class="card">'
+    + '<div class="outcome '+(o.tone||'flat')+'">'
+    +   (o.delta?'<div class="delta">'+o.delta+'</div>':'')
+    +   '<div>'+o.html+'</div>'
+    +   (o.lesson?'<div class="lesson">💡 '+o.lesson+'</div>':'')
+    +   pnl
+    + '</div>'
+    + chipsBar()
+    + '<div class="nav"><span></span><button class="btn gold" onclick="advance()">'
+    +   (last?'See your results →':'Continue →')+'</button></div>'
+    + '</div>';
+  window.scrollTo(0,0);
+}
+
+function pnlBox(p){
+  return '<div class="pnl">'
+    + '<div class="row"><span>Operating profit ('+S.outlets+' outlet'+(S.outlets>1?'s':'')+')</span><span class="g">'+fmt(p.op)+'</span></div>'
+    + '<div class="row"><span>Compliance & filing</span><span class="r">'+fmt(-p.comp)+'</span></div>'
+    + '<div class="row"><span>'+(V().corporate?'Corporate tax':'Personal income tax')+'</span><span class="r">'+fmt(-p.tax)+'</span></div>'
+    + (p.interest?'<div class="row"><span>Loan interest</span><span class="r">'+fmt(-p.interest)+'</span></div>':'')
+    + '<div class="row tot"><span>Year '+S.year+' net → cash</span><span>'+fmt(p.net)+'</span></div>'
+    + '</div>';
+}
+
+function advance(){
+  STEP++;
+  if(STEP >= STEPS.length){ finale(); return; }
+  S.year = Math.floor(STEP/2) + 1;
+  runStep();
+}
+function runStep(){ renderScene(STEPS[STEP]()); }
+
+/* ---------- Year-end profit & loss ---------- */
+function yearEnd(){
+  var factor = 0.55 + S.brand/135;                 // brand 100 -> ~1.29
+  var op = Math.round(S.outlets * 26000 * factor);
+  var comp = V().compliance;
+  var taxable = Math.max(0, op - comp);
+  var tax;
+  if(V().corporate){
+    tax = Math.round(taxable * 0.17);              // SME corporate rate (first band)
+  } else {
+    var rate = taxable>100000?0.24 : taxable>50000?0.14 : taxable>20000?0.08 : 0.03;
+    tax = Math.round(taxable * rate);              // personal, progressive
+  }
+  var interest = S.debts>0 ? Math.round(S.debts*0.07) : 0;
+  var net = op - comp - tax - interest;
+  S.cash += net;
+  // brand drifts toward the mean a little each year
+  S.brand = Math.max(10, Math.min(100, S.brand - 2));
+  return {op:op, comp:comp, tax:tax, interest:interest, net:net};
+}
+
+/* ============================================================
+   YEAR 1 — Opening day
+   ============================================================ */
+function yr1Decision(){
+  return {
+    title:'Year 1 · Opening Day',
+    tags:'<span class="tag n">'+V().em+' '+V().name+'</span><span class="tag g">🍚 Nasi Lemak</span>',
+    flavor:'Your first outlet is ready in a busy Petaling Jaya corner lot. Word of mouth is everything at the start. How hard do you push the launch?',
+    options:[
+      { t:'Humble stall — keep it lean (−RM2,000)',
+        h:'Low spend, steady start. A safe base to build on.',
+        go:function(){ S.cash-=2000; S.brand+=6;
+          return {tone:'flat', delta:'Brand +6', html:'You open quietly and let the sambal do the talking. Costs stay tiny.',
+            lesson:'Low burn buys you time — useful for any vehicle, essential for an unlimited-liability one where losses hit you personally.'}; } },
+      { t:'Kiosk + signboard + GrabFood (−RM8,000)',
+        h:'A proper storefront and delivery reach from day one.',
+        go:function(){ S.cash-=8000; S.brand+=15; S.bizValue+=6000;
+          return {tone:'up', delta:'Brand +15', html:'A bright signboard and delivery listings pull steady crowds. You look established.',
+            lesson:'Investing in presence lifts demand — but spend within your means; a bad month is harder to absorb with thin cash.'}; } },
+      { t:'Go viral — pay a food influencer (−RM5,000)',
+        h:'High risk, high reward. A hit floods you; a flop wastes the cash.',
+        go:function(){ S.cash-=5000;
+          if(chance(0.55)){ S.brand+=28; S.bizValue+=12000; note('A viral launch gave you a demand spike money can\'t easily buy.');
+            return {tone:'up', delta:'Brand +28 · viral hit!', html:'The reel hits 2 million views. Queues snake down the street by the weekend.',
+              lesson:'Marketing can compound fast — but it\'s a gamble, not a guarantee.'}; }
+          S.brand+=5;
+          return {tone:'down', delta:'Brand +5 · flopped', html:'The video underperforms. A few new faces, but mostly you paid for reach that fizzled.',
+            lesson:'High-variance bets can miss. The vehicle you chose decides who absorbs the loss when they do.'}; } }
+    ]
+  };
+}
+function yr1Event(){
+  var health = {
+    title:'Year 1 · The Health Inspection',
+    tags:'<span class="tag n">📋 Licensing</span>',
+    flavor:'MPSJ officers arrive for a routine food-premises inspection. Your business licence and typhoid jabs are what\'s being checked — this is about operating legally, whichever vehicle you chose.',
+    options:[
+      { t:'You\'d sorted licences early',
+        h:'Boring, but it pays off now.',
+        go:function(){ S.brand+=3;
+          return {tone:'up', delta:'Clean pass · Brand +3', html:'Spotless. They post a green rating on your door and move on.',
+            lesson:'A licence is separate from your business vehicle — every operator needs one. Registration ≠ compliance.',
+            pnl: yearEnd()}; } },
+      { t:'You\'d been meaning to renew (−RM1,500)',
+        h:'A compound notice for the lapsed licence.',
+        go:function(){ S.cash-=1500; S.brand-=4;
+          return {tone:'down', delta:'−RM1,500 fine', html:'A compound for the expired licence, plus a warning. Annoying and avoidable.',
+            lesson:'Fines here are personal-operational, not about liability protection — no vehicle shields you from breaking food law.',
+            pnl: yearEnd()}; } }
+    ]
+  };
+  return health;
+}
+
+/* ============================================================
+   YEAR 2 — The second outlet (financing) + liability event
+   ============================================================ */
+function yr2Decision(){
+  var v = V();
+  var opts = [
+    { t:'Stay one outlet — consolidate',
+      h:'No new capital, no new risk. Grow the brand instead.',
+      go:function(){ S.brand+=6;
+        return {tone:'flat', delta:'Brand +6', html:'You perfect the menu and build a loyal base rather than stretching your cash.',
+          lesson:'Not every business must scale. A single-outlet sole prop can be a perfectly good living.'}; } }
+  ];
+
+  // Financing a 2nd outlet differs by vehicle — this is the lesson.
+  if(v.equity){
+    opts.push({ t:'Open 2nd outlet — take an angel\'s equity (+RM25,000 cash)',
+      h:'A regular investor buys shares in your Sdn Bhd. No debt; you give up 15% ownership.',
+      go:function(){ S.cash+=25000; S.outlets++; S.bizValue+=55000; S.ownership*=0.85; S.brand+=8;
+        note('Because you were a Sdn Bhd, you funded growth by ISSUING SHARES — no debt, no personal guarantee.');
+        return {tone:'up', delta:'+RM25,000 · 2nd outlet', html:'A first angel takes 15% of the company for RM25,000. You open outlet #2 with zero new debt.',
+          lesson:'Only a company with shares can raise <b>equity</b>. You traded a slice of ownership for cash and kept liability limited.'}; } });
+  } else if(v.limited){ // LLP
+    opts.push({ t:'Open 2nd outlet — bank term loan (+RM25,000, business debt)',
+      h:'Your LLP\'s limited liability earns a decent business loan. Debt sits on the LLP, not you.',
+      go:function(){ S.cash+=25000; S.debts+=25000; S.outlets++; S.bizValue+=52000; S.brand+=8;
+        note('Your LLP borrowed as a separate legal person — the debt was the firm\'s, not personally yours.');
+        return {tone:'up', delta:'+RM25,000 · 2nd outlet', html:'The bank lends to the LLP on reasonable terms. You open outlet #2. The loan is the firm\'s liability.',
+          lesson:'An LLP can\'t issue shares to outside investors, but its <b>limited liability</b> still gets legitimate business credit.'}; } });
+  } else { // enterprise / partnership — personal debt only
+    opts.push({ t:'Open 2nd outlet — personal bank loan (+RM25,000, YOUR debt)',
+      h:'No shares to sell. The only route is a loan in your own name, personally guaranteed.',
+      go:function(){ S.cash+=25000; S.debts+=25000; S.outlets++; S.bizValue+=48000; S.brand+=7; S.flags.personalLoan=true;
+        note('With no shares to sell, you grew by taking on <b>personal debt</b> — your name on the line.');
+        return {tone:'flat', delta:'+RM25,000 · 2nd outlet', html:'The bank won\'t lend to "the business" — it lends to <b>you</b>. You sign a personal guarantee and open outlet #2.',
+          lesson:'A sole prop / partnership can\'t raise equity. Growth means personal debt — and if it sours, your assets answer for it.'}; } });
+  }
+  return {
+    title:'Year 2 · The Second Outlet',
+    tags:'<span class="tag n">💰 Financing</span>',
+    flavor:'Demand outstrips one kitchen. A second lot opens nearby for RM25,000 in fit-out and stock. How you fund it depends entirely on your vehicle.',
+    options:opts
+  };
+}
+function yr2Event(){
+  var v = V();
+  var claim = 30000;
+  var flavor = 'A customer is hospitalised after a bad batch of sambal and sues for '+fmt(claim)+' in damages. This is the moment your choice of liability matters most.';
+  var options = [ { t:'Face the claim', h:'See how far it reaches.', go:function(){
+    var ye;
+    if(v.limited){
+      var hit = 8000;
+      S.cash -= hit;
+      note('When the lawsuit struck, <b>limited liability</b> capped the damage to the business — your home and savings were untouched.');
+      ye = yearEnd();
+      return {tone:'down', delta:fmt(-hit), html:'Your '+v.name+' is a <b>separate legal person</b>. Insurance and the company absorb the claim; your personal assets are ring-fenced. Net exposure '+fmt(hit)+'.',
+        lesson:'This is the whole point of an LLP / Sdn Bhd: the company is liable, <b>not you</b>. Your downside is capped at what\'s in the business.',
+        pnl: ye};
+    } else {
+      var hitU = Math.min(claim, S.cash + 12000); // can push you into personal debt
+      S.cash -= hitU;
+      if(S.cash < 0){ S.debts += -S.cash; S.cash = 0; }
+      note('The lawsuit reached <b>past the business into your personal money</b> — the price of unlimited liability.');
+      ye = yearEnd();
+      return {tone:'down', delta:fmt(-hitU), html:'As a '+v.name.toLowerCase()+' you and the business are the <b>same</b> in law. The claim comes after your personal savings — and keeps coming. Exposure '+fmt(hitU)+'.',
+        lesson:'Unlimited liability means one disaster can take your <b>personal</b> assets. A limited vehicle would have capped this.',
+        pnl: ye};
+    }
+  }}];
+  return { title:'Year 2 · Food-Poisoning Lawsuit', tags:'<span class="tag n">⚖️ Liability</span>', flavor:flavor, options:options };
+}
+
+/* ============================================================
+   YEAR 3 — The investor / franchise (equity & credibility)
+   ============================================================ */
+function yr3Decision(){
+  var v = V();
+  var opts = [];
+  if(v.equity){
+    opts.push({ t:'Take RM150,000 growth investment for equity',
+      h:'A private-equity firm buys 25% of your Sdn Bhd to fund a jump to 6 outlets + a central kitchen.',
+      go:function(){ S.cash+=150000; S.ownership*=0.75; S.outlets+=4; S.bizValue+=260000; S.brand+=12; S.flags.raised=true;
+        note('A Sdn Bhd could sell shares to a PE investor — RM150k of growth capital with no debt. This is how you build toward a listing.');
+        return {tone:'up', delta:'+RM150,000 · 6 outlets', html:'You issue new shares for RM150,000. A central kitchen and four more outlets follow. You now own 75% of a much bigger company.',
+          lesson:'Equity turns ownership into fuel. You own a <b>smaller slice of a far bigger pie</b> — and you\'re now scaled enough to eye an IPO.'}; } });
+    opts.push({ t:'Grow slowly on your own cash instead',
+      h:'Keep 100% control, but stay small and unlisted-in-practice.',
+      go:function(){ S.outlets+=1; S.bizValue+=45000; S.brand+=6; S.cash-=15000;
+        return {tone:'flat', delta:'+1 outlet', html:'You self-fund a third outlet and keep every share. Slower, but wholly yours.',
+          lesson:'Declining equity keeps control — the trade-off is a lower growth ceiling. Both can be valid; know which you\'re choosing.'}; } });
+  } else if(v.limited){ // LLP
+    opts.push({ t:'Franchise the brand (needs a credible entity)',
+      h:'Your LLP\'s standing lets you licence the recipe to 3 franchisees for fees + royalties.',
+      go:function(){ S.cash+=45000; S.outlets+=2; S.bizValue+=110000; S.brand+=10; S.flags.franchise=true;
+        note('Your LLP was credible enough to franchise — limited liability and a real registration reassured franchisees.');
+        return {tone:'up', delta:'+RM45,000 franchise fees', html:'Three franchisees sign up under your LLP\'s brand. Fees now, royalties later, and the network grows without you funding every outlet.',
+          lesson:'An LLP can license and franchise credibly — but it still <b>can\'t issue shares</b>, so a big equity raise (or IPO) needs converting to Sdn Bhd first.'}; } });
+    opts.push({ t:'An investor offers RM60,000 — for shares you can\'t give',
+      h:'They want equity; an LLP has no shares to sell.',
+      go:function(){ S.cash+=30000; S.debts+=30000; S.outlets+=1; S.bizValue+=45000;
+        note('The investor wanted shares; an LLP has none, so the deal shrank to a loan.');
+        return {tone:'flat', delta:'+RM30,000 (as debt)', html:'"We\'d buy equity, but an LLP has no shares." The deal falls back to a RM30,000 loan instead of an investment.',
+          lesson:'No share capital = no equity investors. That ceiling is exactly why growth-hungry firms pick a <b>Sdn Bhd</b>.'}; } });
+  } else { // enterprise / partnership
+    opts.push({ t:'Pitch an investor for RM150,000',
+      h:'You have the growth story. Do they bite?',
+      go:function(){
+        note('Investors declined: a sole prop / partnership has no shares and unlimited liability — uninvestable at this scale.');
+        return {tone:'down', delta:'Declined', html:'"We only invest in companies. There are no shares to buy, and we won\'t take on your unlimited liability." They pass. Your only route to cash is more personal debt.',
+          lesson:'This is the hard ceiling: without shares, <b>you cannot raise equity</b>. The vehicle now limits the whole business, not just today.',
+          }; } });
+    opts.push({ t:'Self-fund a third outlet on personal debt (+RM30,000 debt)',
+      h:'Push on with another personal loan.',
+      go:function(){ S.cash+=30000; S.debts+=30000; S.outlets++; S.bizValue+=42000; S.brand+=5; S.flags.personalLoan=true;
+        return {tone:'flat', delta:'+1 outlet · +RM30k debt', html:'You borrow again in your own name and open a third outlet. Growing, but every ringgit of debt is personally yours.',
+          lesson:'Debt-only growth is slower and riskier. Compare this with the Sdn Bhd player raising RM150k of equity with no personal guarantee.'}; } });
+  }
+  return {
+    title:'Year 3 · The Investor Knocks',
+    tags:'<span class="tag n">📈 Raising capital</span>',
+    flavor:'Your nasi lemak is a local name now. A well-dressed investor slides a term sheet across the table — RM150,000 to scale fast. Whether you can even take it depends on your vehicle.',
+    options:opts
+  };
+}
+function yr3Event(){
+  var v = V();
+  if(v.key==='partnership' && !S.flags.dispute){
+    return { title:'Year 3 · Partners Fall Out', tags:'<span class="tag n">🤝 Governance</span>',
+      flavor:'You and your partner disagree hard over expansion. With no written agreement, the argument drags — and it\'s costing the business.',
+      options:[
+        { t:'Settle privately and carry on (−RM12,000)',
+          h:'Painful, but you keep the business together.',
+          go:function(){ S.cash-=12000; S.brand-=4; S.flags.dispute=true;
+            note('A partnership dispute with no clear agreement cost real money — shared control cuts both ways.');
+            return {tone:'down', delta:'−RM12,000', html:'You buy peace with a cash settlement and a hasty written understanding. Momentum lost.',
+              lesson:'Partnerships share control <b>and</b> unlimited liability. Without governance in writing, disputes get expensive fast.',
+              pnl: yearEnd()}; } }
+      ] };
+  }
+  // generic opportunity: a viral festival season
+  var good = chance(0.6);
+  return { title:'Year 3 · Hari Raya Rush', tags:'<span class="tag n">🎉 Seasonality</span>',
+    flavor:'The festive season sends demand through the roof. Do you staff up to capture it, or play it safe?',
+    options:[
+      { t:'Hire extra hands and go all-out (−RM6,000)',
+        h:'Capture the surge — if it lands.',
+        go:function(){ S.cash-=6000;
+          if(good){ S.cash+=22000; S.brand+=8;
+            return {tone:'up', delta:'+RM16,000 net', html:'You catch the wave beautifully. Record weeks and a wave of new regulars.',
+              lesson:'Operating leverage: staffing up ahead of real demand multiplies a good season.',
+              pnl: yearEnd()}; }
+          S.brand+=2;
+          return {tone:'down', delta:'−RM6,000', html:'Demand was softer than hoped and the extra wages ate the margin.',
+            lesson:'Scaling costs ahead of demand is a bet — size it to what your cash can absorb.',
+            pnl: yearEnd()}; } },
+      { t:'Run lean, protect the cash',
+        h:'Steady as she goes.',
+        go:function(){ S.brand+=3; S.cash+=6000;
+          return {tone:'flat', delta:'+RM6,000', html:'A solid, unspectacular festive bump with no added risk.',
+            lesson:'Conserving cash is a valid strategy — especially with unlimited liability or heavy debt.',
+            pnl: yearEnd()}; } }
+    ] };
+}
+
+/* ============================================================
+   YEAR 4 — Big contract (credibility) + tax season
+   ============================================================ */
+function yr4Decision(){
+  var v = V();
+  var opts = [];
+  if(v.cred>=3){ // sdnbhd
+    opts.push({ t:'Win the supermarket ready-meal contract (+RM200,000/yr)',
+      h:'A national grocer wants your nasi lemak on its shelves. They require audited accounts + a registered company + liability cover — which you have.',
+      go:function(){ S.cash+=120000; S.bizValue+=300000; S.brand+=14; S.flags.contract=true;
+        note('Your Sdn Bhd\'s audited accounts and limited liability won a contract a smaller vehicle simply couldn\'t sign.');
+        return {tone:'up', delta:'+RM120,000 · major contract', html:'You sign a RM200,000/year supply deal. The buyer\'s procurement team is satisfied by your company accounts and insurance. Revenue and company value jump.',
+          lesson:'Big corporate buyers demand a <b>credible, audited company</b>. The Sdn Bhd form unlocks deals informal vehicles can\'t reach.'}; } });
+  } else if(v.cred===2){ // llp
+    opts.push({ t:'Win a smaller supply deal (+RM70,000/yr)',
+      h:'Your LLP is credible enough for a regional buyer, though not the national grocer\'s full programme.',
+      go:function(){ S.cash+=45000; S.bizValue+=90000; S.brand+=8; S.flags.contract=true;
+        note('The LLP was credible enough for a mid-size contract — more than a sole prop could land, less than a Sdn Bhd.');
+        return {tone:'up', delta:'+RM45,000 · regional deal', html:'A regional chain takes you on. Your LLP registration and limited liability clear their basic checks — but the national grocer wants audited-company scale.',
+          lesson:'Credibility is a ladder. LLP beats an informal vehicle; a Sdn Bhd with audited accounts sits a rung higher again.'}; } });
+  } else {
+    opts.push({ t:'Try for the supermarket contract',
+      h:'They\'ll check who they\'re dealing with.',
+      go:function(){ S.brand-=2;
+        note('The supermarket contract was lost: buyers wouldn\'t deal with an unregistered, unlimited-liability vehicle.');
+        return {tone:'down', delta:'Rejected', html:'Procurement asks for audited accounts, a company registration and product-liability cover. As a '+v.name.toLowerCase()+' you can\'t provide them. They decline.',
+          lesson:'The wrong vehicle <b>closes doors</b>. Corporate customers need a company they can contract with safely.'}; } });
+  }
+  opts.push({ t:'Skip contracts — focus on your own outlets',
+    h:'Deepen what you have rather than chase big buyers.',
+    go:function(){ S.brand+=6; S.bizValue+=25000;
+      return {tone:'flat', delta:'Brand +6', html:'You pour energy into service and menu. Your existing outlets get stronger and better-loved.',
+        lesson:'Focus is legitimate — but note which growth avenues your vehicle leaves open or shut.'}; } });
+  return {
+    title:'Year 4 · The Supermarket Contract',
+    tags:'<span class="tag n">🏦 Credibility</span>',
+    flavor:'A national supermarket chain wants a signature nasi lemak ready-meal. It\'s a company-making deal — but their procurement team only contracts with entities that can prove they\'re real, audited and insured.',
+    options:opts
+  };
+}
+function yr4Event(){
+  // Tax season — corporate vs personal, at scale
+  var v = V();
+  var base = S.outlets * 24000;
+  var tax, txt, lesson;
+  if(v.corporate){
+    tax = Math.round(base * 0.17);
+    txt = 'Your '+v.name+' pays a flat SME <b>corporate</b> rate on its profits, and can retain earnings inside the company to reinvest.';
+    lesson = 'Companies (and LLPs) are taxed on profits at corporate rates and can <b>retain earnings</b> to fund growth — often lighter at scale.';
+  } else {
+    var rate = base>150000?0.26 : base>80000?0.19 : 0.12;
+    tax = Math.round(base * rate);
+    txt = 'As a '+v.name.toLowerCase()+', the whole profit is <b>your personal income</b>, taxed at progressive personal rates — which bite harder as you grow.';
+    lesson = 'Sole props / partnerships are taxed on the owner <b>personally</b>. Simple at small scale, heavier as profits climb.';
+  }
+  S.cash -= tax;
+  return {
+    title:'Year 4 · Tax Season (LHDN)',
+    tags:'<span class="tag n">🧾 Taxation</span>',
+    flavor:'The financial year closes and Lembaga Hasil Dalam Negeri wants its share. How you\'re taxed depends on your vehicle.',
+    options:[
+      { t:'Settle the tax bill', h:'Pay what\'s due and close the year.',
+        go:function(){
+          var ye = yearEnd();
+          return {tone:'flat', delta:fmt(-tax)+' tax', html:txt+' This year\'s tax bill: <b>'+fmt(tax)+'</b>.',
+            lesson:lesson, pnl:ye}; } }
+    ]
+  };
+}
+
+/* ============================================================
+   YEAR 5 — The exit: IPO, trade sale, or ceiling
+   ============================================================ */
+function yr5Exit(){
+  var v = V();
+  var canIPO = v.canList && S.outlets>=5 && S.bizValue>=350000;
+  if(canIPO){
+    return {
+      title:'Year 5 · The Bursa Malaysia Opportunity',
+      tags:'<span class="tag g">🏛️ Listing</span>',
+      flavor:'Advisers say your Sdn Bhd is ready to go public. You would convert to a <b>Berhad (Bhd)</b> and float shares on Bursa Malaysia — turning private company value into a public-market valuation. Which board do you list on?',
+      options:[
+        { t:'LEAP Market — smallest, fastest, sophisticated investors only',
+          h:'Lightest requirements. A modest public premium (~2×) and a smaller raise.',
+          go:function(){ return doIPO('LEAP Market', 2.0, 120000); } },
+        { t:'ACE Market — growth companies (recommended for your size)',
+          h:'Sponsor-driven listing for growth firms. Strong premium (~3.5×) and a solid raise.',
+          go:function(){ return doIPO('ACE Market', 3.5, 300000); } },
+        { t:'Main Market — the big board',
+          h:'Heaviest scrutiny (profit track record, larger size). Top premium (~4.5×) if you qualify.',
+          go:function(){
+            if(S.bizValue < 600000 || S.outlets < 7){
+              S.brand-=2;
+              return {tone:'down', delta:'Not yet eligible', html:'The Main Market wants a larger profit track record and scale than you have this year. The advisers steer you back — you\'d need another year or two of growth first.',
+                lesson:'Listing boards are tiered (LEAP → ACE → Main). You must <b>grow into</b> the bigger board — being a Sdn Bhd is necessary but not automatic.'};
+            }
+            return doIPO('Main Market', 4.5, 500000);
+          } },
+        { t:'Stay private — sell 100% to a bigger F&B group',
+          h:'Skip the listing and take a clean trade-sale exit at private multiples.',
+          go:function(){ return tradeSale(1.4); } }
+      ]
+    };
+  }
+  // Not able to list
+  var reason;
+  if(!v.canList){
+    reason = 'A '+v.name+' <b>cannot list on Bursa</b> — it has no shares to offer the public'
+      + (v.key==='llp' ? '. You\'d have had to <b>convert to a Sdn Bhd</b> years earlier to be on this path.' : '. Only a company (Sdn Bhd → Bhd) can IPO.');
+  } else {
+    reason = 'Your Sdn Bhd <b>can</b> list in principle, but it\'s too small this year — a listing needs more outlets and company value than you built.';
+  }
+  return {
+    title:'Year 5 · The Ceiling',
+    tags:'<span class="tag n">🚪 Exit</span>',
+    flavor:'Five years in, a national F&B group offers to buy you out. There is no IPO on your table. '+reason,
+    options:[
+      { t:'Accept the trade sale',
+        h:'Take the buyout at a private-market multiple.',
+        go:function(){ return tradeSale(v.limited?1.2:1.0); } },
+      { t:'Decline — keep running it privately',
+        h:'Stay independent at your current scale.',
+        go:function(){
+          note('You kept the business private at its natural ceiling — a fine outcome, but the big value unlock (a listing) was never available to this vehicle.');
+          return {tone:'flat', delta:'Stay private', html:'You keep the keys and carry on. Steady income, full control, and a clear ceiling.',
+            lesson:'Know your goal before you pick a vehicle: a lifestyle single-outlet business and a would-be listed chain need <b>different vehicles from day one</b>.'}; } }
+    ]
+  };
+}
+
+function doIPO(market, premium, raise){
+  S.listed = true; S.market = market;
+  var pre = S.bizValue;
+  S.bizValue = Math.round(S.bizValue * premium);
+  S.cash += raise;
+  S.ownership *= 0.7;                 // sell ~30% to the public
+  S.flags.ipo = true;
+  note('You reached the top rung: <b>Sdn Bhd → Berhad → listed on Bursa\'s '+market+'</b>. A public valuation multiplied your company\'s worth.');
+  return {
+    tone:'up', delta:'🔔 LISTED on '+market,
+    html:'The bell rings. Your company converts to a <b>Berhad</b> and floats on the <b>'+market+'</b>. '
+      + 'Public investors value the business at '+fmt(S.bizValue)+' (up from ~'+fmt(pre)+'), and the IPO raises '+fmt(raise)+' in fresh cash. You sell ~30% to the public and keep the rest.',
+    lesson:'This is the payoff of the Sdn Bhd path: a <b>public market</b> re-prices your business far above private multiples and hands you growth capital. No other vehicle reaches here.'
+  };
+}
+function tradeSale(mult){
+  var pre = S.bizValue;
+  S.bizValue = Math.round(S.bizValue * mult);
+  note('You exited by <b>trade sale</b> at a private multiple — solid, but well short of a public-market re-rating.');
+  return {
+    tone:'flat', delta:'Sold at '+mult+'× value',
+    html:'You sell the business privately for '+fmt(S.bizValue)+' (a '+mult+'× multiple on ~'+fmt(pre)+' of built-up value). A clean, real exit — just without a listing\'s premium.',
+    lesson:'Private buyers pay private prices. A Bursa listing typically values a business at a <b>higher multiple</b> — but only a company can walk that path.'
+  };
+}
+
+/* ============================================================
+   FINALE — net worth, verdict, pathway ladder, leaderboard
+   ============================================================ */
+function netWorth(){
+  return Math.round(S.cash + S.ownership*S.bizValue - S.debts);
+}
+function finale(){
+  document.getElementById('hud').style.display='none';
+  var nw = netWorth();
+  var entry = { name:S.name, vk:S.vk, vehicle:VEHICLES[S.vk].name, em:VEHICLES[S.vk].em,
+    listed:S.listed, market:S.market, score:nw, ts:Date.now() };
+  var board = loadBoard(); board.push(entry); board.sort(function(a,b){return b.score-a.score;}); saveBoard(board);
+  var rank = board.findIndex(function(e){return e.ts===entry.ts && e.name===entry.name;})+1;
+  var medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
+
+  var verdict = S.listed ? 'You built a listed company — the top of the ladder.' :
+    nw>=700000 ? 'A serious, valuable business.' :
+    nw>=250000 ? 'A solid, healthy enterprise.' :
+    nw>=80000 ? 'A modest living built from a stall.' :
+    nw>0 ? 'You survived, but growth stayed capped.' : 'The venture ended underwater.';
+
+  app.innerHTML = '<div class="card">'
+    + '<div class="finalscore">'
+    +   (medal?'<div class="medal">'+medal+'</div>':'')
+    +   '<div style="color:var(--mute);font-size:13px;letter-spacing:1px;text-transform:uppercase">'+S.name+'\'s net worth after 5 years</div>'
+    +   '<div class="big'+(nw<0?' neg':'')+'">'+fmt(nw)+'</div>'
+    +   '<div class="verdict">'+verdict+' &nbsp;·&nbsp; Rank #'+rank+' of '+board.length+'</div>'
+    + '</div>'
+    + breakdownHTML(nw)
+    + debriefHTML()
+    + ladderHTML()
+    + '<h4 style="margin:22px 0 0;color:var(--navy);font-family:Cambria,Georgia,serif">🏆 Leaderboard'+syncTag(!CLOUD_READY)+'</h4>'
+    + boardTable(board, entry.ts)
+    + boardNote()
+    + '<div class="nav"><span></span><button class="btn gold" onclick="home()">Play again →</button></div>'
+    + '</div>';
+  window.scrollTo(0,0);
+  cloudSubmit(entry);
+}
+
+function breakdownHTML(nw){
+  return '<div class="breakdown">'
+    + '<div class="row"><span>💵 Cash on hand</span><span>'+fmt(S.cash)+'</span></div>'
+    + '<div class="row"><span>🏢 Your equity ('+Math.round(S.ownership*100)+'% of '+fmt(S.bizValue)+(S.listed?', listed':'')+')</span><span>'+fmt(S.ownership*S.bizValue)+'</span></div>'
+    + (S.debts>0?'<div class="row"><span>💳 Debts</span><span>'+fmt(-S.debts)+'</span></div>':'')
+    + '<div class="row tot"><span>Net worth</span><span>'+fmt(nw)+'</span></div>'
+    + '</div>';
+}
+
+function debriefHTML(){
+  var v = VEHICLES[S.vk];
+  var pts = S.pts.slice();
+  if(!pts.length) pts.push('You ran a steady five years without a defining structural moment.');
+  // Fit verdict: did the vehicle match the ambition shown?
+  var fit;
+  if(S.listed){
+    fit = '✅ <b>Perfect fit.</b> You wanted to scale — and you chose the one vehicle (Sdn Bhd) that can raise equity and list. The ceiling was the sky.';
+  } else if(v.canList){
+    fit = '➖ <b>Right vehicle, more road to run.</b> Your Sdn Bhd <b>could</b> have listed — you simply needed more scale. The pathway was open; you didn\'t reach the top of it this time.';
+  } else if(v.key==='llp'){
+    fit = '⚠️ <b>Capable, but capped.</b> Your LLP gave you limited liability and credibility, yet to list you\'d have needed to <b>convert to a Sdn Bhd</b> early. Fine for a mid-size chain; wrong if the goal was Bursa.';
+  } else {
+    fit = '⚠️ <b>Outgrown.</b> A '+v.name.toLowerCase()+' is cheap and simple — great for a stall — but its <b>unlimited liability</b> and inability to raise equity or list became the ceiling as you grew.';
+  }
+  return '<div class="debrief"><h4>What your vehicle did over five years</h4><ul>'
+    + pts.map(function(p){return '<li>'+p+'</li>';}).join('')
+    + '</ul><div class="ideal">'+fit+'</div></div>';
+}
+
+/* Pathway-to-listing ladder, highlighting how far this vehicle can climb */
+function ladderHTML(){
+  var v = VEHICLES[S.vk];
+  var rungs = [
+    {k:'enterprise', em:'🧍', t:'Sole Proprietorship', s:'Cheapest. Unlimited liability. A stall or two.'},
+    {k:'partnership', em:'🤝', t:'Partnership', s:'Pool capital with partners. Still unlimited liability.'},
+    {k:'llp', em:'🛡️', t:'LLP (PLT)', s:'Limited liability, light compliance. Must convert to list.'},
+    {k:'sdnbhd', em:'🏢', t:'Sdn Bhd', s:'Issues shares, raises equity. The gateway to listing.'},
+    {k:'listed', em:'🏛️', t:'Berhad — Listed on Bursa', s:'Public capital & valuation. LEAP → ACE → Main Market.'}
+  ];
+  // How high can this vehicle reach on the ladder?
+  var reachIndex = {enterprise:0, partnership:1, llp:2, sdnbhd:4}[v.key];
+  var hereIndex = {enterprise:0, partnership:1, llp:2, sdnbhd: (S.listed?4:3)}[v.key];
+  var html = rungs.map(function(r, i){
+    var cls='rung', badge='';
+    if(i===hereIndex){ cls+=' here'; badge='<span class="badge">You are here</span>'; }
+    else if(i<=reachIndex){ cls+=' reach'; if(i===reachIndex && i!==hereIndex) badge='<span class="badge">Reachable</span>'; }
+    return '<div class="'+cls+'">'+badge
+      + '<div class="rem">'+r.em+'</div>'
+      + '<div><div class="rt">'+r.t+'</div><div class="rs">'+r.s+'</div></div></div>';
+  }).join('<div style="text-align:center;color:#9aa6bf;font-weight:800;margin:-2px 0">▲</div>');
+  var cap = v.canList
+    ? 'Your vehicle can climb all the way to a listing. '+(S.listed?'And you did. 🎉':'You stopped short of the top this time.')
+    : 'Your vehicle tops out below the listing rung. To reach Bursa you\'d convert up to a <b>Sdn Bhd</b> first.';
+  return '<div class="debrief" style="background:#F3F6FE;border-color:#D9E3FA"><h4>📈 The pathway to a listed company</h4>'
+    + '<div class="ladder">'+html+'</div>'
+    + '<div class="ideal" style="border-color:#c9d6f2">'+cap+'</div></div>';
+}
+
+/* ============================================================
+   Leaderboard — localStorage now, shared cloud when wired
+   ============================================================ */
+var CLOUD_READY = false;
+function loadBoard(){ try{return JSON.parse(localStorage.getItem('nasilemak_leaderboard')||'[]');}catch(e){return [];} }
+function saveBoard(b){ try{localStorage.setItem('nasilemak_leaderboard', JSON.stringify(b.slice(0,50)));}catch(e){} }
+function syncTag(off){ return ''; } // reserved for future cloud "syncing…" hint
+function boardNote(){
+  return CLOUD_READY
+    ? '<p class="lead" style="font-size:13px;margin-top:10px">🌐 Live shared leaderboard — every founder who plays appears here.</p>'
+    : '<p class="lead" style="font-size:13px;margin-top:10px">📱 Saved on this device. Ask Muchen to switch on the shared board for a live seminar ranking.</p>';
+}
+/* Placeholder so wiring a shared backend later is a one-liner; safe no-op today. */
+function cloudSubmit(entry){ /* POST to /api/scores?game=nasilemak once the shared board is enabled */ }
+
+function boardTable(board, myTs){
+  var rows = board.slice(0,12).map(function(e,i){
+    var medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    var badge = e.listed ? ' 🏛️' : '';
+    return '<tr class="'+(e.ts===myTs?'me':'')+'"><td>'+medal+'</td><td>'+e.name+'</td><td>'+(e.em||'')+' '+(e.vehicle||'')+badge+'</td><td class="sc">'+fmt(e.score)+'</td></tr>';
+  }).join('');
+  return '<div class="lbwrap"><table class="lb"><tr><th>#</th><th>Founder</th><th>Vehicle</th><th style="text-align:right">Net worth</th></tr>'+rows+'</table></div>';
+}
+function showBoard(fromHome){
+  document.getElementById('hud').style.display='none';
+  var board = loadBoard();
+  app.innerHTML = '<div class="card"><h2 class="scene-title">🏆 Leaderboard</h2>'
+    + (board.length? boardTable(board,-1) : '<p class="lead">No games played yet. Be the first to build an empire.</p>')
+    + boardNote()
+    + '<div class="nav"><span></span><button class="btn gold" onclick="home()">'+(fromHome?'← Back':'Play')+'</button></div></div>';
+  window.scrollTo(0,0);
+}
+
+/* ============================================================
+   Home + vehicle selection
+   ============================================================ */
+function home(){
+  S=null; document.getElementById('hud').style.display='none';
+  app.innerHTML = '<div class="card">'
+    + '<p class="lead"><b>You\'ve perfected the family nasi lemak recipe.</b> Everyone says you should sell it. So you will — but first, the question nobody at the pasar asks: <b>what kind of business will you be?</b></p>'
+    + '<p class="lead" style="margin-top:10px">The same recipe, run through four different <b>business vehicles</b>, leads to four very different fates over five years. One path can end on the Bursa Malaysia trading floor. Others can\'t — by law. Build the most net worth, and learn <b>why the vehicle decides the ceiling.</b></p>'
+    + '<div class="nav"><button class="btn ghost" onclick="showBoard(true)">🏆 Leaderboard</button><button class="btn gold" onclick="enterName()">Start cooking →</button></div>'
+    + '</div>';
+  window.scrollTo(0,0);
+}
+function enterName(){
+  app.innerHTML = '<div class="card"><h2 class="scene-title">Before we begin…</h2>'
+    + '<p class="lead">What\'s your name, founder? (This is how you\'ll appear on the leaderboard.)</p>'
+    + '<input class="name" id="nm" maxlength="22" placeholder="e.g. Aisha, Team Rendang, Table 4" />'
+    + '<div class="nav"><button class="btn ghost" onclick="home()">← Back</button><button class="btn primary" onclick="chooseVehicle()">Next →</button></div></div>';
+  var el=document.getElementById('nm'); el.focus();
+  el.addEventListener('keydown',function(e){ if(e.key==='Enter') chooseVehicle(); });
+}
+var pendingName='';
+function chooseVehicle(){
+  var v=(document.getElementById('nm')?document.getElementById('nm').value:'').trim();
+  if(document.getElementById('nm')){ if(!v){document.getElementById('nm').focus();return;} pendingName=v; }
+  var cards = Object.keys(VEHICLES).map(function(k){
+    var V=VEHICLES[k];
+    var stats=V.stats.map(function(s){return '<span class="st '+(s[1]||'')+'">'+s[0]+'</span>';}).join('');
+    return '<div class="pick" onclick="startWith(\''+k+'\')">'
+      + '<div class="em">'+V.em+'</div>'
+      + '<h3>'+V.name+'</h3><div class="my">'+V.my+'</div>'
+      + '<div class="sub">'+V.sub+'</div>'
+      + '<div class="stats">'+stats+'</div></div>';
+  }).join('');
+  app.innerHTML = '<div class="card"><h2 class="scene-title">Choose your business vehicle</h2>'
+    + '<p class="lead">This single choice decides your starting cash, whether your <b>personal</b> assets are at risk, how you can raise money to grow — and whether you can ever <b>list on Bursa Malaysia</b>. Choose for a nasi lemak business you hope to grow.</p>'
+    + '<div class="grid">'+cards+'</div>'
+    + '<div class="nav"><button class="btn ghost" onclick="enterName()">← Back</button><span></span></div></div>';
+  window.scrollTo(0,0);
+}
+function startWith(k){ newGame(pendingName, k); }
+
+home();
+</script>
+</body>
+</html>

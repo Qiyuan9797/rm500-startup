@@ -240,7 +240,8 @@ function renderSetup(){
     +   '2. In <b>Vercel → your project → Settings → Environment Variables</b>, add <code>ANTHROPIC_API_KEY</code> = your key (all environments).<br>'
     +   '3. <b>Redeploy</b> (Deployments → ⋯ → Redeploy).'
     + '</div>'
-    + '<p class="lead" style="margin-top:12px;font-size:13px">Tip: for a live seminar with many phones, set the model in <code>api/coffee.js</code> to <code>claude-haiku-4-5</code> — faster and cheaper.</p>'
+    + '<p class="lead" style="margin-top:12px;font-size:13px"><b>No API key?</b> Run it on one laptop with your Claude subscription instead: <code>node local-server.js</code> in the project folder, then open <code>localhost:8787/coffee-talk</code> (needs the <code>claude</code> CLI logged in). Great for a projected screen.</p>'
+    + '<p class="lead" style="margin-top:8px;font-size:13px">Tip: for many phones on the hosted version, set <code>MODEL</code> in <code>api/coffee.js</code> to <code>claude-haiku-4-5</code> — faster and cheaper.</p>'
     + '<div class="nav"><span></span><button class="btn gold" onclick="home()">← Back</button></div></div>';
   window.scrollTo(0,0);
 }

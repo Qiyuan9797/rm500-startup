@@ -71,14 +71,33 @@ Every finished game posts its score to a **shared** leaderboard that everyone se
 
 An AI role-play that lets seminar participants practise the **Signal → Service → Question** method from *"Spotting Prospects Through Corporate Knowledge."* Claude plays a Malaysian business owner (café / startup / family business / app founder) who drops prospect *signals* in casual chat; the player listens, probes, then gets an AI-coached scorecard on how many signals they caught.
 
-**Powered by:** a serverless function (`api/coffee.js`) that calls the Claude API. **Setup:**
+There are **two ways** to power the AI — pick one.
 
-1. Get an API key at **console.anthropic.com** → API Keys.
+### Option A — One laptop, your Claude subscription (no API key)
+
+Run it locally on the machine you'll project, using the `claude` CLI (your Pro/Max subscription). Nothing is billed per token beyond your plan.
+
+```bash
+# prereqs: Node + the `claude` CLI, already logged in (run `claude` once)
+node local-server.js
+# then open http://localhost:8787/coffee-talk  (project this at the seminar)
+```
+
+- The local server (`local-server.js`) serves all the games and answers `/api/coffee` by shelling out to `claude` — so it uses your subscription directly.
+- **Model:** `KOPI_MODEL=haiku node local-server.js` (default). Try `sonnet` or `opus` for richer role-play.
+- Only that one laptop works — phones scanning a QR to the hosted URL can't use your subscription. Great for a projected screen; use Option B if you want everyone on their own phone.
+
+### Option B — Hosted for everyone's phone (Anthropic API key)
+
+Wire an API key into Vercel so the deployed `/coffee-talk` works for every phone.
+
+1. Get a key at **console.anthropic.com** → API Keys (prepaid credits + a spend cap = pay-what-you-use).
 2. In **Vercel → Settings → Environment Variables**, add `ANTHROPIC_API_KEY` = your key (all environments).
-3. **Redeploy.** Until then, the game shows a friendly "switch on the AI" screen.
+3. **Redeploy.** Until then the game shows a friendly "switch on the AI" screen.
 
-- **Model:** set at the top of `api/coffee.js` (`MODEL`). Default `claude-opus-4-8`; switch to `claude-haiku-4-5` for a faster/cheaper live seminar.
-- **Cost:** each chat turn is a short API call — with Haiku, a full coffee-talk + debrief is a fraction of a cent.
+- **Model:** `API_MODEL` at the top of `api/_coffee-core.js`. Default `claude-opus-4-8`; switch to `claude-haiku-4-5` for a faster/cheaper live seminar (a full coffee-talk + debrief is a fraction of a cent on Haiku).
+
+Personas, prompts and the coach's answer key live in `api/_coffee-core.js`, shared by both paths.
 
 ## Notes
 - **Custom domain:** in the Vercel dashboard → your project → *Settings → Domains*, you can attach your own domain (e.g. `game.muchen.com.my`).

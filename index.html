@@ -113,7 +113,7 @@
   <div class="foot">
     A training simulation — not financial or legal advice. Structure effects are simplified from the entity
     comparison in <b>“Business Essentials — What Directors Need to Know.”</b><br>
-    Leaderboard is saved in this browser only. Verify real-world specifics against current SSM / Companies Act 2016 rules.
+    Scores post to a shared live leaderboard. Verify real-world specifics against current SSM / Companies Act 2016 rules.
   </div>
 </div>
 
@@ -596,27 +596,37 @@ function nextStage(){ stageIdx++; renderStage(); }
 function endGame(){
   var final=score(S);
   var entry={name:S.name, idea:IDEAS[S.ideaKey].name, ideaEm:IDEAS[S.ideaKey].em, structure:STRUCTURES[S.structKey].name, structEm:STRUCTURES[S.structKey].em, score:final, ts:Date.now()};
-  var board=loadBoard(); board.push(entry); board.sort(function(a,b){return b.score-a.score;});
-  saveBoard(board);
-  var rank=board.findIndex(function(e){return e.ts===entry.ts;})+1;
+  var localBoard=loadBoard(); localBoard.push(entry); localBoard.sort(function(a,b){return b.score-a.score;});
+  saveBoard(localBoard);
   document.getElementById('hud').style.display='none';
-  var medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
   var neg = final<0;
   var verdict = neg ? "You ended in the red — the business took your family's money down with it." :
     final>=6000 ? "Outstanding — you built real wealth from RM500." :
     final>=2500 ? "Solid — a healthy, surviving business." :
     final>=500 ? "You made it through, modestly ahead." : "You survived, but barely broke even.";
 
-  app.innerHTML='<div class="card">'
-    +'<div class="finalscore">'+(medal?'<div class="medal">'+medal+'</div>':'')
-    +'<div style="color:var(--mute);font-size:13px;letter-spacing:1px;text-transform:uppercase">'+S.name+'\'s final net worth</div>'
-    +'<div class="big'+(neg?' neg':'')+'">'+fmt(final)+'</div>'
-    +'<div class="verdict">'+verdict+' &nbsp;·&nbsp; Rank #'+rank+' of '+board.length+'</div></div>'
-    + debriefHTML(final)
-    + '<h4 style="margin:22px 0 0;color:var(--navy);font-family:Cambria,Georgia,serif">🏆 Leaderboard</h4>'
-    + boardTable(board, entry.ts)
-    +'<div class="nav"><button class="btn ghost" onclick="resetBoard()">Reset board</button><button class="btn gold" onclick="home()">Play again →</button></div>'
-    +'</div>';
+  function renderFinal(board, syncing){
+    var rank=board.findIndex(function(e){return e.ts===entry.ts && e.name===entry.name;})+1;
+    if(rank<=0) rank=board.length;
+    var medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
+    app.innerHTML='<div class="card">'
+      +'<div class="finalscore">'+(medal?'<div class="medal">'+medal+'</div>':'')
+      +'<div style="color:var(--mute);font-size:13px;letter-spacing:1px;text-transform:uppercase">'+S.name+'\'s final net worth</div>'
+      +'<div class="big'+(neg?' neg':'')+'">'+fmt(final)+'</div>'
+      +'<div class="verdict">'+verdict+' &nbsp;·&nbsp; Rank #'+rank+' of '+board.length+'</div></div>'
+      + debriefHTML(final)
+      + '<h4 style="margin:22px 0 0;color:var(--navy);font-family:Cambria,Georgia,serif">🏆 Leaderboard'+syncTag(syncing)+'</h4>'
+      + boardTable(board, entry.ts)
+      + boardNote()
+      +'<div class="nav"><span></span><button class="btn gold" onclick="home()">Play again →</button></div>'
+      +'</div>';
+  }
+  // Show instantly with the local view, then sync the shared board in.
+  renderFinal(localBoard, true);
+  cloudPost(entry).then(function(board){
+    if(board && board.length){ saveBoard(board); renderFinal(board, false); }
+    else renderFinal(localBoard, false);
+  }).catch(function(){ renderFinal(localBoard, false); });
 }
 
 function debriefHTML(final){
@@ -662,13 +672,46 @@ function boardTable(board, myTs){
 }
 function loadBoard(){ try{return JSON.parse(localStorage.getItem('rm500_leaderboard')||'[]');}catch(e){return [];} }
 function saveBoard(b){ try{localStorage.setItem('rm500_leaderboard', JSON.stringify(b.slice(0,50)));}catch(e){} }
-function resetBoard(){ if(confirm('Clear the leaderboard for everyone on this browser?')){ saveBoard([]); showBoard(true);} }
+
+/* ---------- Shared cloud leaderboard (falls back to this-browser storage) ---------- */
+var CLOUD_ON=false;
+function cloudGet(){
+  return fetch('/api/scores',{cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); })
+    .then(function(j){ CLOUD_ON=true; return (j&&j.board)||[]; });
+}
+function cloudPost(entry){
+  return fetch('/api/scores',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)})
+    .then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); })
+    .then(function(j){ CLOUD_ON=true; return (j&&j.board)||[]; });
+}
+function syncTag(on){ return on ? ' <span style="font-size:12px;color:var(--mute);font-weight:400">· syncing…</span>' : ''; }
+function boardNote(){
+  return CLOUD_ON
+    ? '<p class="lead" style="font-size:13px;color:var(--mute);margin-top:10px">🌐 Live shared leaderboard — every founder who plays on any device appears here.</p>'
+    : '<p class="lead" style="font-size:13px;color:var(--mute);margin-top:10px">📵 Offline — showing this device only. Scores will join the shared board once you\'re back online.</p>';
+}
+/* Host-only reset: open the site with ?admin=YOUR_ADMIN_KEY to reveal the button. */
+function adminKey(){ try{return new URLSearchParams(location.search).get('admin')||'';}catch(e){return '';} }
+function adminBtn(){ return adminKey() ? '<button class="btn ghost" onclick="hostReset()">🗑 Clear shared board (host)</button>' : '<span></span>'; }
+function hostReset(){
+  if(!confirm('Clear the shared leaderboard for EVERYONE? This cannot be undone.')) return;
+  fetch('/api/scores?key='+encodeURIComponent(adminKey()),{method:'DELETE'})
+    .then(function(r){ if(!r.ok) throw new Error('http '+r.status); saveBoard([]); showBoard(true); })
+    .catch(function(){ alert('Reset failed — check that ADMIN_KEY is set in Vercel and the ?admin= key matches.'); });
+}
+
 function showBoard(fromHome){
-  var board=loadBoard();
   document.getElementById('hud').style.display='none';
-  app.innerHTML='<div class="card"><h2 class="scene-title">🏆 Leaderboard</h2>'
-    +(board.length? boardTable(board,-1) : '<p class="lead">No games played yet. Be the first founder on the board.</p>')
-    +'<div class="nav"><button class="btn ghost" onclick="resetBoard()">Reset board</button><button class="btn gold" onclick="home()">'+(fromHome?'← Back':'Play')+'</button></div></div>';
+  function render(board, syncing){
+    app.innerHTML='<div class="card"><h2 class="scene-title">🏆 Leaderboard'+syncTag(syncing)+'</h2>'
+      +(board.length? boardTable(board,-1) : '<p class="lead">No games played yet. Be the first founder on the board.</p>')
+      + boardNote()
+      +'<div class="nav">'+adminBtn()+'<button class="btn gold" onclick="home()">'+(fromHome?'← Back':'Play')+'</button></div></div>';
+  }
+  render(loadBoard(), true);
+  cloudGet().then(function(board){ saveBoard(board); render(board,false); })
+            .catch(function(){ render(loadBoard(),false); });
 }
 
 home();

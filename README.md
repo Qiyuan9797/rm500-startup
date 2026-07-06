@@ -1,6 +1,13 @@
 # RM500 Startup — Deploy to Vercel
 
+**🔴 Live:** https://rm500-startup.vercel.app/ · **📷 Share page:** https://rm500-startup.vercel.app/share.html
+
 A single-page browser game (no build step, no server). This folder is ready to publish as-is.
+
+## Sharing (QR code)
+
+- `rm500-qr.png` — scannable QR code for the live URL (print or drop into slides).
+- `share.html` — a self-contained "scan to play" page (big QR + link); open it locally or share `https://rm500-startup.vercel.app/share.html`. Print-friendly.
 
 ## What's inside
 

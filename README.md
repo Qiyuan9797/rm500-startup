@@ -67,6 +67,19 @@ Every finished game posts its score to a **shared** leaderboard that everyone se
 - In Vercel → **Settings → Environment Variables**, add `ADMIN_KEY` = some secret of your choice, and redeploy.
 - Then open the site as `…/?admin=YOUR_SECRET` — a **"Clear shared board"** button appears on the leaderboard. Without `ADMIN_KEY` set, no one can wipe the board (safe by default).
 
+## Kopi Talk — AI-powered seminar recap (`/coffee-talk`)
+
+An AI role-play that lets seminar participants practise the **Signal → Service → Question** method from *"Spotting Prospects Through Corporate Knowledge."* Claude plays a Malaysian business owner (café / startup / family business / app founder) who drops prospect *signals* in casual chat; the player listens, probes, then gets an AI-coached scorecard on how many signals they caught.
+
+**Powered by:** a serverless function (`api/coffee.js`) that calls the Claude API. **Setup:**
+
+1. Get an API key at **console.anthropic.com** → API Keys.
+2. In **Vercel → Settings → Environment Variables**, add `ANTHROPIC_API_KEY` = your key (all environments).
+3. **Redeploy.** Until then, the game shows a friendly "switch on the AI" screen.
+
+- **Model:** set at the top of `api/coffee.js` (`MODEL`). Default `claude-opus-4-8`; switch to `claude-haiku-4-5` for a faster/cheaper live seminar.
+- **Cost:** each chat turn is a short API call — with Haiku, a full coffee-talk + debrief is a fraction of a cent.
+
 ## Notes
 - **Custom domain:** in the Vercel dashboard → your project → *Settings → Domains*, you can attach your own domain (e.g. `game.muchen.com.my`).
 - **Updating the game:** replace `index.html` and re-drag the folder (Option A), or run `vercel --prod` again (Option B).

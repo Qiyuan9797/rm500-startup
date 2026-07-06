@@ -335,7 +335,7 @@ function newGame(name, vk){
     halal:Lic.halal, insured:Lic.insured,
     listed:false, market:null,
     sstReg:false, hasManager:false, governance:false, succession:false,
-    equipInvest:false, crunch:false, fateDrawn:[],
+    equipInvest:false, crunch:false, fateDrawn:[], cashflow:0,
     flags:{},
     pts:[]                    // debrief lesson bullets
   };
@@ -368,6 +368,7 @@ function chipsBar(){
     + '<span class="chip">🏪 Outlets <b>'+S.outlets+'</b></span>'
     + '<span class="chip">⭐ Brand <b>'+Math.round(S.brand)+'</b></span>'
     + '<span class="chip">🧾 You own <b>'+Math.round(S.ownership*100)+'%</b></span>'
+    + (V().canList?'<span class="chip">📊 Cash flow <b>'+fmt(S.cashflow||0)+'</b></span>':'')
     + (S.debts>0?'<span class="chip">💳 Debt <b>'+fmt(S.debts)+'</b></span>':'')
     + (S.loc?'<span class="chip">'+LOCATIONS[S.loc].em+' '+(S.loc==='heartland'?'Heartland':S.loc==='mall'?'Mall':S.loc==='transit'?'Transit':'Street')+'</span>':'')
     + (S.price?'<span class="chip">'+PRICING[S.price].em+' '+(S.price.charAt(0).toUpperCase()+S.price.slice(1))+'</span>':'')
@@ -450,8 +451,9 @@ function runStep(){ S.year = STEP_YEARS[STEP] || S.year; renderScene(STEPS[STEP]
 /* ---------- Year-end profit & loss (harder: overhead, SST, cash crunch) ---------- */
 function yearEnd(){
   var factor = 0.50 + S.brand/150;                     // brand 100 -> ~1.17 (tighter margins)
-  var op = Math.round(S.outlets * 27000 * factor * (S.demandFactor||1) * (S.priceYield||1));
-  var overhead = Math.round(S.outlets * 7000 * (S.rentFactor||1) + 4000);  // rent scales with location
+  var op = Math.round(S.outlets * 33000 * factor * (S.demandFactor||1) * (S.priceYield||1));
+  var overhead = Math.round(S.outlets * 9000 * (S.rentFactor||1) + 4000);  // rent scales with location
+  S.cashflow = (S.cashflow||0) + op;                   // cumulative operating cash flow (listing gate)
   var comp = V().compliance;
   var sst = S.sstReg ? Math.round(op * 0.04) : 0;      // net service-tax burden once registered
   var taxable = Math.max(0, op - overhead - comp);
@@ -946,11 +948,11 @@ function yr3Decision(){
   var v = V();
   var opts = [];
   if(v.equity){
-    opts.push({ t:'Take RM150,000 growth investment for equity',
-      h:'A private-equity firm buys 25% of your Sdn Bhd to fund a jump to 6 outlets + a central kitchen.',
-      go:function(){ S.cash+=150000; S.ownership*=0.75; S.outlets+=4; S.bizValue+=260000; S.brand+=12; S.flags.raised=true; S.equipInvest=true;
-        note('A Sdn Bhd could sell shares to a PE investor — RM150k of growth capital with no debt. This is how you build toward a listing.');
-        return {tone:'up', delta:'+RM150,000 · 6 outlets', html:'You issue new shares for RM150,000. A central kitchen and four more outlets follow. You now own 75% of a much bigger company — and your investor takes a <b>board seat</b>.',
+    opts.push({ t:'Take RM250,000 growth investment for equity',
+      h:'A private-equity firm buys 30% of your Sdn Bhd to fund a jump to 8 outlets + a central kitchen.',
+      go:function(){ S.cash+=250000; S.ownership*=0.70; S.outlets+=6; S.bizValue+=400000; S.brand+=12; S.flags.raised=true; S.equipInvest=true;
+        note('A Sdn Bhd could sell shares to a PE investor — RM250k of growth capital with no debt. This is how you build toward a listing.');
+        return {tone:'up', delta:'+RM250,000 · 8 outlets', html:'You issue new shares for RM250,000. A central kitchen and six more outlets follow. You now own 70% of a much bigger company — and your investor takes a <b>board seat</b>.',
           lesson:'Equity turns ownership into fuel — but it isn\'t free money. Your investor is now a part-owner with real power. Sort a <b>shareholders\' agreement</b> (the succession step) or a dispute later could get ugly.'}; } });
     opts.push({ t:'Grow slowly on your own cash instead',
       h:'Keep 100% control, but stay small and unlisted-in-practice.',
@@ -1085,6 +1087,14 @@ function yr4Decision(){
         return {tone:'down', delta:'Rejected', html:'Procurement asks for audited accounts, a company registration and product-liability cover. As a '+v.name.toLowerCase()+' you can\'t provide them. They decline.',
           lesson:'The wrong vehicle <b>closes doors</b>. Corporate customers need a company they can contract with safely.'}; } });
   }
+  if(v.canList){
+    opts.push({ t:'Pre-IPO regional rollout — go big (−RM220,000)',
+      h:'Aggressively open outlets to reach listing scale. Deep pockets (or debt) required.',
+      go:function(){ S.cash-=220000; if(S.cash<0){S.debts+=-S.cash;S.cash=0;} S.outlets+=6; S.bizValue+=420000; S.brand+=6; S.flags.rollout=true; S.equipInvest=true;
+        note('You spent heavily on a pre-IPO rollout to reach listing scale — going public demands real size, and real size costs real money.');
+        return {tone:'up', delta:'−RM220,000 · +6 outlets', html:'You blitz-open six more outlets and a bigger central kitchen to reach the scale a listing needs. Expensive — often debt-funded — but it\'s the price of the Bursa dream.',
+          lesson:'Listing has a high bar: you must <b>spend to reach scale</b> first. Firms routinely take on debt or another raise just to become big enough to IPO.'}; } });
+  }
   opts.push({ t:'Skip contracts — focus on your own outlets',
     h:'Deepen what you have rather than chase big buyers.',
     go:function(){ S.brand+=6; S.bizValue+=25000;
@@ -1197,31 +1207,38 @@ function yr4Event(){
    ============================================================ */
 function yr5Exit(){
   var v = V();
-  var bigEnough = v.canList && S.outlets>=5 && S.bizValue>=350000;
+  var cf = S.cashflow||0;
+  var LEAP_CF = 1000000, ACE_CF = 1600000, MAIN_CF = 2600000;
+  var bigEnough = v.canList && cf>=LEAP_CF && S.outlets>=8;
   if(bigEnough){
     var governed = S.hasManager && S.governance;
-    var aceLock = governed ? null : 'Bursa expects professional management + internal controls — you never put a governance layer in place (Year 3).';
-    var mainMissing = [];
-    if(!governed) mainMissing.push('professional management & governance');
-    if(!S.succession) mainMissing.push('a shareholders’ agreement / succession plan');
-    if(S.bizValue<600000 || S.outlets<7) mainMissing.push('a larger profit track record & scale');
-    var mainLock = mainMissing.length ? ('Main Market needs '+mainMissing.join(', ')+'.') : null;
+    var aceMiss=[];
+    if(cf<ACE_CF) aceMiss.push('RM1.6m cash flow (you have '+fmt(cf)+')');
+    if(S.outlets<10) aceMiss.push('10+ outlets');
+    if(!governed) aceMiss.push('management & governance');
+    var aceLock = aceMiss.length ? ('ACE needs '+aceMiss.join(', ')+'.') : null;
+    var mainMiss=[];
+    if(cf<MAIN_CF) mainMiss.push('RM2.6m cash flow (you have '+fmt(cf)+')');
+    if(S.outlets<12) mainMiss.push('12+ outlets');
+    if(!governed) mainMiss.push('management & governance');
+    if(!S.succession) mainMiss.push('a shareholders’ agreement');
+    var mainLock = mainMiss.length ? ('Main needs '+mainMiss.join(', ')+'.') : null;
     return {
       title:'Year 5 · The Bursa Malaysia Opportunity',
       tags:'<span class="tag g">🏛️ Listing</span>',
-      flavor:'Advisers say your Sdn Bhd is big enough to consider going public — converting to a <b>Berhad (Bhd)</b> and floating on Bursa Malaysia. But the regulator looks past size at your <b>management, governance and succession</b> too. Which board can you list on?',
+      flavor:'You cleared the entry bar — <b>'+fmt(cf)+' of cumulative cash flow</b> and '+S.outlets+' outlets. Advisers can take you public: convert to a <b>Berhad (Bhd)</b> and float on Bursa Malaysia. But listing isn\'t free — advisers, underwriters and due diligence cost real money, and the bigger boards demand far more scale. Which can you reach?',
       options:[
-        { t:'LEAP Market — smallest, fastest, sophisticated investors only',
-          h:'Lightest requirements. A modest public premium (~2×) and a smaller raise.',
-          go:function(){ return doIPO('LEAP Market', 2.0, 120000); } },
-        { t:'ACE Market — growth companies (recommended for your size)',
-          h:'Sponsor-driven listing for growth firms. Strong premium (~3.5×) and a solid raise.',
+        { t:'LEAP Market — entry board (−RM70,000 fees)',
+          h:'Needs ≥ RM1m cash flow. Modest premium (~2×) and a small raise.',
+          go:function(){ return doIPO('LEAP Market', 2.0, 150000, 70000); } },
+        { t:'ACE Market — growth board (−RM200,000 fees)',
+          h:'Needs ≥ RM1.6m cash flow, 10+ outlets, governance. Premium ~3.5×.',
           locked: aceLock,
-          go:function(){ return doIPO('ACE Market', 3.5, 300000); } },
-        { t:'Main Market — the big board',
-          h:'Heaviest scrutiny: profit track record, scale, governance and continuity. Top premium (~4.5×).',
+          go:function(){ return doIPO('ACE Market', 3.5, 400000, 200000); } },
+        { t:'Main Market — the big board (−RM450,000 fees)',
+          h:'Needs ≥ RM2.6m cash flow, 12+ outlets, governance + succession. Premium ~4.5×.',
           locked: mainLock,
-          go:function(){ return doIPO('Main Market', 4.5, 500000); } },
+          go:function(){ return doIPO('Main Market', 4.5, 700000, 450000); } },
         { t:'Stay private — sell 100% to a bigger F&B group',
           h:'Skip the listing and take a clean trade-sale exit at private multiples.',
           go:function(){ return tradeSale(1.4); } }
@@ -1234,7 +1251,7 @@ function yr5Exit(){
     reason = 'A '+v.name+' <b>cannot list on Bursa</b> — it has no shares to offer the public'
       + (v.key==='llp' ? '. You\'d have had to <b>convert to a Sdn Bhd</b> years earlier to be on this path.' : '. Only a company (Sdn Bhd → Bhd) can IPO.');
   } else {
-    reason = 'Your Sdn Bhd <b>can</b> list in principle, but it\'s too small this year — a listing needs more outlets and company value than you built.';
+    reason = 'Your Sdn Bhd <b>can</b> list in principle, but you fell short of the bar: a LEAP listing needs at least <b>RM1,000,000 of cumulative cash flow</b> and 8+ outlets. You built '+fmt(S.cashflow||0)+' across '+S.outlets+' outlet'+(S.outlets>1?'s':'')+'. Reaching the Bursa floor takes years of scale — and real spending to get there.';
   }
   return {
     title:'Year 5 · The Ceiling',
@@ -1254,20 +1271,22 @@ function yr5Exit(){
   };
 }
 
-function doIPO(market, premium, raise){
+function doIPO(market, premium, raise, fee){
+  fee = fee||0;
   if(S.succession) premium += 0.3;    // clean continuity earns a valuation premium
   S.listed = true; S.market = market;
   var pre = S.bizValue;
   S.bizValue = Math.round(S.bizValue * premium);
-  S.cash += raise;
+  S.cash += raise - fee;
+  if(S.cash<0){ S.debts+=-S.cash; S.cash=0; }
   S.ownership *= 0.7;                 // sell ~30% to the public
   S.flags.ipo = true;
-  note('You reached the top rung: <b>Sdn Bhd → Berhad → listed on Bursa\'s '+market+'</b>. A public valuation multiplied your company\'s worth.');
+  note('You reached the top rung: <b>Sdn Bhd → Berhad → listed on Bursa\'s '+market+'</b> — after paying '+fmt(fee)+' in listing costs. A public valuation multiplied your company\'s worth.');
   return {
     tone:'up', delta:'🔔 LISTED on '+market,
     html:'The bell rings. Your company converts to a <b>Berhad</b> and floats on the <b>'+market+'</b>. '
-      + 'Public investors value the business at '+fmt(S.bizValue)+' (up from ~'+fmt(pre)+'), and the IPO raises '+fmt(raise)+' in fresh cash. You sell ~30% to the public and keep the rest.',
-    lesson:'The payoff of the Sdn Bhd path: a <b>public market</b> re-prices your business far above private multiples and hands you growth capital — and Malaysia charges <b>no capital gains tax</b> on listed shares, so that paper wealth is realised efficiently. No other vehicle reaches here.'
+      + 'Public investors value the business at '+fmt(S.bizValue)+' (up from ~'+fmt(pre)+'). The IPO raises '+fmt(raise)+', less '+fmt(fee)+' in advisory, underwriting and due-diligence fees. You sell ~30% to the public and keep the rest.',
+    lesson:'The payoff of the Sdn Bhd path: a <b>public market</b> re-prices your business far above private multiples and hands you growth capital — and Malaysia charges <b>no capital gains tax</b> on listed shares. But listing is <b>expensive and hard-won</b>: you must first spend to reach real scale.'
   };
 }
 function tradeSale(mult){

@@ -202,24 +202,29 @@
     box-shadow:0 5px 16px rgba(6,40,24,.3);transition:.15s}
   .bgm-btn:active{transform:scale(.92)} .bgm-btn.off{opacity:.55}
   @media(max-width:560px){.bgm-btn{right:10px;bottom:10px;width:40px;height:40px;font-size:17px}}
+  .lang-btn{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.38);border-radius:999px;
+    padding:6px 15px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;align-self:center;white-space:nowrap}
+  .lang-btn:active{transform:scale(.96)}
+  @media(max-width:560px){.lang-btn{padding:5px 11px;font-size:12px}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <div class="kick">MUCHEN CORPORATE SERVICES · BUSINESS VEHICLE GAME</div>
+      <div class="kick" id="kick">MUCHEN CORPORATE SERVICES · BUSINESS VEHICLE GAME</div>
       <h1>Nasi Lemak <span>Empire</span></h1>
     </div>
     <div class="hud" id="hud" style="display:none">
-      <div class="round" id="roundBox">Year<b id="yearN">1</b></div>
-      <div class="money"><div class="n" id="moneyN">RM0</div><div class="l">Cash on hand</div></div>
+      <div class="round" id="roundBox"><span id="yearLbl">Year</span><b id="yearN">1</b></div>
+      <div class="money"><div class="n" id="moneyN">RM0</div><div class="l" id="cashLbl">Cash on hand</div></div>
     </div>
+    <button id="langBtn" class="lang-btn" onclick="toggleLang()" aria-label="Language / 语言">中文</button>
   </header>
 
   <div id="app"></div>
 
-  <div class="foot">
+  <div class="foot" id="foot">
     A training simulation — not financial or legal advice. Entity effects are simplified for gameplay and reflect
     Malaysian vehicles (SSM / Companies Act 2016 / LLP Act 2012 / Bursa Malaysia listing).<br>
     Also try the <a href="/">RM500 Startup</a> game. Verify real-world specifics against current rules.
@@ -242,80 +247,135 @@ function fmt(n){
 function rand(a,b){ return a + Math.random()*(b-a); }
 function chance(p){ return Math.random() < p; }
 
+/* ---- bilingual helpers (EN / 简体中文) ---- */
+var LANG = (function(){
+  try{ var q=new URLSearchParams(location.search).get('lang'); if(q==='zh'||q==='en'){ try{localStorage.setItem('muchen_lang',q);}catch(e){} return q; } }catch(e){}
+  try{ return localStorage.getItem('muchen_lang')==='zh'?'zh':'en'; }catch(e){ return 'en'; }
+})();
+function T(en,zh){ return LANG==='zh'?zh:en; }
+function nmz(o){ return (LANG==='zh'&&o&&o.nameZh)?o.nameZh:o.name; }   // localized name of any {name,nameZh}
+function myz(o){ return (LANG==='zh'&&o&&o.myZh)?o.myZh:o.my; }
+function subz(o){ return (LANG==='zh'&&o&&o.subZh)?o.subZh:o.sub; }
+function statz(o){ return (LANG==='zh'&&o&&o.statsZh)?o.statsZh:o.stats; }
+function vn(v){ return nmz(v); }        // vehicle name (object form)
+function VN(){ return nmz(V()); }       // current vehicle name
+var VIEW=null;                          // re-render hook for the language toggle
+function paintLang(){
+  document.getElementById('langBtn').textContent = LANG==='zh'?'EN':'中文';
+  document.getElementById('kick').textContent = T('MUCHEN CORPORATE SERVICES · BUSINESS VEHICLE GAME','沐宸企业服务 · 商业载体游戏');
+  document.getElementById('yearLbl').textContent = T('Year','年份');
+  document.getElementById('cashLbl').textContent = T('Cash on hand','手头现金');
+  document.getElementById('foot').innerHTML = T(
+    'A training simulation — not financial or legal advice. Entity effects are simplified for gameplay and reflect Malaysian vehicles (SSM / Companies Act 2016 / LLP Act 2012 / Bursa Malaysia listing).<br>Also try the <a href="/">RM500 Startup</a> game. Verify real-world specifics against current rules.',
+    '这是培训模拟——并非财务或法律建议。实体影响为方便游戏而简化，参照马来西亚的商业载体（SSM／2016 年公司法令／2012 年 LLP 法令／马来西亚交易所上市）。<br>也来玩 <a href="/">RM500 创业</a> 游戏。实际规定请以现行法规为准。');
+}
+function toggleLang(){
+  LANG = LANG==='zh'?'en':'zh';
+  try{ localStorage.setItem('muchen_lang', LANG); }catch(e){}
+  paintLang();
+  if(VIEW) VIEW();
+}
+
 /* ---------- The four vehicles ---------- */
 var VEHICLES = {
   enterprise: {
-    key:'enterprise', em:'🧍', name:'Enterprise', my:'Milik Tunggal · Sole Proprietorship',
+    key:'enterprise', em:'🧍', name:'Enterprise', nameZh:'独资企业', my:'Milik Tunggal · Sole Proprietorship', myZh:'Milik Tunggal · 独资经营',
     setup:80, startCash:24000, ownership:1.0,
     limited:false, equity:false, canList:false, corporate:false, compliance:20, cred:1,
     sub:'Cheapest, fastest, all yours. But you ARE the business — its debts are your debts.',
-    stats:[['Setup ~RM80','st'],['Keep 100%','good'],['Unlimited liability','warn'],['Cannot list','warn']]
+    subZh:'最便宜、最快、全归你。但你就是生意本身——它的债就是你的债。',
+    stats:[['Setup ~RM80','st'],['Keep 100%','good'],['Unlimited liability','warn'],['Cannot list','warn']],
+    statsZh:[['注册约 RM80','st'],['独占 100%','good'],['无限责任','warn'],['不能上市','warn']]
   },
   partnership: {
-    key:'partnership', em:'🤝', name:'Partnership', my:'Perkongsian · with a co-founder',
+    key:'partnership', em:'🤝', name:'Partnership', nameZh:'合伙企业', my:'Perkongsian · with a co-founder', myZh:'Perkongsian · 有一位合伙人',
     setup:200, startCash:46000, ownership:0.5,
     limited:false, equity:false, canList:false, corporate:false, compliance:80, cred:1,
     sub:'You + a partner pool cash, so you start with more. But you share profits — and unlimited liability for each other.',
-    stats:[['Pooled RM38k','good'],['You own 50%','st'],['Unlimited & shared','warn'],['Cannot list','warn']]
+    subZh:'你和一位合伙人凑钱，所以起步资金更多。但你们要分利润——也要为彼此承担无限责任。',
+    stats:[['Pooled RM38k','good'],['You own 50%','st'],['Unlimited & shared','warn'],['Cannot list','warn']],
+    statsZh:[['合资 RM38k','good'],['你占 50%','st'],['无限且连带','warn'],['不能上市','warn']]
   },
   llp: {
-    key:'llp', em:'🛡️', name:'LLP (PLT)', my:'Perkongsian Liabiliti Terhad',
+    key:'llp', em:'🛡️', name:'LLP (PLT)', nameZh:'有限责任合伙 (PLT)', my:'Perkongsian Liabiliti Terhad', myZh:'Perkongsian Liabiliti Terhad',
     setup:800, startCash:27000, ownership:1.0,
     limited:true, equity:false, canList:false, corporate:true, compliance:300, cred:2,
     sub:'A modern hybrid: limited liability like a company, light compliance like a partnership. Credible — but to list you must first convert to Sdn Bhd.',
-    stats:[['Setup ~RM800','st'],['Limited liability','good'],['Low compliance','good'],['Convert to list','warn']]
+    subZh:'现代混合体：像公司一样有限责任，像合伙一样合规负担轻。有公信力——但要上市必须先转为 Sdn Bhd。',
+    stats:[['Setup ~RM800','st'],['Limited liability','good'],['Low compliance','good'],['Convert to list','warn']],
+    statsZh:[['注册约 RM800','st'],['有限责任','good'],['合规负担低','good'],['上市需先转制','warn']]
   },
   sdnbhd: {
-    key:'sdnbhd', em:'🏢', name:'Sdn Bhd', my:'Sendirian Berhad · Private Limited',
+    key:'sdnbhd', em:'🏢', name:'Sdn Bhd', nameZh:'私人有限公司 (Sdn Bhd)', my:'Sendirian Berhad · Private Limited', myZh:'Sendirian Berhad · 私人有限公司',
     setup:2000, startCash:31000, ownership:1.0,
     limited:true, equity:true, canList:true, corporate:true, compliance:1200, cred:3,
     sub:'A separate legal person. Costs more to run (secretary, audit), but it can ISSUE SHARES to investors — and is the only vehicle on the road to a Bursa listing.',
-    stats:[['Setup ~RM2k','st'],['Limited liability','good'],['Can raise equity','good'],['→ IPO pathway','good']]
+    subZh:'独立的法律人格。运营成本较高（秘书、审计），但它能向投资者发行股份——也是唯一通往交易所上市的载体。',
+    stats:[['Setup ~RM2k','st'],['Limited liability','good'],['Can raise equity','good'],['→ IPO pathway','good']],
+    statsZh:[['注册约 RM2k','st'],['有限责任','good'],['可募股','good'],['→ 通往 IPO','good']]
   }
 };
 
 /* ---------- Setup choices: location, pricing, licensing ---------- */
 var LOCATIONS = {
-  street:    { key:'street', em:'🏙️', name:'High-footfall street corner', my:'Busy PJ / KL roadside lot',
+  street:    { key:'street', em:'🏙️', name:'High-footfall street corner', nameZh:'高人流街角', my:'Busy PJ / KL roadside lot', myZh:'PJ／KL 繁忙路边铺',
     cost:4000, rent:1.0, demand:1.05, brand:4, biz:8000,
     sub:'Steady walk-in trade and balanced costs — a dependable all-rounder.',
-    stats:[['Rent · medium','st'],['Footfall · high','good'],['Balanced','st']] },
-  mall:      { key:'mall', em:'🏬', name:'Shopping-mall lot', my:'Aircon crowds & prestige',
+    subZh:'稳定的过路客生意、成本均衡——可靠的全能之选。',
+    stats:[['Rent · medium','st'],['Footfall · high','good'],['Balanced','st']],
+    statsZh:[['租金 · 中','st'],['人流 · 高','good'],['均衡','st']] },
+  mall:      { key:'mall', em:'🏬', name:'Shopping-mall lot', nameZh:'商场铺位', my:'Aircon crowds & prestige', myZh:'冷气人潮与门面',
     cost:12000, rent:1.7, demand:1.30, brand:9, biz:24000,
     sub:'Premium address and heavy footfall — but punishing rent that bites in bad months.',
-    stats:[['Rent · very high','warn'],['Footfall · high','good'],['Prestige +','good']] },
-  transit:   { key:'transit', em:'🚇', name:'LRT/MRT commuter hub', my:'Grab-and-go volume',
+    subZh:'高档地段、人流密集——但租金高昂，淡月很咬人。',
+    stats:[['Rent · very high','warn'],['Footfall · high','good'],['Prestige +','good']],
+    statsZh:[['租金 · 极高','warn'],['人流 · 高','good'],['门面 +','good']] },
+  transit:   { key:'transit', em:'🚇', name:'LRT/MRT commuter hub', nameZh:'轻快铁／地铁通勤站', my:'Grab-and-go volume', myZh:'即拿即走的走量',
     cost:7000, rent:1.2, demand:1.20, brand:5, biz:12000,
     sub:'Huge volume and fast turnover with smaller tickets — pairs well with value pricing.',
-    stats:[['Rent · high','st'],['Volume · very high','good'],['Fast turnover','st']] },
-  heartland: { key:'heartland', em:'🏘️', name:'Neighborhood shoplot', my:'Loyal regulars',
+    subZh:'客单价小但走量大、翻台快——很配平价策略。',
+    stats:[['Rent · high','st'],['Volume · very high','good'],['Fast turnover','st']],
+    statsZh:[['租金 · 高','st'],['走量 · 极高','good'],['翻台快','st']] },
+  heartland: { key:'heartland', em:'🏘️', name:'Neighborhood shoplot', nameZh:'社区店铺', my:'Loyal regulars', myZh:'忠实熟客',
     cost:2000, rent:0.6, demand:0.85, brand:3, biz:4000,
     sub:'Cheap and low-risk with loyal regulars — but a limited ceiling.',
-    stats:[['Rent · low','good'],['Footfall · modest','warn'],['Low risk','good']] }
+    subZh:'便宜、低风险、有忠实熟客——但天花板有限。',
+    stats:[['Rent · low','good'],['Footfall · modest','warn'],['Low risk','good']],
+    statsZh:[['租金 · 低','good'],['人流 · 一般','warn'],['低风险','good']] }
 };
 var PRICING = {
-  premium:  { key:'premium', em:'💎', name:'Premium / artisanal', my:'RM15 signature sets',
+  premium:  { key:'premium', em:'💎', name:'Premium / artisanal', nameZh:'高档／匠心', my:'RM15 signature sets', myZh:'RM15 招牌套餐',
     yield:1.18, brand:6, recession:1.6,
     sub:'Fat margins and a strong brand — but fragile when wallets tighten.',
-    stats:[['Margin · high','good'],['Volume · low','warn'],['Recession-fragile','warn']] },
-  balanced: { key:'balanced', em:'⚖️', name:'Balanced everyday', my:'RM8–10 a plate',
+    subZh:'利润丰厚、品牌强——但钱包一紧就脆弱。',
+    stats:[['Margin · high','good'],['Volume · low','warn'],['Recession-fragile','warn']],
+    statsZh:[['利润 · 高','good'],['走量 · 低','warn'],['经济下行脆弱','warn']] },
+  balanced: { key:'balanced', em:'⚖️', name:'Balanced everyday', nameZh:'均衡日常', my:'RM8–10 a plate', myZh:'每盘 RM8–10',
     yield:1.0, brand:2, recession:1.0,
     sub:'A dependable middle path that suits most locations.',
-    stats:[['Margin · medium','st'],['Volume · medium','st'],['Steady','good']] },
-  value:    { key:'value', em:'🪙', name:'Value / high-volume', my:'RM4–5, sell a lot',
+    subZh:'可靠的中庸路线，适合大多数地点。',
+    stats:[['Margin · medium','st'],['Volume · medium','st'],['Steady','good']],
+    statsZh:[['利润 · 中','st'],['走量 · 中','st'],['稳定','good']] },
+  value:    { key:'value', em:'🪙', name:'Value / high-volume', nameZh:'平价／走量', my:'RM4–5, sell a lot', myZh:'RM4–5，薄利多销',
     yield:0.9, brand:3, recession:0.6,
     sub:'Thin margins but resilient, mass-market volume — downturn-proof.',
-    stats:[['Margin · low','warn'],['Volume · high','good'],['Recession-proof','good']] }
+    subZh:'利润薄但抗打、大众走量——不怕经济下行。',
+    stats:[['Margin · low','warn'],['Volume · high','good'],['Recession-proof','good']],
+    statsZh:[['利润 · 低','warn'],['走量 · 高','good'],['抗经济下行','good']] }
 };
 var LICENSING = {
-  full:  { key:'full', em:'✅', name:'Full licences + Halal + insurance', my:'JAKIM halal, premise & signboard, cover',
+  full:  { key:'full', em:'✅', name:'Full licences + Halal + insurance', nameZh:'完整执照 + 清真 + 保险', my:'JAKIM halal, premise & signboard, cover', myZh:'JAKIM 清真、场所与招牌执照、保险',
     cost:6000, halal:true, insured:true, brand:5,
     sub:'Costs more up front, but unlocks big contracts (many require halal) and softens fate\'s disasters.',
-    stats:[['−RM6,000','st'],['Halal cert','good'],['Insured','good'],['Contract-ready','good']] },
-  basic: { key:'basic', em:'📋', name:'Basic licence only', my:'The minimum to open',
+    subZh:'前期花费更多，但能解锁大合同（很多要求清真），也能缓冲命运的灾难。',
+    stats:[['−RM6,000','st'],['Halal cert','good'],['Insured','good'],['Contract-ready','good']],
+    statsZh:[['−RM6,000','st'],['清真认证','good'],['已投保','good'],['可接合同','good']] },
+  basic: { key:'basic', em:'📋', name:'Basic licence only', nameZh:'仅基本执照', my:'The minimum to open', myZh:'开业的最低要求',
     cost:1000, halal:false, insured:false, brand:0,
     sub:'Cheap now — but no halal cert (a smaller market) and no insurance when fate strikes.',
-    stats:[['−RM1,000','good'],['No halal','warn'],['Uninsured','warn']] }
+    subZh:'现在便宜——但没有清真认证（市场更小），命运来袭时也没有保险。',
+    stats:[['−RM1,000','good'],['No halal','warn'],['Uninsured','warn']],
+    statsZh:[['−RM1,000','good'],['无清真','warn'],['未投保','warn']] }
 };
 
 /* ---------- Game state ---------- */
@@ -371,24 +431,27 @@ function note(t){ if(S.pts.indexOf(t)<0) S.pts.push(t); }
 
 /* ---------- Rendering ---------- */
 function chipsBar(){
+  var locZh={street:'街角',mall:'商场',transit:'通勤站',heartland:'社区'};
+  var priceZh={premium:'高档',balanced:'均衡',value:'平价'};
   return '<div class="chips">'
-    + '<span class="chip">'+V().em+' <b>'+V().name+'</b></span>'
-    + '<span class="chip">🏪 Outlets <b>'+S.outlets+'</b></span>'
-    + '<span class="chip">⭐ Brand <b>'+Math.round(S.brand)+'</b></span>'
-    + '<span class="chip">🧾 You own <b>'+Math.round(S.ownership*100)+'%</b></span>'
-    + (V().canList?'<span class="chip">📊 Cash flow <b>'+fmt(S.cashflow||0)+'</b></span>':'')
-    + (S.debts>0?'<span class="chip">💳 Debt <b>'+fmt(S.debts)+'</b></span>':'')
-    + (S.loc?'<span class="chip">'+LOCATIONS[S.loc].em+' '+(S.loc==='heartland'?'Heartland':S.loc==='mall'?'Mall':S.loc==='transit'?'Transit':'Street')+'</span>':'')
-    + (S.price?'<span class="chip">'+PRICING[S.price].em+' '+(S.price.charAt(0).toUpperCase()+S.price.slice(1))+'</span>':'')
-    + (S.halal?'<span class="chip">✅ Halal</span>':'')
-    + (S.insured?'<span class="chip">🛡️ Insured</span>':'')
-    + (S.hasManager?'<span class="chip">👔 Managed</span>':'')
-    + (S.succession?'<span class="chip">🧬 Succession</span>':'')
+    + '<span class="chip">'+V().em+' <b>'+VN()+'</b></span>'
+    + '<span class="chip">🏪 '+T('Outlets','分店')+' <b>'+S.outlets+'</b></span>'
+    + '<span class="chip">⭐ '+T('Brand','品牌')+' <b>'+Math.round(S.brand)+'</b></span>'
+    + '<span class="chip">🧾 '+T('You own','持股')+' <b>'+Math.round(S.ownership*100)+'%</b></span>'
+    + (V().canList?'<span class="chip">📊 '+T('Cash flow','现金流')+' <b>'+fmt(S.cashflow||0)+'</b></span>':'')
+    + (S.debts>0?'<span class="chip">💳 '+T('Debt','债务')+' <b>'+fmt(S.debts)+'</b></span>':'')
+    + (S.loc?'<span class="chip">'+LOCATIONS[S.loc].em+' '+T((S.loc==='heartland'?'Heartland':S.loc==='mall'?'Mall':S.loc==='transit'?'Transit':'Street'),locZh[S.loc])+'</span>':'')
+    + (S.price?'<span class="chip">'+PRICING[S.price].em+' '+T((S.price.charAt(0).toUpperCase()+S.price.slice(1)),priceZh[S.price])+'</span>':'')
+    + (S.halal?'<span class="chip">✅ '+T('Halal','清真')+'</span>':'')
+    + (S.insured?'<span class="chip">🛡️ '+T('Insured','已投保')+'</span>':'')
+    + (S.hasManager?'<span class="chip">👔 '+T('Managed','有管理')+'</span>':'')
+    + (S.succession?'<span class="chip">🧬 '+T('Succession','传承')+'</span>':'')
     + (S.sstReg?'<span class="chip">🧾 SST</span>':'')
     + '</div>';
 }
 
 function renderScene(sc){
+  VIEW = runStep;
   syncHud();
   var opts = sc.options.map(function(o,i){
     if(o.locked){
@@ -419,6 +482,7 @@ function choose(i){
 }
 
 function renderOutcome(o){
+  VIEW = null;   // keep the resolved outcome text stable across a language toggle
   syncHud();
   var pnl = o.pnl ? pnlBox(o.pnl) : '';
   var last = (STEP >= STEPS.length-1);
@@ -431,21 +495,21 @@ function renderOutcome(o){
     + '</div>'
     + chipsBar()
     + '<div class="nav"><span></span><button class="btn gold" onclick="advance()">'
-    +   (last?'See your results →':'Continue →')+'</button></div>'
+    +   (last?T('See your results →','查看你的成绩 →'):T('Continue →','继续 →'))+'</button></div>'
     + '</div>';
   window.scrollTo(0,0);
 }
 
 function pnlBox(p){
   return '<div class="pnl">'
-    + '<div class="row"><span>Operating profit ('+S.outlets+' outlet'+(S.outlets>1?'s':'')+')</span><span class="g">'+fmt(p.op)+'</span></div>'
-    + '<div class="row"><span>Rent, wages & overheads</span><span class="r">'+fmt(-p.overhead)+'</span></div>'
-    + '<div class="row"><span>Compliance & filing</span><span class="r">'+fmt(-p.comp)+'</span></div>'
-    + (p.sst?'<div class="row"><span>Service tax (SST)</span><span class="r">'+fmt(-p.sst)+'</span></div>':'')
-    + '<div class="row"><span>'+(V().corporate?'Corporate tax':'Personal income tax')+'</span><span class="r">'+fmt(-p.tax)+'</span></div>'
-    + (p.interest?'<div class="row"><span>Loan interest ('+(V().limited?'business':'personal')+')</span><span class="r">'+fmt(-p.interest)+'</span></div>':'')
-    + '<div class="row tot"><span>Year '+S.year+' net → cash</span><span>'+fmt(p.net)+'</span></div>'
-    + (p.crunch?'<div class="row" style="color:var(--bad)"><span>⚠️ Emergency borrowing (cash crunch)</span><span>+'+fmt(p.crunch)+' debt</span></div>':'')
+    + '<div class="row"><span>'+T('Operating profit ('+S.outlets+' outlet'+(S.outlets>1?'s':'')+')','营运利润（'+S.outlets+' 家分店）')+'</span><span class="g">'+fmt(p.op)+'</span></div>'
+    + '<div class="row"><span>'+T('Rent, wages & overheads','租金、工资与杂费')+'</span><span class="r">'+fmt(-p.overhead)+'</span></div>'
+    + '<div class="row"><span>'+T('Compliance & filing','合规与申报')+'</span><span class="r">'+fmt(-p.comp)+'</span></div>'
+    + (p.sst?'<div class="row"><span>'+T('Service tax (SST)','服务税 (SST)')+'</span><span class="r">'+fmt(-p.sst)+'</span></div>':'')
+    + '<div class="row"><span>'+(V().corporate?T('Corporate tax','公司税'):T('Personal income tax','个人所得税'))+'</span><span class="r">'+fmt(-p.tax)+'</span></div>'
+    + (p.interest?'<div class="row"><span>'+T('Loan interest ('+(V().limited?'business':'personal')+')','贷款利息（'+(V().limited?'公司':'个人')+'）')+'</span><span class="r">'+fmt(-p.interest)+'</span></div>':'')
+    + '<div class="row tot"><span>'+T('Year '+S.year+' net → cash','第 '+S.year+' 年净额 → 现金')+'</span><span>'+fmt(p.net)+'</span></div>'
+    + (p.crunch?'<div class="row" style="color:var(--bad)"><span>⚠️ '+T('Emergency borrowing (cash crunch)','紧急借贷（现金告急）')+'</span><span>+'+fmt(p.crunch)+T(' debt',' 债务')+'</span></div>':'')
     + '</div>';
 }
 
@@ -484,8 +548,8 @@ function yearEnd(){
     crunch = Math.ceil(-S.cash * 1.15);
     S.debts += crunch; S.cash = 0; S.crunch = true;
     note(V().limited
-      ? 'A cash crunch forced emergency borrowing — even a limited company can be wound up if it can\'t pay its debts.'
-      : 'You ran out of cash and borrowed personally at penalty rates — with unlimited liability, insolvency here can mean personal bankruptcy.');
+      ? T('A cash crunch forced emergency borrowing — even a limited company can be wound up if it can\'t pay its debts.','现金告急迫使你紧急借贷——即使是有限公司，还不起债也可能被清盘。')
+      : T('You ran out of cash and borrowed personally at penalty rates — with unlimited liability, insolvency here can mean personal bankruptcy.','你现金耗尽，只能以惩罚性利率个人借贷——在无限责任下，这里的资不抵债可能意味着个人破产。'));
   }
   return {op:op, overhead:overhead, comp:comp, sst:sst, tax:tax, interest:interest, net:net, crunch:crunch};
 }
@@ -500,248 +564,261 @@ function yearEnd(){
    depend on the vehicle / earlier choices, so strategy shapes luck. */
 var FATE_DECK = [
   // ---------- Disasters ----------
-  { em:'🔥', title:'Kitchen Fire', tone:'down', w:3,
+  { em:'🔥', title:'Kitchen Fire', titleZh:'厨房失火', tone:'down', w:3,
     situation:'A grease fire guts one of your kitchens overnight — equipment and stock destroyed.',
+    situationZh:'一场油火在一夜间烧毁了你的一间厨房——设备和存货尽毁。',
     opts:function(){ return [
-      { t:(S.insured?'File the insurance claim & rebuild fast':'Rebuild — but you have no insurance'), h:(S.insured?'Insurance covers most; you pay the excess.':'You chose basic licensing, so there\'s no cover — you eat the loss.'),
+      { t:T((S.insured?'File the insurance claim & rebuild fast':'Rebuild — but you have no insurance'),(S.insured?'申请保险理赔，快速重建':'重建——但你没有保险')), h:T((S.insured?'Insurance covers most; you pay the excess.':'You chose basic licensing, so there\'s no cover — you eat the loss.'),(S.insured?'保险赔付大部分，你付自付额。':'你选了基本执照，没有保障——损失自己扛。')),
         go:function(){ if(S.insured){ var l=4000+S.outlets*1000; S.cash-=l; S.brand-=2;
-            return {tone:'flat', delta:fmt(-l), html:'Because you took full licensing <b>with insurance</b>, the insurer covers the bulk. You pay the excess and reopen within weeks.',
-              lesson:'<b>Insurance</b> — not your legal vehicle — is what covers fire, theft and floods. That setup choice just paid for itself.'}; }
+            return {tone:'flat', delta:fmt(-l), html:T('Because you took full licensing <b>with insurance</b>, the insurer covers the bulk. You pay the excess and reopen within weeks.','因为你选了<b>含保险</b>的完整执照，保险公司赔付大头。你付自付额，几周内重开。'),
+              lesson:T('<b>Insurance</b> — not your legal vehicle — is what covers fire, theft and floods. That setup choice just paid for itself.','为火灾、盗窃和水灾兜底的是<b>保险</b>，而非你的法律载体。那个设置选择刚刚回本了。')}; }
           var l2=11000+S.outlets*3500; S.cash-=l2; S.brand-=4;
-          note('An uninsured fire wiped out equipment you had to replace from cash — the basic-licence saving cost you many times over.');
-          return {tone:'down', delta:fmt(-l2), html:'You skipped insurance at setup, so the full rebuild comes out of your own cash. A brutal, avoidable hit.',
-            lesson:'Going uninsured to save a little at setup is a false economy — one disaster dwarfs the premium you skipped.'}; } },
-      { t:'Rebuild from your own pocket to keep premiums low', h:'Bigger cash hit now, no claim on record.',
+          note(T('An uninsured fire wiped out equipment you had to replace from cash — the basic-licence saving cost you many times over.','一场无保险的火灾烧掉了你只能用现金重置的设备——当初省下的基本执照钱，翻倍地赔了回去。'));
+          return {tone:'down', delta:fmt(-l2), html:T('You skipped insurance at setup, so the full rebuild comes out of your own cash. A brutal, avoidable hit.','你在设置时略过了保险，于是整个重建都由你自己的现金买单。一次残酷却本可避免的打击。'),
+            lesson:T('Going uninsured to save a little at setup is a false economy — one disaster dwarfs the premium you skipped.','为省一点点而不投保是假节约——一场灾难就远超你省下的保费。')}; } },
+      { t:T('Rebuild from your own pocket to keep premiums low','自掏腰包重建，保持低保费'), h:T('Bigger cash hit now, no claim on record.','现在现金压力更大，但不留理赔记录。'),
         go:function(){ var l=9000+S.outlets*3000; S.cash-=l;
-          return {tone:'down', delta:fmt(-l), html:'You self-fund the whole rebuild. Painful on cash today, cheaper insurance tomorrow.',
-            lesson:'Self-insuring trades cash for control — fine with deep reserves, dangerous when cash is thin.'}; } },
-      { t:'Shut that outlet for good', h:'Stop the bleeding; lose an outlet.',
+          return {tone:'down', delta:fmt(-l), html:T('You self-fund the whole rebuild. Painful on cash today, cheaper insurance tomorrow.','你自筹全部重建费。今天现金很痛，明天保费更便宜。'),
+            lesson:T('Self-insuring trades cash for control — fine with deep reserves, dangerous when cash is thin.','自保是拿现金换掌控——储备厚时可行，现金薄时危险。')}; } },
+      { t:T('Shut that outlet for good','彻底关掉那家分店'), h:T('Stop the bleeding; lose an outlet.','止血；但少一家分店。'),
         go:function(){ if(S.outlets>1)S.outlets--; S.bizValue-=40000; S.cash-=1500;
-          return {tone:'down', delta:'−1 outlet', html:'You decide the site isn\'t worth saving and close it. Less to manage — a smaller business.',
-            lesson:'Cutting a losing outlet can be the disciplined move: shrink to strengthen.'}; } }
+          return {tone:'down', delta:T('−1 outlet','−1 家分店'), html:T('You decide the site isn\'t worth saving and close it. Less to manage — a smaller business.','你判断这个点不值得救，关掉它。要管的少了——生意也小了。'),
+            lesson:T('Cutting a losing outlet can be the disciplined move: shrink to strengthen.','砍掉亏损的分店可以是纪律之举：收缩以求更强。')}; } }
     ]; } },
 
-  { em:'⚖️', title:'Slip-and-Fall Lawsuit', tone:'down', w:3,
+  { em:'⚖️', title:'Slip-and-Fall Lawsuit', titleZh:'滑倒索赔诉讼', tone:'down', w:3,
     situation:'A customer slips on a wet floor and sues for damages. How you handle it — and your liability — decide the damage.',
+    situationZh:'一位顾客在湿滑地面上滑倒并索赔。你怎么处理——以及你的责任类型——决定损失有多大。',
     opts:function(){ var lim=V().limited; return [
-      { t:'Settle quickly and quietly', h:'Pay a moderate sum to make it disappear.',
+      { t:T('Settle quickly and quietly','迅速低调地和解'), h:T('Pay a moderate sum to make it disappear.','付一笔适中的钱让它消失。'),
         go:function(){ var s=lim?7000:12000; if(S.insured) s=Math.round(s*0.5); S.cash-=s; if(S.cash<0){S.debts+=-S.cash;S.cash=0;}
-          note(lim?'A lawsuit was contained inside the company — limited liability at work.':'A lawsuit came out of your personal pocket — the price of unlimited liability.');
-          return {tone:'down', delta:fmt(-s), html:'You settle out of court. '+(lim?'The <b>company</b> pays — your personal assets stay clear.':'You pay <b>personally</b> — a sole prop/partnership has no company to stand behind.')+(S.insured?' Your liability insurance covers half.':''),
-            lesson:lim?'Even settling, limited liability keeps the cost inside the business'+(S.insured?' — and insurance shrinks it further.':'.'):'Even a quick settlement comes out of your <b>own</b> pocket under unlimited liability'+(S.insured?', though insurance softens it.':'.')}; } },
-      { t:'Fight it in court', h:'A gamble — win and pay little, lose and pay a lot.',
+          note(lim?T('A lawsuit was contained inside the company — limited liability at work.','一场诉讼被限制在公司内部——这就是有限责任的作用。'):T('A lawsuit came out of your personal pocket — the price of unlimited liability.','一场诉讼从你个人口袋掏钱——无限责任的代价。'));
+          return {tone:'down', delta:fmt(-s), html:T('You settle out of court. ','你庭外和解。')+(lim?T('The <b>company</b> pays — your personal assets stay clear.','由<b>公司</b>买单——你的个人财产不受牵连。'):T('You pay <b>personally</b> — a sole prop/partnership has no company to stand behind.','由<b>你个人</b>买单——独资／合伙背后没有公司可倚靠。'))+(S.insured?T(' Your liability insurance covers half.',' 你的责任险赔付一半。'):''),
+            lesson:lim?T('Even settling, limited liability keeps the cost inside the business','即便是和解，有限责任也把成本留在生意里')+(S.insured?T(' — and insurance shrinks it further.','——而保险让它更小。'):'。'):T('Even a quick settlement comes out of your <b>own</b> pocket under unlimited liability','在无限责任下，即便快速和解也是从<b>你自己</b>口袋出钱')+(S.insured?T(', though insurance softens it.','，不过保险能缓冲。'):'。')}; } },
+      { t:T('Fight it in court','上法庭抗辩'), h:T('A gamble — win and pay little, lose and pay a lot.','一场赌博——赢了付得少，输了付得多。'),
         go:function(){ if(chance(0.5)){ var c=3000; S.cash-=c;
-            return {tone:'up', delta:fmt(-c), html:'You win. Only legal fees to pay.',
-              lesson:'Standing firm can pay — but it\'s a genuine gamble with your cash (and, if unlimited, your personal assets).'}; }
+            return {tone:'up', delta:fmt(-c), html:T('You win. Only legal fees to pay.','你赢了。只需付律师费。'),
+              lesson:T('Standing firm can pay — but it\'s a genuine gamble with your cash (and, if unlimited, your personal assets).','硬碰硬可能有回报——但这是拿你的现金（若是无限责任，还有个人财产）真刀真枪地赌。')}; }
           var big=lim?18000:32000; var pay=Math.min(big,S.cash+20000); S.cash-=pay; if(S.cash<0){S.debts+=-S.cash;S.cash=0;}
-          note(lim?'You lost a lawsuit but the company absorbed it — limited liability capped the damage.':'You lost a lawsuit and it reached your personal assets — unlimited liability at its most dangerous.');
-          return {tone:'down', delta:fmt(-pay), html:'You lose. '+(lim?'The company pays the judgment — capped at the business.':'The judgment comes after <b>you personally</b> — savings and all.'),
-            lesson:lim?'Losing hurt, but limited liability capped it to the business.':'A lost case under unlimited liability can take everything you own.'}; } },
-      { t:'Ignore the letter and hope it goes away', h:'The worst move — a default judgment can follow.',
+          note(lim?T('You lost a lawsuit but the company absorbed it — limited liability capped the damage.','你输了官司但由公司承担——有限责任封顶了损失。'):T('You lost a lawsuit and it reached your personal assets — unlimited liability at its most dangerous.','你输了官司，它追到了你的个人财产——无限责任最危险的一面。'));
+          return {tone:'down', delta:fmt(-pay), html:T('You lose. ','你输了。')+(lim?T('The company pays the judgment — capped at the business.','由公司支付判决——上限止于生意本身。'):T('The judgment comes after <b>you personally</b> — savings and all.','判决追向<b>你个人</b>——连积蓄一起。')),
+            lesson:lim?T('Losing hurt, but limited liability capped it to the business.','输了很痛，但有限责任把它封顶在生意里。'):T('A lost case under unlimited liability can take everything you own.','在无限责任下，一场败诉可能夺走你的一切。')}; } },
+      { t:T('Ignore the letter and hope it goes away','无视信件，希望它自己消失'), h:T('The worst move — a default judgment can follow.','最糟的一步——可能招来缺席判决。'),
         go:function(){ var big=lim?16000:30000; var pay=Math.min(big,S.cash+18000); S.cash-=pay; if(S.cash<0){S.debts+=-S.cash;S.cash=0;} S.brand-=4;
-          note('Ignoring legal process led to a default judgment — never leave a lawsuit unanswered.');
-          return {tone:'down', delta:fmt(-pay)+' · Brand −4', html:'A default judgment is entered against you for not responding'+(lim?', enforced against the company.':' — enforced against <b>you personally</b>.'),
-            lesson:'Never ignore legal process. The magnitude of a disaster often depends on how you respond to it.'}; } }
+          note(T('Ignoring legal process led to a default judgment — never leave a lawsuit unanswered.','无视法律程序导致缺席判决——绝不要对诉讼置之不理。'));
+          return {tone:'down', delta:fmt(-pay)+T(' · Brand −4',' · 品牌 −4'), html:T('A default judgment is entered against you for not responding','因你不回应，法庭对你作出缺席判决')+(lim?T(', enforced against the company.','，对公司强制执行。'):T(' — enforced against <b>you personally</b>.','——对<b>你个人</b>强制执行。')),
+            lesson:T('Never ignore legal process. The magnitude of a disaster often depends on how you respond to it.','绝不要无视法律程序。灾难的大小，往往取决于你如何应对。')}; } }
     ]; } },
 
-  { em:'🌊', title:'Flash Flood', tone:'down', w:2,
+  { em:'🌊', title:'Flash Flood', titleZh:'突发水灾', tone:'down', w:2,
     situation:'A monsoon flood swamps your area. Your outlets could be shut for weeks.',
+    situationZh:'一场季候风水灾淹没你的地区。你的分店可能要关上几周。',
     opts:function(){ return [
-      { t:'Invest in flood defences & reopen fast (−RM4,000)', h:'Spend to reopen quickly and protect against next time.',
+      { t:T('Invest in flood defences & reopen fast (−RM4,000)','投资防洪并快速重开（−RM4,000）'), h:T('Spend to reopen quickly and protect against next time.','花钱快速重开，并为下次做防护。'),
         go:function(){ var l=4000+S.outlets*1000; S.cash-=l; S.brand+=2;
-          return {tone:'flat', delta:fmt(-l), html:'Pumps, barriers and a fast clean-up get you trading again in days — and better prepared for the next storm.',
-            lesson:'Spending to reduce downside is often cheaper than the downside itself.'}; } },
-      { t:'Wait it out and reopen when dry', h:'No capex, but weeks of lost sales.',
+          return {tone:'flat', delta:fmt(-l), html:T('Pumps, barriers and a fast clean-up get you trading again in days — and better prepared for the next storm.','水泵、挡水板加上快速清理，让你几天内重新营业——也为下一场风暴做好了准备。'),
+            lesson:T('Spending to reduce downside is often cheaper than the downside itself.','花钱减小下行风险，往往比下行本身更便宜。')}; } },
+      { t:T('Wait it out and reopen when dry','等水退了再重开'), h:T('No capex, but weeks of lost sales.','不用投入，但损失几周营业额。'),
         go:function(){ var l=7000+S.outlets*3000; if(S.insured) l=Math.round(l*0.65); S.cash-=l; S.brand-=3;
-          return {tone:'down', delta:fmt(-l)+' · Brand −3', html:'You wait for the water to recede. Cheaper up front, but weeks of lost revenue and spoiled stock.'+(S.insured?' Business-interruption cover refunds some of the lost trade.':''),
-            lesson:'Doing nothing has a cost too. External shocks hit every vehicle — reserves'+(S.insured?' and insurance':'')+' are your shield.'}; } }
+          return {tone:'down', delta:fmt(-l)+T(' · Brand −3',' · 品牌 −3'), html:T('You wait for the water to recede. Cheaper up front, but weeks of lost revenue and spoiled stock.','你等水退去。前期便宜，但损失几周营收和一批变质存货。')+(S.insured?T(' Business-interruption cover refunds some of the lost trade.',' 营业中断保险补回部分损失的生意。'):''),
+            lesson:T('Doing nothing has a cost too. External shocks hit every vehicle — reserves','什么都不做也有代价。外部冲击对每种载体都一样——储备')+(S.insured?T(' and insurance','和保险'):'')+T(' are your shield.','就是你的盾牌。')}; } }
     ]; } },
 
-  { em:'🧑‍🍳', title:'Head Chef Poached', tone:'down', w:3,
+  { em:'🧑‍🍳', title:'Head Chef Poached', titleZh:'主厨被挖角', tone:'down', w:3,
     situation:'A rival tries to poach your head chef — the person who holds the recipe and runs the kitchen.',
+    situationZh:'竞争对手试图挖走你的主厨——那个掌握配方、撑起厨房的人。',
     opts:function(){ return [
-      { t:'Counter-offer with a raise'+(V().equity?' + share options':'')+' (−RM8,000)', h:'Keep the talent; costs cash'+(V().equity?', but shares help':'')+'.',
+      { t:T('Counter-offer with a raise'+(V().equity?' + share options':'')+' (−RM8,000)','以加薪'+(V().equity?' + 股票期权':'')+'留人（−RM8,000）'), h:T('Keep the talent; costs cash'+(V().equity?', but shares help':'')+'.','留住人才；要花钱'+(V().equity?'，但股份有帮助':'')+'。'),
         go:function(){ S.cash-=8000; S.brand+=2;
-          return {tone:'flat', delta:'−RM8,000', html:'You match the offer'+(V().equity?' and sweeten it with share options only a company can grant':'')+'. The chef stays.',
-            lesson:V().equity?'A company can retain key people with <b>equity</b> — a powerful tool a sole prop simply doesn\'t have.':'Retaining talent costs cash when you can\'t offer shares.'}; } },
-      { t:'Let them go and promote from within', h:'Cheap — but only smooth if you built systems.',
+          return {tone:'flat', delta:'−RM8,000', html:T('You match the offer'+(V().equity?' and sweeten it with share options only a company can grant':'')+'. The chef stays.','你开出对等条件'+(V().equity?'，再加上只有公司才能授予的股票期权':'')+'。主厨留下了。'),
+            lesson:V().equity?T('A company can retain key people with <b>equity</b> — a powerful tool a sole prop simply doesn\'t have.','公司能用<b>股权</b>留住关键人才——这是独资根本没有的利器。'):T('Retaining talent costs cash when you can\'t offer shares.','当你给不了股份时，留人只能靠现金。')}; } },
+      { t:T('Let them go and promote from within','放人走，从内部提拔'), h:T('Cheap — but only smooth if you built systems.','便宜——但只有建了系统才顺畅。'),
         go:function(){ if(S.hasManager){ S.brand-=1;
-            return {tone:'flat', delta:'Brand −1', html:'Your documented recipes and trained team mean a shift-lead steps up easily. Barely a wobble.',
-              lesson:'Systems and delegation turn key-person risk into a minor bump.'}; }
+            return {tone:'flat', delta:T('Brand −1','品牌 −1'), html:T('Your documented recipes and trained team mean a shift-lead steps up easily. Barely a wobble.','你有记录在案的配方和训练有素的团队，班组长轻松顶上。几乎没有波动。'),
+              lesson:T('Systems and delegation turn key-person risk into a minor bump.','系统与授权把关键人风险变成小颠簸。')}; }
           var l=6000+S.outlets*2000; S.cash-=l; S.brand-=7; S.flags.keyperson=true;
-          note('Losing a key person hurt because everything lived in one head — the case for management and documented systems.');
-          return {tone:'down', delta:fmt(-l)+' · Brand −7', html:'With nothing written down, quality collapses while you scramble to recover the recipe.',
-            lesson:'Without systems, people <b>are</b> the business — and they can walk out the door.'}; } }
+          note(T('Losing a key person hurt because everything lived in one head — the case for management and documented systems.','失去关键人很痛，因为一切都装在一个人脑子里——这正是需要管理和成文系统的理由。'));
+          return {tone:'down', delta:fmt(-l)+T(' · Brand −7',' · 品牌 −7'), html:T('With nothing written down, quality collapses while you scramble to recover the recipe.','什么都没写下来，你手忙脚乱地找回配方时，品质崩了。'),
+            lesson:T('Without systems, people <b>are</b> the business — and they can walk out the door.','没有系统，人<b>就是</b>生意本身——而他们随时可以走人。')}; } }
     ]; } },
 
-  { em:'💸', title:'Cashier Fraud', tone:'down', w:2,
+  { em:'💸', title:'Cashier Fraud', titleZh:'收银员舞弊', tone:'down', w:2,
     situation:'You suspect a cashier has been skimming the takings.',
+    situationZh:'你怀疑一位收银员一直在私吞营业款。',
     opts:function(){ return [
-      { t:'Audit the books & install controls (−RM3,000)', h:'Investigate, recover what you can, prevent a repeat.',
+      { t:T('Audit the books & install controls (−RM3,000)','查账并建立内控（−RM3,000）'), h:T('Investigate, recover what you can, prevent a repeat.','调查、尽量追回、防止再犯。'),
         go:function(){ S.cash-=3000; if(!S.governance){S.governance=true; S.bizValue+=10000;}
-          note('You put internal controls in place after a fraud scare — governance protects cash and is what a listing demands.');
-          return {tone:'flat', delta:'−RM3,000 · controls added', html:'An audit confirms it. You recover some, dismiss the cashier, and put proper cash controls in place.',
-            lesson:'Governance and internal controls are what catch and prevent fraud — and exactly what Bursa checks before a listing.'}; } },
-      { t:'Quietly fire them and move on', h:'Avoid the fuss; absorb the loss and the risk.',
+          note(T('You put internal controls in place after a fraud scare — governance protects cash and is what a listing demands.','一场舞弊惊魂后你建立了内控——治理既护住现金，也是上市所要求的。'));
+          return {tone:'flat', delta:T('−RM3,000 · controls added','−RM3,000 · 已建内控'), html:T('An audit confirms it. You recover some, dismiss the cashier, and put proper cash controls in place.','审计证实了。你追回一部分、辞退收银员，并建立起妥当的现金管控。'),
+            lesson:T('Governance and internal controls are what catch and prevent fraud — and exactly what Bursa checks before a listing.','治理与内控才能抓住并防范舞弊——也正是交易所上市前要查的。')}; } },
+      { t:T('Quietly fire them and move on','悄悄辞退，翻篇'), h:T('Avoid the fuss; absorb the loss and the risk.','省去麻烦；自己吞下损失和风险。'),
         go:function(){ var l=7000+S.outlets*2500; S.cash-=l;
-          note('Fraud went unaddressed at the root — with no controls, the next leak is only a matter of time.');
-          return {tone:'down', delta:fmt(-l), html:'You let the cashier go without a fuss and eat the loss. But nothing changes — the control gap is still there.',
-            lesson:'Firing the symptom isn\'t fixing the cause. Weak governance is a slow, recurring leak.'}; } }
+          note(T('Fraud went unaddressed at the root — with no controls, the next leak is only a matter of time.','舞弊的根源没解决——没有内控，下一次漏洞只是时间问题。'));
+          return {tone:'down', delta:fmt(-l), html:T('You let the cashier go without a fuss and eat the loss. But nothing changes — the control gap is still there.','你不声不响放走收银员、自吞损失。但什么都没变——管控漏洞仍在。'),
+            lesson:T('Firing the symptom isn\'t fixing the cause. Weak governance is a slow, recurring leak.','辞掉表象不等于治好病根。薄弱的治理是一个缓慢、反复的漏洞。')}; } }
     ]; } },
 
-  { em:'🏚️', title:'Landlord Triples the Rent', tone:'down', w:2,
+  { em:'🏚️', title:'Landlord Triples the Rent', titleZh:'房东租金翻三倍', tone:'down', w:2,
     situation:'At renewal, your flagship\'s landlord triples the rent.',
+    situationZh:'续约时，你旗舰店的房东把租金翻了三倍。',
     opts:function(){ return [
-      { t:'Pay up to keep the prime location', h:'Protect footfall & brand; absorb the cost.',
+      { t:T('Pay up to keep the prime location','照付以守住黄金地段'), h:T('Protect footfall & brand; absorb the cost.','保住人流与品牌；自己吸收成本。'),
         go:function(){ var l=7000+S.outlets*2000; S.cash-=l;
-          return {tone:'down', delta:fmt(-l), html:'You swallow the increase to hold your best-performing spot. Footfall and brand intact.',
-            lesson:'Location can be worth paying up for — but fixed costs that spike squeeze every future year.'}; } },
-      { t:'Negotiate a longer lease on your entity\'s standing', h:'A registered business bargains from strength.',
+          return {tone:'down', delta:fmt(-l), html:T('You swallow the increase to hold your best-performing spot. Footfall and brand intact.','你咽下涨价，守住业绩最好的点位。人流与品牌完好。'),
+            lesson:T('Location can be worth paying up for — but fixed costs that spike squeeze every future year.','为好地段多付钱可能值得——但飙升的固定成本会挤压未来每一年。')}; } },
+      { t:T('Negotiate a longer lease on your entity\'s standing','凭实体公信力谈更长租约'), h:T('A registered business bargains from strength.','注册的生意谈判有底气。'),
         go:function(){ if(V().cred>=2){ var l=3000; S.cash-=l;
-            return {tone:'flat', delta:fmt(-l), html:'As a credible registered '+V().name+', you negotiate a longer lease at a far smaller increase. The landlord values a stable corporate tenant.',
-              lesson:'A registered, credible entity negotiates from strength — even landlords price you on how solid you look.'}; }
+            return {tone:'flat', delta:fmt(-l), html:T('As a credible registered '+V().name+', you negotiate a longer lease at a far smaller increase. The landlord values a stable corporate tenant.','作为有公信力的注册'+VN()+'，你谈下了更长租约、涨幅小得多。房东看重稳定的企业租户。'),
+              lesson:T('A registered, credible entity negotiates from strength — even landlords price you on how solid you look.','注册、有公信力的实体谈判有底气——连房东都会按你看起来有多稳来给你定价。')}; }
           var l2=5000+S.outlets*1500; S.cash-=l2; S.brand-=2;
-          return {tone:'down', delta:fmt(-l2), html:'As an informal operator you have little leverage. You get a small concession but mostly pay the increase.',
-            lesson:'Credibility is leverage. Informal vehicles negotiate from weakness.'}; } },
-      { t:'Relocate to a cheaper unit', h:'One-off moving cost + brand dip, lower future rent.',
+          return {tone:'down', delta:fmt(-l2), html:T('As an informal operator you have little leverage. You get a small concession but mostly pay the increase.','作为非正规经营者你没什么筹码。只争到一点点让步，大部分涨价照付。'),
+            lesson:T('Credibility is leverage. Informal vehicles negotiate from weakness.','公信力就是筹码。非正规载体谈判处于弱势。')}; } },
+      { t:T('Relocate to a cheaper unit','搬到更便宜的铺位'), h:T('One-off moving cost + brand dip, lower future rent.','一次性搬迁费 + 品牌下滑，但未来租金更低。'),
         go:function(){ var l=8000; S.cash-=l; S.brand-=5; S.bizValue-=10000;
-          return {tone:'down', delta:fmt(-l)+' · Brand −5', html:'You move to a cheaper lot. Costly and disruptive now — regulars take time to follow.',
-            lesson:'Chasing lower costs can cost you customers. Weigh the move against the brand you\'ve built.'}; } }
+          return {tone:'down', delta:fmt(-l)+T(' · Brand −5',' · 品牌 −5'), html:T('You move to a cheaper lot. Costly and disruptive now — regulars take time to follow.','你搬到更便宜的铺位。眼下费钱又折腾——熟客要时间才跟得上。'),
+            lesson:T('Chasing lower costs can cost you customers. Weigh the move against the brand you\'ve built.','追求更低成本可能让你流失客户。搬迁要和你建起来的品牌权衡。')}; } }
     ]; } },
 
-  { em:'📉', title:'Recession Bites', tone:'down', w:2,
-    situation:function(){ return S.price==='premium'?'An economic slump thins the lunch crowd — and your <b>premium</b> pricing is exactly what belt-tightening customers cut first.':S.price==='value'?'An economic slump thins the lunch crowd — but your <b>value</b> pricing is what cash-strapped diners trade <i>down</i> to.':'An economic slump thins the lunch crowd across all your outlets.'; },
+  { em:'📉', title:'Recession Bites', titleZh:'经济衰退来袭', tone:'down', w:2,
+    situation:function(){ return S.price==='premium'?T('An economic slump thins the lunch crowd — and your <b>premium</b> pricing is exactly what belt-tightening customers cut first.','经济不景让午餐人潮变稀——而你的<b>高档</b>定价正是勒紧裤带的顾客最先砍掉的。'):S.price==='value'?T('An economic slump thins the lunch crowd — but your <b>value</b> pricing is what cash-strapped diners trade <i>down</i> to.','经济不景让午餐人潮变稀——但你的<b>平价</b>定价正是手头紧的食客<i>转投</i>的选择。'):T('An economic slump thins the lunch crowd across all your outlets.','经济不景让你所有分店的午餐人潮都变稀。'); },
     opts:function(){ var rs=S.recSens||1; return [
-      { t:'Discount hard to keep volume', h:'Protect footfall, sacrifice margin.',
+      { t:T('Discount hard to keep volume','狠打折以保走量'), h:T('Protect footfall, sacrifice margin.','保住人流，牺牲利润。'),
         go:function(){ var l=Math.round((5000+S.outlets*2500)*rs); S.cash-=l; S.brand+=3;
-          return {tone:'down', delta:fmt(-l)+' · Brand +3', html:'Promotions keep the queues alive but crush margins this year.'+(rs>1.2?' Premium positioning makes the downturn bite harder.':rs<0.8?' Your value model holds up remarkably well.':''),
-            lesson:'Buying volume with discounts protects presence at the cost of profit — and a premium brand suffers most when wallets close.'}; } },
-      { t:'Hold prices, cut costs', h:'Protect margin, risk some footfall.',
+          return {tone:'down', delta:fmt(-l)+T(' · Brand +3',' · 品牌 +3'), html:T('Promotions keep the queues alive but crush margins this year.','促销保住了排队人潮，却把今年的利润压垮了。')+(rs>1.2?T(' Premium positioning makes the downturn bite harder.',' 高档定位让下行更咬人。'):rs<0.8?T(' Your value model holds up remarkably well.',' 你的平价模式撑得出奇地好。'):''),
+            lesson:T('Buying volume with discounts protects presence at the cost of profit — and a premium brand suffers most when wallets close.','用折扣买走量，是以利润为代价换存在感——而钱包一紧，高档品牌受创最重。')}; } },
+      { t:T('Hold prices, cut costs','守价、控成本'), h:T('Protect margin, risk some footfall.','保住利润，冒点人流风险。'),
         go:function(){ var l=Math.round((3000+S.outlets*1500)*rs); S.cash-=l; S.brand-=3;
-          return {tone:'down', delta:fmt(-l)+' · Brand −3', html:'You trim costs and hold prices. Fewer customers, healthier margins per sale.'+(rs<0.8?' Value pricing keeps enough diners coming.':''),
-            lesson:'Defending margin over volume is the classic downturn trade-off — and your <b>pricing strategy</b> decides how painful the slump is.'}; } }
+          return {tone:'down', delta:fmt(-l)+T(' · Brand −3',' · 品牌 −3'), html:T('You trim costs and hold prices. Fewer customers, healthier margins per sale.','你压成本、守价格。客人少了，但每单利润更健康。')+(rs<0.8?T(' Value pricing keeps enough diners coming.',' 平价定价仍留住足够食客。'):''),
+            lesson:T('Defending margin over volume is the classic downturn trade-off — and your <b>pricing strategy</b> decides how painful the slump is.','守利润而非走量是经典的下行取舍——而你的<b>定价策略</b>决定这场低迷有多痛。')}; } }
     ]; } },
 
   // ---------- Windfalls ----------
-  { em:'📈', title:'You Go Viral — Nationally', tone:'up', w:3,
+  { em:'📈', title:'You Go Viral — Nationally', titleZh:'你火遍全国', tone:'up', w:3,
     situation:'A food vlogger\'s review of your nasi lemak explodes. Demand suddenly far exceeds what you can serve.',
+    situationZh:'一位美食博主对你椰浆饭的评测爆红。需求突然远超你能供应的量。',
     opts:function(){ return [
-      { t:'Pour cash into scaling to meet the demand (−RM15,000)', h:'Capture the spike fully — big brand & value gain.',
+      { t:T('Pour cash into scaling to meet the demand (−RM15,000)','砸钱扩产以承接需求（−RM15,000）'), h:T('Capture the spike fully — big brand & value gain.','完整抓住这波高峰——品牌与价值大涨。'),
         go:function(){ S.cash-=15000; var g=14000+S.outlets*4000; S.cash+=g; S.brand+=22; S.bizValue+=45000;
-          note('You had the cash to scale into a viral spike and captured it fully — capacity turns luck into lasting value.');
-          return {tone:'up', delta:'+'+fmt(g-15000)+' net · Brand +22', html:'You rush in extra staff, stock and a pop-up. The wave is enormous and you ride all of it — new regulars everywhere.',
-            lesson:'Upside is random too — but only businesses with the <b>capacity and capital</b> to serve it capture the full spike.'}; } },
-      { t:'Serve what you can, stay lean', h:'Safe, moderate gain — no risk.',
+          note(T('You had the cash to scale into a viral spike and captured it fully — capacity turns luck into lasting value.','你有现金在爆红高峰时扩产并完整承接——产能把运气变成长久价值。'));
+          return {tone:'up', delta:'+'+fmt(g-15000)+T(' net · Brand +22',' 净 · 品牌 +22'), html:T('You rush in extra staff, stock and a pop-up. The wave is enormous and you ride all of it — new regulars everywhere.','你紧急加人、补货、开快闪店。这波浪潮巨大，你全部乘上了——到处都是新熟客。'),
+            lesson:T('Upside is random too — but only businesses with the <b>capacity and capital</b> to serve it capture the full spike.','好运也是随机的——但只有有<b>产能和资本</b>去承接的生意，才能吃下整波高峰。')}; } },
+      { t:T('Serve what you can, stay lean','量力而为，保持精简'), h:T('Safe, moderate gain — no risk.','安全、适度获益——没有风险。'),
         go:function(){ var g=6000+S.outlets*2000; S.cash+=g; S.brand+=10;
-          return {tone:'up', delta:'+'+fmt(g)+' · Brand +10', html:'You serve who you can and turn the rest away politely. A solid, low-risk bump.',
-            lesson:'Playing it safe banks a real gain — you just leave some of the windfall on the table.'}; } },
-      { t:'Hike prices on the hype', h:'Cash now, but you risk the goodwill.',
+          return {tone:'up', delta:'+'+fmt(g)+T(' · Brand +10',' · 品牌 +10'), html:T('You serve who you can and turn the rest away politely. A solid, low-risk bump.','你接待能接待的，其余礼貌婉拒。一次扎实、低风险的提升。'),
+            lesson:T('Playing it safe banks a real gain — you just leave some of the windfall on the table.','稳着来能锁定实实在在的收益——只是把一部分意外之财留在了桌上。')}; } },
+      { t:T('Hike prices on the hype','趁热度涨价'), h:T('Cash now, but you risk the goodwill.','现在有现金，但拿商誉冒险。'),
         go:function(){ var g=10000+S.outlets*2500; S.cash+=g; S.brand-=6;
-          return {tone:'flat', delta:'+'+fmt(g)+' · Brand −6', html:'You cash in with higher prices. Great this month — but some new fans feel gouged and don\'t return.',
-            lesson:'Squeezing a hype moment for cash can burn the very brand goodwill that created it.'}; } }
+          return {tone:'flat', delta:'+'+fmt(g)+T(' · Brand −6',' · 品牌 −6'), html:T('You cash in with higher prices. Great this month — but some new fans feel gouged and don\'t return.','你靠涨价套现。这个月很爽——但一些新粉觉得被宰，不再回头。'),
+            lesson:T('Squeezing a hype moment for cash can burn the very brand goodwill that created it.','在热度时刻榨取现金，可能烧掉造就它的品牌商誉。')}; } }
     ]; } },
 
-  { em:'💰', title:'Government SME Grant', tone:'up', w:3,
+  { em:'💰', title:'Government SME Grant', titleZh:'政府中小企业补助金', tone:'up', w:3,
     situation:'An SME Corp / TEKUN grant round opens. Whether you qualify — and for how much — depends on your vehicle.',
+    situationZh:'一轮 SME Corp／TEKUN 补助金开放申请。你是否符合资格、能拿多少，取决于你的载体。',
     opts:function(){ var reg=V().cred>=2; var amt=reg?25000:6000; return [
-      { t:'Apply, then invest it in a central kitchen', h:'Reinvest for scale (and capital allowances).',
+      { t:T('Apply, then invest it in a central kitchen','申请，然后投入中央厨房'), h:T('Reinvest for scale (and capital allowances).','为扩张再投资（并享资本免税额）。'),
         go:function(){ S.cash+=amt; S.bizValue+=amt+15000; S.equipInvest=true;
-          note(reg?'A registered entity qualified for a full SME grant and reinvested it — formality unlocks money and tax relief.':'As an informal vehicle you only qualified for a micro-grant — most schemes want a registered company/LLP.');
-          return {tone:'up', delta:'+'+fmt(amt)+' · reinvested', html:(reg?'As a registered '+V().name+' you win the full <b>'+fmt(amt)+'</b> grant':'Most schemes want a registered company/LLP, so you scrape a <b>'+fmt(amt)+'</b> micro-grant')+' and plough it into a shared kitchen — boosting capacity and earning capital allowances.',
-            lesson:'Grants favour <b>registered</b> entities, and reinvesting in equipment earns capital allowances that cut future tax.'}; } },
-      { t:'Apply and bank the cash as reserve', h:'Safety buffer against the next bad card.',
+          note(reg?T('A registered entity qualified for a full SME grant and reinvested it — formality unlocks money and tax relief.','注册实体拿到了完整的中小企业补助金并再投资——正规化解锁了资金和税务减免。'):T('As an informal vehicle you only qualified for a micro-grant — most schemes want a registered company/LLP.','作为非正规载体，你只符合微型补助——大多数计划要求注册公司／LLP。'));
+          return {tone:'up', delta:'+'+fmt(amt)+T(' · reinvested',' · 已再投资'), html:(reg?T('As a registered '+V().name+' you win the full <b>'+fmt(amt)+'</b> grant','作为注册的'+VN()+'，你拿到完整的 <b>'+fmt(amt)+'</b> 补助'):T('Most schemes want a registered company/LLP, so you scrape a <b>'+fmt(amt)+'</b> micro-grant','大多数计划要求注册公司／LLP，你只勉强拿到 <b>'+fmt(amt)+'</b> 微型补助'))+T(' and plough it into a shared kitchen — boosting capacity and earning capital allowances.','，并把它投入共享厨房——提升产能，赚取资本免税额。'),
+            lesson:T('Grants favour <b>registered</b> entities, and reinvesting in equipment earns capital allowances that cut future tax.','补助偏爱<b>注册</b>实体，而把钱再投入设备能赚取资本免税额、减少未来的税。')}; } },
+      { t:T('Apply and bank the cash as reserve','申请并把现金存作储备'), h:T('Safety buffer against the next bad card.','为下一张坏牌留个安全缓冲。'),
         go:function(){ S.cash+=amt;
-          note(reg?'A registered entity qualified for a full SME grant.':'As an informal vehicle you only qualified for a small micro-grant.');
-          return {tone:'up', delta:'+'+fmt(amt), html:(reg?'As a registered '+V().name+' you receive the full <b>'+fmt(amt)+'</b>':'You only qualify for a <b>'+fmt(amt)+'</b> micro-grant as an informal operator')+' and keep it as a cash buffer.',
-            lesson:'Being unregistered locks you out of most government funding — a quiet, recurring cost of staying informal.'}; } }
+          note(reg?T('A registered entity qualified for a full SME grant.','注册实体符合完整的中小企业补助金资格。'):T('As an informal vehicle you only qualified for a small micro-grant.','作为非正规载体，你只符合小额微型补助。'));
+          return {tone:'up', delta:'+'+fmt(amt), html:(reg?T('As a registered '+V().name+' you receive the full <b>'+fmt(amt)+'</b>','作为注册的'+VN()+'，你收到完整的 <b>'+fmt(amt)+'</b>'):T('You only qualify for a <b>'+fmt(amt)+'</b> micro-grant as an informal operator','作为非正规经营者，你只符合 <b>'+fmt(amt)+'</b> 微型补助'))+T(' and keep it as a cash buffer.','，并留作现金缓冲。'),
+            lesson:T('Being unregistered locks you out of most government funding — a quiet, recurring cost of staying informal.','没注册会把你挡在大多数政府资助门外——这是保持非正规的一项无声、反复的成本。')}; } }
     ]; } },
 
-  { em:'🤝', title:'Surprise Catering Windfall', tone:'up', w:3,
+  { em:'🤝', title:'Surprise Catering Windfall', titleZh:'意外的餐饮大单', tone:'up', w:3,
     situation:'A corporate client offers a month-long office-catering contract — good money, but it will stretch your kitchen.',
+    situationZh:'一位企业客户提出为期一个月的办公室餐饮合同——钱不错，但会把你的厨房撑到极限。',
     opts:function(){ return [
-      { t:'Take it and hire temps to deliver well (−RM4,000)', h:'Protect quality; bank a strong margin.',
+      { t:T('Take it and hire temps to deliver well (−RM4,000)','接下并请临时工做好（−RM4,000）'), h:T('Protect quality; bank a strong margin.','保住品质；赚取可观利润。'),
         go:function(){ S.cash-=4000; var g=12000+S.outlets*2500; S.cash+=g; S.brand+=4;
-          return {tone:'up', delta:'+'+fmt(g-4000)+' net · Brand +4', html:'You staff up properly and deliver flawlessly. Great margin and a delighted client who refers others.',
-            lesson:'Spending a little to protect quality on a big order usually pays back many times over.'}; } },
-      { t:'Take it and stretch your current team', h:'Keep all the cash — risk your regular service.',
+          return {tone:'up', delta:'+'+fmt(g-4000)+T(' net · Brand +4',' 净 · 品牌 +4'), html:T('You staff up properly and deliver flawlessly. Great margin and a delighted client who refers others.','你妥善加人、交付无瑕。利润丰厚，客户满意还替你转介。'),
+            lesson:T('Spending a little to protect quality on a big order usually pays back many times over.','为大单花点钱保住品质，通常回报翻倍。')}; } },
+      { t:T('Take it and stretch your current team','接下并硬撑现有团队'), h:T('Keep all the cash — risk your regular service.','全拿现金——但赌上日常服务。'),
         go:function(){ var g=13000+S.outlets*2500; S.cash+=g; S.brand-=5;
-          return {tone:'flat', delta:'+'+fmt(g)+' · Brand −5', html:'You pocket the full fee, but your overworked team lets standards slip at the outlets. Some regulars grumble.',
-            lesson:'Chasing every ringgit of a windfall can quietly damage the core business that feeds you.'}; } },
-      { t:'Decline — you can\'t do it justice now', h:'No cash, but no risk to your reputation.',
+          return {tone:'flat', delta:'+'+fmt(g)+T(' · Brand −5',' · 品牌 −5'), html:T('You pocket the full fee, but your overworked team lets standards slip at the outlets. Some regulars grumble.','你把全额收入收进口袋，但过劳的团队让分店的水准滑坡。一些熟客有怨言。'),
+            lesson:T('Chasing every ringgit of a windfall can quietly damage the core business that feeds you.','为意外之财追逐每一分钱，可能悄悄损害养你的核心生意。')}; } },
+      { t:T('Decline — you can\'t do it justice now','婉拒——你现在做不好'), h:T('No cash, but no risk to your reputation.','没现金，但不冒声誉的险。'),
         go:function(){ S.brand+=2;
-          return {tone:'flat', delta:'Brand +2', html:'You politely pass. No windfall — but your regular service stays impeccable and word gets around.',
-            lesson:'Saying no to work you can\'t deliver well protects the asset that matters most: your reputation.'}; } }
+          return {tone:'flat', delta:T('Brand +2','品牌 +2'), html:T('You politely pass. No windfall — but your regular service stays impeccable and word gets around.','你礼貌婉拒。没有意外之财——但你的日常服务无可挑剔，口碑传开了。'),
+            lesson:T('Saying no to work you can\'t deliver well protects the asset that matters most: your reputation.','对做不好的活说不，保护了最重要的资产：你的声誉。')}; } }
     ]; } },
 
-  { em:'🏆', title:'Best Nasi Lemak Award', tone:'up', w:2,
+  { em:'🏆', title:'Best Nasi Lemak Award', titleZh:'最佳椰浆饭奖', tone:'up', w:2,
     situation:'You win a national "Best Nasi Lemak" award. How hard do you leverage it?',
+    situationZh:'你赢得全国“最佳椰浆饭”奖。你要多用力借势？',
     opts:function(){ return [
-      { t:'Launch a PR & marketing blitz (−RM6,000)', h:'Turn the moment into lasting brand value.',
+      { t:T('Launch a PR & marketing blitz (−RM6,000)','发起公关与营销攻势（−RM6,000）'), h:T('Turn the moment into lasting brand value.','把这一刻变成长久的品牌价值。'),
         go:function(){ S.cash-=6000; S.brand+=16; S.bizValue+=40000;
-          return {tone:'up', delta:'Brand +16 · value up', html:'You milk the award with press, packaging and a campaign. Brand and company value jump well beyond the spend.',
-            lesson:'Intangible brand value is real value — and leveraging a moment compounds it into the price you\'ll fetch at exit.'}; } },
-      { t:'Let it speak for itself', h:'A free, modest brand bump.',
+          return {tone:'up', delta:T('Brand +16 · value up','品牌 +16 · 价值上升'), html:T('You milk the award with press, packaging and a campaign. Brand and company value jump well beyond the spend.','你用新闻、包装和一波活动把奖项发挥到极致。品牌和公司价值的跃升远超花费。'),
+            lesson:T('Intangible brand value is real value — and leveraging a moment compounds it into the price you\'ll fetch at exit.','无形的品牌价值是真价值——借好一个时刻，会把它复利成你退出时的售价。')}; } },
+      { t:T('Let it speak for itself','让它自己说话'), h:T('A free, modest brand bump.','免费、适度的品牌提升。'),
         go:function(){ S.brand+=8; S.bizValue+=15000;
-          return {tone:'up', delta:'Brand +8', html:'You add a sticker to the window and let word spread naturally. A pleasant, cost-free lift.',
-            lesson:'Even unleveraged, brand is an asset — but you capture more of it when you invest behind the moment.'}; } }
+          return {tone:'up', delta:T('Brand +8','品牌 +8'), html:T('You add a sticker to the window and let word spread naturally. A pleasant, cost-free lift.','你在橱窗贴上贴纸，让口碑自然传播。一次愉快、零成本的提升。'),
+            lesson:T('Even unleveraged, brand is an asset — but you capture more of it when you invest behind the moment.','即使不刻意借势，品牌也是资产——但你在时刻背后投入，才能捕获更多。')}; } }
     ]; } },
 
   // ---------- Mixed / cautionary ----------
-  { em:'🎲', title:'A "Sure-Win" Side Bet', tone:'flat', w:2,
+  { em:'🎲', title:'A "Sure-Win" Side Bet', titleZh:'一个“稳赢”的旁门投注', tone:'flat', w:2,
     situation:'A friend swears his crypto tip is a guaranteed double. He wants you to put in RM10,000 of business cash.',
+    situationZh:'一个朋友信誓旦旦说他的加密货币内幕稳翻倍。他要你拿出 RM10,000 的生意现金。',
     opts:function(){ return [
-      { t:'Go all in — RM10,000', h:'A real gamble with your working capital.',
+      { t:T('Go all in — RM10,000','全押——RM10,000'), h:T('A real gamble with your working capital.','拿你的营运资金真赌一把。'),
         go:function(){ var stake=10000; if(chance(0.42)){ S.cash+=stake;
-            return {tone:'up', delta:'+'+fmt(stake), html:'It actually pays off this time — you double the punt.',
-              lesson:'It worked — but betting business cash on tips is how good businesses die. Don\'t confuse luck with skill.'}; }
-          S.cash-=stake; note('You gambled business cash on a hot tip and lost — never mix speculation with operating cash.');
-          return {tone:'down', delta:fmt(-stake), html:'The "sure thing" evaporates. RM10,000 of working capital — gone.',
-            lesson:'Speculating with business cash is a disaster waiting to happen. Ring-fence your operating funds.'}; } },
-      { t:'Put in a token RM2,000 for fun', h:'Limit the downside; small stake.',
+            return {tone:'up', delta:'+'+fmt(stake), html:T('It actually pays off this time — you double the punt.','这次居然真赚了——你把本金翻了倍。'),
+              lesson:T('It worked — but betting business cash on tips is how good businesses die. Don\'t confuse luck with skill.','成了——但拿生意现金押内幕，正是好生意送命的方式。别把运气当本事。')}; }
+          S.cash-=stake; note(T('You gambled business cash on a hot tip and lost — never mix speculation with operating cash.','你拿生意现金赌内幕并输了——绝不要把投机和营运现金混在一起。'));
+          return {tone:'down', delta:fmt(-stake), html:T('The "sure thing" evaporates. RM10,000 of working capital — gone.','“稳的”蒸发了。RM10,000 营运资金——没了。'),
+            lesson:T('Speculating with business cash is a disaster waiting to happen. Ring-fence your operating funds.','拿生意现金投机是等着发生的灾难。把营运资金隔离起来。')}; } },
+      { t:T('Put in a token RM2,000 for fun','象征性投 RM2,000 玩玩'), h:T('Limit the downside; small stake.','限制下行；小注。'),
         go:function(){ var stake=2000; if(chance(0.42)){ S.cash+=stake;
-            return {tone:'flat', delta:'+'+fmt(stake), html:'A small win on a small stake. Harmless fun this time.',
-              lesson:'Sizing a bet to what you can lose is the whole game — position size beats being "right".'}; }
+            return {tone:'flat', delta:'+'+fmt(stake), html:T('A small win on a small stake. Harmless fun this time.','小注小赢。这次是无伤大雅的乐子。'),
+              lesson:T('Sizing a bet to what you can lose is the whole game — position size beats being "right".','把下注控制在你输得起的范围，才是关键——仓位大小胜过“押对”。')}; }
           S.cash-=stake;
-          return {tone:'flat', delta:fmt(-stake), html:'You lose the RM2,000 — annoying, but survivable.',
-            lesson:'Because you sized it small, a bad bet is a lesson, not a crisis.'}; } },
-      { t:'Walk away — keep your cash', h:'The disciplined choice.',
-        go:function(){ return {tone:'up', delta:'RM0', html:'You pass. The tip later crashes 80%. Your cash is safe and working in the business.',
-          lesson:'The best response to "guaranteed" returns is usually no response at all.'}; } }
+          return {tone:'flat', delta:fmt(-stake), html:T('You lose the RM2,000 — annoying, but survivable.','你输掉 RM2,000——恼人，但扛得住。'),
+            lesson:T('Because you sized it small, a bad bet is a lesson, not a crisis.','因为你下得小，一次坏注只是教训，不是危机。')}; } },
+      { t:T('Walk away — keep your cash','走开——守住你的现金'), h:T('The disciplined choice.','有纪律的选择。'),
+        go:function(){ return {tone:'up', delta:'RM0', html:T('You pass. The tip later crashes 80%. Your cash is safe and working in the business.','你不玩。那个内幕后来暴跌 80%。你的现金安全地在生意里运转。'),
+          lesson:T('The best response to "guaranteed" returns is usually no response at all.','对“保证”回报，最好的回应通常是根本不回应。')}; } }
     ]; } },
 
-  { em:'📦', title:'Key Supplier Collapses', tone:'down', w:2,
+  { em:'📦', title:'Key Supplier Collapses', titleZh:'关键供应商倒闭', tone:'down', w:2,
     situation:'Your main rice-and-coconut supplier goes bust overnight. Prices spike and stock runs short.',
+    situationZh:'你主要的米和椰浆供应商一夜倒闭。价格飙升，货源短缺。',
     opts:function(){ return [
-      { t:'Pay a premium for emergency supply', h:'Protect quality and your brand.',
+      { t:T('Pay a premium for emergency supply','高价采购应急货源'), h:T('Protect quality and your brand.','保住品质和品牌。'),
         go:function(){ var l=4000+S.outlets*2000; S.cash-=l;
-          return {tone:'down', delta:fmt(-l), html:'You source at a premium to keep the sambal exactly right. Costly, but the food never dips.',
-            lesson:'Supply-chain shocks are inevitable at scale. Paying to protect quality guards the brand you built.'}; } },
-      { t:'Switch to a cheaper substitute', h:'Save cash, risk the taste.',
+          return {tone:'down', delta:fmt(-l), html:T('You source at a premium to keep the sambal exactly right. Costly, but the food never dips.','你以高价进货，让参峇分毫不差。费钱，但味道从不掉链子。'),
+            lesson:T('Supply-chain shocks are inevitable at scale. Paying to protect quality guards the brand you built.','规模一大，供应链冲击难免。花钱保品质，守的是你建起来的品牌。')}; } },
+      { t:T('Switch to a cheaper substitute','换更便宜的替代品'), h:T('Save cash, risk the taste.','省现金，赌味道。'),
         go:function(){ S.brand-=7;
-          return {tone:'down', delta:'Brand −7', html:'A cheaper supplier keeps costs down — but regulars notice the taste isn\'t quite the same.',
-            lesson:'Cutting input quality to save cash can quietly erode the very thing customers came for.'}; } }
+          return {tone:'down', delta:T('Brand −7','品牌 −7'), html:T('A cheaper supplier keeps costs down — but regulars notice the taste isn\'t quite the same.','更便宜的供应商压住了成本——但熟客尝得出味道不太一样。'),
+            lesson:T('Cutting input quality to save cash can quietly erode the very thing customers came for.','为省现金而降低用料品质，会悄悄侵蚀顾客正是为之而来的东西。')}; } }
     ]; } },
 
   // ---------- Conditional risk: only for those who raised equity ----------
-  { em:'🥊', title:'Investor Dispute', tone:'down', w:6, when:function(){ return S.flags.raised; },
+  { em:'🥊', title:'Investor Dispute', titleZh:'投资人纠纷', tone:'down', w:6, when:function(){ return S.flags.raised; },
     situation:'The investor who took equity and a board seat when you raised capital now clashes with you — they want to slash quality for short-term profit, and hint at replacing you as CEO.',
+    situationZh:'当初募资时拿了股权和董事席位的投资人，如今和你起了冲突——他们想砍品质换短期利润，还暗示要换掉你这个 CEO。',
     opts:function(){ return [
-      { t:'Buy back their stake at a premium to regain control', h:'Priced at ~fair value + premium — a heavy cash strain.',
+      { t:T('Buy back their stake at a premium to regain control','溢价回购其股份以夺回控制权'), h:T('Priced at ~fair value + premium — a heavy cash strain.','按约公允价 + 溢价——现金压力很大。'),
         go:function(){ var c=Math.round(S.bizValue*0.28); S.cash-=c; if(S.cash<0){S.debts+=-S.cash;S.cash=0;} S.ownership=Math.min(1,S.ownership/0.75);
-          note('You bought your investor out at a premium to regain control — equity is easy to take and dear to unwind, and the cash strain can be brutal.');
-          return {tone:'down', delta:fmt(-c)+' cash', html:'You buy back their 25% at a premium of '+fmt(c)+'. You own the whole company again — but the cash drain is severe, often forcing debt.',
-            lesson:'Buying an investor out costs roughly what their stake is <b>worth</b> — which balloons as your company grows. Equity taken cheaply in Year 3 is dear to reverse in Year 5.'}; } },
-      { t:'Concede — let them steer', h:'Keep the cash, lose direction and brand.',
+          note(T('You bought your investor out at a premium to regain control — equity is easy to take and dear to unwind, and the cash strain can be brutal.','你溢价买回投资人以夺回控制权——股权好拿难退，现金压力可能极其残酷。'));
+          return {tone:'down', delta:fmt(-c)+T(' cash',' 现金'), html:T('You buy back their 25% at a premium of '+fmt(c)+'. You own the whole company again — but the cash drain is severe, often forcing debt.','你以 '+fmt(c)+' 的溢价回购他们的 25%。你重新独占整家公司——但现金流失严重，往往被迫举债。'),
+            lesson:T('Buying an investor out costs roughly what their stake is <b>worth</b> — which balloons as your company grows. Equity taken cheaply in Year 3 is dear to reverse in Year 5.','买断投资人，大致要按其股份的<b>价值</b>付钱——而这会随公司成长膨胀。第 3 年廉价卖出的股权，第 5 年要昂贵地买回。')}; } },
+      { t:T('Concede — let them steer','让步——由他们主导'), h:T('Keep the cash, lose direction and brand.','保住现金，失去方向和品牌。'),
         go:function(){ S.brand-=12; S.bizValue-=Math.round(S.bizValue*0.12);
-          note('You lost control to your investor — the founder\'s dilemma when equity is sold without protections.');
-          return {tone:'down', delta:'Brand −12 · value hit', html:'You bow to their cost-cutting. Quality and brand slip, the business is worth less — and it\'s no longer really yours.',
-            lesson:'Sell equity without protections and you can be steered, even ousted. Control is traded away a slice at a time.'}; } },
-      { t:'Settle it via your shareholders\' agreement', h:'Only if you signed one (Year-4 succession step).',
-        locked:(S.succession ? null : 'You never signed a shareholders\' agreement (the Year-4 succession choice) — there\'s no framework to resolve this cheaply.'),
+          note(T('You lost control to your investor — the founder\'s dilemma when equity is sold without protections.','你把控制权输给了投资人——这是在没有保护条款下出售股权时，创办人的两难。'));
+          return {tone:'down', delta:T('Brand −12 · value hit','品牌 −12 · 价值受挫'), html:T('You bow to their cost-cutting. Quality and brand slip, the business is worth less — and it\'s no longer really yours.','你屈从于他们的削减成本。品质与品牌下滑，生意变得更不值钱——而且它已不真正属于你。'),
+            lesson:T('Sell equity without protections and you can be steered, even ousted. Control is traded away a slice at a time.','没有保护条款就出售股权，你可能被人牵着走，甚至被赶下台。控制权是一片一片被让出去的。')}; } },
+      { t:T('Settle it via your shareholders\' agreement','用你的股东协议来解决'), h:T('Only if you signed one (Year-4 succession step).','前提是你签过（第 4 年传承那步）。'),
+        locked:(S.succession ? null : T('You never signed a shareholders\' agreement (the Year-4 succession choice) — there\'s no framework to resolve this cheaply.','你从没签过股东协议（第 4 年的传承选择）——没有框架能低成本地化解这件事。')),
         go:function(){ var c=8000; S.cash-=c;
-          note('A shareholders\' agreement turned an investor dispute into a clause — governance is what makes equity safe.');
-          return {tone:'flat', delta:fmt(-c), html:'Your shareholders\' agreement spells out decision rights, reserved matters and a fair exit. The dispute settles quickly and cleanly.',
-            lesson:'A <b>shareholders\' agreement</b> turns an investor fight from a crisis into a clause. This is exactly why you sort governance <i>before</i> you raise.'}; } }
+          note(T('A shareholders\' agreement turned an investor dispute into a clause — governance is what makes equity safe.','一份股东协议把投资人纠纷变成了一个条款——治理才是让股权安全的东西。'));
+          return {tone:'flat', delta:fmt(-c), html:T('Your shareholders\' agreement spells out decision rights, reserved matters and a fair exit. The dispute settles quickly and cleanly.','你的股东协议写明了决策权、保留事项和公平退出。纠纷迅速而干净地解决了。'),
+            lesson:T('A <b>shareholders\' agreement</b> turns an investor fight from a crisis into a clause. This is exactly why you sort governance <i>before</i> you raise.','一份<b>股东协议</b>能把投资人之争从危机变成条款。这正是为什么你要在募资<i>之前</i>先把治理理清。')}; } }
     ]; } }
 ];
 
@@ -757,26 +834,26 @@ function pickFate(){
 
 /* Reveal the drawn card, then let the player choose how to act on it. */
 function cardReveal(card){
-  var kind = card.tone==='down' ? 'Disaster' : card.tone==='up' ? 'Fortune' : 'Fate';
-  var sit = (typeof card.situation==='function') ? card.situation() : card.situation;
+  var kind = card.tone==='down' ? T('Disaster','灾难') : card.tone==='up' ? T('Fortune','机遇') : T('Fate','命运');
+  var sit = (typeof card.situation==='function') ? card.situation() : T(card.situation, card.situationZh||card.situation);
   return {
-    title:'🎡 The Wheel of Fate — Year '+S.year,
-    tags:'<span class="tag '+(card.tone==='down'?'n':'g')+'">🃏 '+kind+' card</span>',
+    title:T('🎡 The Wheel of Fate — Year '+S.year,'🎡 命运之轮 · 第 '+S.year+' 年'),
+    tags:'<span class="tag '+(card.tone==='down'?'n':'g')+'">🃏 '+kind+T(' card',' 卡')+'</span>',
     flavor:'<div class="wheel">🎡</div>'
-      + '<div class="fatecard '+card.tone+'"><div class="fk">Fate Card</div>'
-      + '<div class="fem">'+card.em+'</div><div class="ft">'+card.title+'</div></div>'
-      + sit + ' <b>How do you respond?</b>',
+      + '<div class="fatecard '+card.tone+'"><div class="fk">'+T('Fate Card','命运卡')+'</div>'
+      + '<div class="fem">'+card.em+'</div><div class="ft">'+T(card.title, card.titleZh||card.title)+'</div></div>'
+      + sit + ' <b>'+T('How do you respond?','你如何应对？')+'</b>',
     options: card.opts()
   };
 }
 
 function fateScene(){
   return {
-    title:'🎡 The Wheel of Fate — Year '+S.year,
-    tags:'<span class="tag g">🃏 Fate Card</span>',
-    flavor:'Business isn\'t only your choices — it\'s what the world throws at you, and how you react to it. Spin the wheel, then <b>decide how to act</b> on the card you draw. Your response sets how big the reward or the damage is.',
+    title:T('🎡 The Wheel of Fate — Year '+S.year,'🎡 命运之轮 · 第 '+S.year+' 年'),
+    tags:'<span class="tag g">🃏 '+T('Fate Card','命运卡')+'</span>',
+    flavor:T('Business isn\'t only your choices — it\'s what the world throws at you, and how you react to it. Spin the wheel, then <b>decide how to act</b> on the card you draw. Your response sets how big the reward or the damage is.','做生意不只靠你的选择——还有世界抛给你的意外，以及你如何应对。转动命运之轮，再<b>决定如何行动</b>。你的应对决定奖励或损失有多大。'),
     options:[
-      { t:'🎡 Spin the Wheel of Fate', h:'Draw a random event — then choose how to handle it.',
+      { t:T('🎡 Spin the Wheel of Fate','🎡 转动命运之轮'), h:T('Draw a random event — then choose how to handle it.','抽一张随机事件——再决定怎么应对。'),
         go:function(){ return { scene: cardReveal(pickFate()) }; } }
     ]
   };
@@ -787,49 +864,49 @@ function fateScene(){
    ============================================================ */
 function yr1Decision(){
   return {
-    title:'Year 1 · Opening Day',
-    tags:'<span class="tag n">'+V().em+' '+V().name+'</span><span class="tag g">🍚 Nasi Lemak</span>',
-    flavor:'Your first outlet is ready in a busy Petaling Jaya corner lot. Word of mouth is everything at the start. How hard do you push the launch?',
+    title:T('Year 1 · Opening Day','第 1 年 · 开业日'),
+    tags:'<span class="tag n">'+V().em+' '+VN()+'</span><span class="tag g">🍚 '+T('Nasi Lemak','椰浆饭')+'</span>',
+    flavor:T('Your first outlet is ready in a busy Petaling Jaya corner lot. Word of mouth is everything at the start. How hard do you push the launch?','你的第一家分店在八打灵再也一个繁忙街角准备就绪。起步阶段口碑就是一切。开业你要多用力推？'),
     options:[
-      { t:'Humble stall — keep it lean (−RM2,000)',
-        h:'Low spend, steady start. A safe base to build on.',
+      { t:T('Humble stall — keep it lean (−RM2,000)','朴素小摊——保持精简（−RM2,000）'),
+        h:T('Low spend, steady start. A safe base to build on.','低投入、稳起步。一个可靠的基础。'),
         go:function(){ S.cash-=2000; S.brand+=6;
-          return {tone:'flat', delta:'Brand +6', html:'You open quietly and let the sambal do the talking. Costs stay tiny.',
-            lesson:'Low burn buys you time — useful for any vehicle, essential for an unlimited-liability one where losses hit you personally.'}; } },
-      { t:'Kiosk + signboard + GrabFood (−RM8,000)',
-        h:'A proper storefront and delivery reach from day one.',
+          return {tone:'flat', delta:T('Brand +6','品牌 +6'), html:T('You open quietly and let the sambal do the talking. Costs stay tiny.','你低调开业，让参峇自己说话。成本极低。'),
+            lesson:T('Low burn buys you time — useful for any vehicle, essential for an unlimited-liability one where losses hit you personally.','低烧钱率为你争取时间——对任何载体都有用，对无限责任的载体尤其关键，因为亏损会砸到你个人身上。')}; } },
+      { t:T('Kiosk + signboard + GrabFood (−RM8,000)','档口 + 招牌 + GrabFood（−RM8,000）'),
+        h:T('A proper storefront and delivery reach from day one.','从第一天起就有像样的门面和外送触达。'),
         go:function(){ S.cash-=8000; S.brand+=15; S.bizValue+=6000;
-          return {tone:'up', delta:'Brand +15', html:'A bright signboard and delivery listings pull steady crowds. You look established.',
-            lesson:'Investing in presence lifts demand — but spend within your means; a bad month is harder to absorb with thin cash.'}; } },
-      { t:'Go viral — pay a food influencer (−RM5,000)',
-        h:'High risk, high reward. A hit floods you; a flop wastes the cash.',
+          return {tone:'up', delta:T('Brand +15','品牌 +15'), html:T('A bright signboard and delivery listings pull steady crowds. You look established.','亮眼的招牌和外送上架带来稳定人潮。你看起来很上道。'),
+            lesson:T('Investing in presence lifts demand — but spend within your means; a bad month is harder to absorb with thin cash.','投资曝光能提升需求——但量力而为；现金薄时，一个淡月更难扛。')}; } },
+      { t:T('Go viral — pay a food influencer (−RM5,000)','冲爆红——付钱找美食网红（−RM5,000）'),
+        h:T('High risk, high reward. A hit floods you; a flop wastes the cash.','高风险、高回报。爆了人潮涌来；砸了钱就打水漂。'),
         go:function(){ S.cash-=5000;
-          if(chance(0.55)){ S.brand+=28; S.bizValue+=12000; note('A viral launch gave you a demand spike money can\'t easily buy.');
-            return {tone:'up', delta:'Brand +28 · viral hit!', html:'The reel hits 2 million views. Queues snake down the street by the weekend.',
-              lesson:'Marketing can compound fast — but it\'s a gamble, not a guarantee.'}; }
+          if(chance(0.55)){ S.brand+=28; S.bizValue+=12000; note(T('A viral launch gave you a demand spike money can\'t easily buy.','一次爆红开业带来了钱难买的需求高峰。'));
+            return {tone:'up', delta:T('Brand +28 · viral hit!','品牌 +28 · 爆红！'), html:T('The reel hits 2 million views. Queues snake down the street by the weekend.','短视频冲上 200 万播放。到周末，队伍已排到街尾。'),
+              lesson:T('Marketing can compound fast — but it\'s a gamble, not a guarantee.','营销能快速复利——但它是赌博，不是保证。')}; }
           S.brand+=5;
-          return {tone:'down', delta:'Brand +5 · flopped', html:'The video underperforms. A few new faces, but mostly you paid for reach that fizzled.',
-            lesson:'High-variance bets can miss. The vehicle you chose decides who absorbs the loss when they do.'}; } }
+          return {tone:'down', delta:T('Brand +5 · flopped','品牌 +5 · 扑街'), html:T('The video underperforms. A few new faces, but mostly you paid for reach that fizzled.','视频表现平平。来了几张新面孔，但大多是你花钱买了一场哑火的曝光。'),
+            lesson:T('High-variance bets can miss. The vehicle you chose decides who absorbs the loss when they do.','高波动的赌注会落空。当它落空时，你选的载体决定由谁来承担损失。')}; } }
     ]
   };
 }
 function yr1Event(){
   var health = {
-    title:'Year 1 · The Health Inspection',
-    tags:'<span class="tag n">📋 Licensing</span>',
-    flavor:'MPSJ officers arrive for a routine food-premises inspection. Your business licence and typhoid jabs are what\'s being checked — this is about operating legally, whichever vehicle you chose.',
+    title:T('Year 1 · The Health Inspection','第 1 年 · 卫生检查'),
+    tags:'<span class="tag n">📋 '+T('Licensing','执照')+'</span>',
+    flavor:T('MPSJ officers arrive for a routine food-premises inspection. Your business licence and typhoid jabs are what\'s being checked — this is about operating legally, whichever vehicle you chose.','市议会（MPSJ）官员前来例行检查食品场所。他们查的是你的营业执照和伤寒疫苗——这关乎合法经营，无论你选了哪种载体。'),
     options:[
-      { t:'You\'d sorted licences early',
-        h:'Boring, but it pays off now.',
+      { t:T('You\'d sorted licences early','你早早办妥了执照'),
+        h:T('Boring, but it pays off now.','无趣，但此刻有回报。'),
         go:function(){ S.brand+=3;
-          return {tone:'up', delta:'Clean pass · Brand +3', html:'Spotless. They post a green rating on your door and move on.',
-            lesson:'A licence is separate from your business vehicle — every operator needs one. Registration ≠ compliance.',
+          return {tone:'up', delta:T('Clean pass · Brand +3','顺利通过 · 品牌 +3'), html:T('Spotless. They post a green rating on your door and move on.','一尘不染。他们在你门上贴了绿色评级便离开。'),
+            lesson:T('A licence is separate from your business vehicle — every operator needs one. Registration ≠ compliance.','执照与你的商业载体是两回事——每个经营者都需要。注册 ≠ 合规。'),
             pnl: yearEnd()}; } },
-      { t:'You\'d been meaning to renew (−RM1,500)',
-        h:'A compound notice for the lapsed licence.',
+      { t:T('You\'d been meaning to renew (−RM1,500)','你一直想着要续（−RM1,500）'),
+        h:T('A compound notice for the lapsed licence.','过期执照收到一张罚单。'),
         go:function(){ S.cash-=1500; S.brand-=4;
-          return {tone:'down', delta:'−RM1,500 fine', html:'A compound for the expired licence, plus a warning. Annoying and avoidable.',
-            lesson:'Fines here are personal-operational, not about liability protection — no vehicle shields you from breaking food law.',
+          return {tone:'down', delta:T('−RM1,500 fine','−RM1,500 罚款'), html:T('A compound for the expired licence, plus a warning. Annoying and avoidable.','过期执照被开罚单，外加一次警告。恼人且本可避免。'),
+            lesson:T('Fines here are personal-operational, not about liability protection — no vehicle shields you from breaking food law.','这里的罚款属于个人经营层面，与责任保护无关——没有任何载体能替你挡违反食品法的责任。'),
             pnl: yearEnd()}; } }
     ]
   };
@@ -842,64 +919,64 @@ function yr1Event(){
 function yr2Decision(){
   var v = V();
   var opts = [
-    { t:'Stay one outlet — consolidate',
-      h:'No new capital, no new risk. Grow the brand instead.',
+    { t:T('Stay one outlet — consolidate','守住一家分店——巩固'),
+      h:T('No new capital, no new risk. Grow the brand instead.','不融新资、不添新险。转而做大品牌。'),
       go:function(){ S.brand+=6;
-        return {tone:'flat', delta:'Brand +6', html:'You perfect the menu and build a loyal base rather than stretching your cash.',
-          lesson:'Not every business must scale. A single-outlet sole prop can be a perfectly good living.'}; } }
+        return {tone:'flat', delta:T('Brand +6','品牌 +6'), html:T('You perfect the menu and build a loyal base rather than stretching your cash.','你打磨菜单、培养忠实客群，而不是把现金摊薄。'),
+          lesson:T('Not every business must scale. A single-outlet sole prop can be a perfectly good living.','不是每门生意都非扩张不可。一家独资小店也能是一份很好的生计。')}; } }
   ];
 
   // Financing a 2nd outlet differs by vehicle — this is the lesson.
   if(v.equity){
-    opts.push({ t:'Open 2nd outlet — take an angel\'s equity (+RM25,000 cash)',
-      h:'A regular investor buys shares in your Sdn Bhd. No debt; you give up 15% ownership.',
+    opts.push({ t:T('Open 2nd outlet — take an angel\'s equity (+RM25,000 cash)','开第二家——引入天使股权（+RM25,000 现金）'),
+      h:T('A regular investor buys shares in your Sdn Bhd. No debt; you give up 15% ownership.','一位普通投资人买你 Sdn Bhd 的股份。不欠债；你让出 15% 股权。'),
       go:function(){ S.cash+=25000; S.outlets++; S.bizValue+=55000; S.ownership*=0.85; S.brand+=8;
-        note('Because you were a Sdn Bhd, you funded growth by ISSUING SHARES — no debt, no personal guarantee.');
-        return {tone:'up', delta:'+RM25,000 · 2nd outlet', html:'A first angel takes 15% of the company for RM25,000. You open outlet #2 with zero new debt.',
-          lesson:'Only a company with shares can raise <b>equity</b>. You traded a slice of ownership for cash and kept liability limited.'}; } });
+        note(T('Because you were a Sdn Bhd, you funded growth by ISSUING SHARES — no debt, no personal guarantee.','因为你是 Sdn Bhd，你靠发行股份为成长融资——无债务、无个人担保。'));
+        return {tone:'up', delta:T('+RM25,000 · 2nd outlet','+RM25,000 · 第二家分店'), html:T('A first angel takes 15% of the company for RM25,000. You open outlet #2 with zero new debt.','第一位天使以 RM25,000 拿下公司 15%。你零新债地开出第二家分店。'),
+          lesson:T('Only a company with shares can raise <b>equity</b>. You traded a slice of ownership for cash and kept liability limited.','只有有股份的公司才能募<b>股权</b>。你用一小片股权换现金，同时把责任控制在有限范围。')}; } });
   } else if(v.limited){ // LLP
-    opts.push({ t:'Open 2nd outlet — bank term loan (+RM25,000, business debt)',
-      h:'Your LLP\'s limited liability earns a decent business loan. Debt sits on the LLP, not you.',
+    opts.push({ t:T('Open 2nd outlet — bank term loan (+RM25,000, business debt)','开第二家——银行定期贷款（+RM25,000，公司债务）'),
+      h:T('Your LLP\'s limited liability earns a decent business loan. Debt sits on the LLP, not you.','你 LLP 的有限责任能拿到不错的商业贷款。债在 LLP 身上，不在你身上。'),
       go:function(){ S.cash+=25000; S.debts+=25000; S.outlets++; S.bizValue+=52000; S.brand+=8;
-        note('Your LLP borrowed as a separate legal person — the debt was the firm\'s, not personally yours.');
-        return {tone:'up', delta:'+RM25,000 · 2nd outlet', html:'The bank lends to the LLP on reasonable terms. You open outlet #2. The loan is the firm\'s liability.',
-          lesson:'An LLP can\'t issue shares to outside investors, but its <b>limited liability</b> still gets legitimate business credit.'}; } });
+        note(T('Your LLP borrowed as a separate legal person — the debt was the firm\'s, not personally yours.','你的 LLP 以独立法律人格借款——债是公司的，不是你个人的。'));
+        return {tone:'up', delta:T('+RM25,000 · 2nd outlet','+RM25,000 · 第二家分店'), html:T('The bank lends to the LLP on reasonable terms. You open outlet #2. The loan is the firm\'s liability.','银行以合理条件贷给 LLP。你开出第二家分店。贷款是公司的负债。'),
+          lesson:T('An LLP can\'t issue shares to outside investors, but its <b>limited liability</b> still gets legitimate business credit.','LLP 不能向外部投资人发股，但它的<b>有限责任</b>仍能取得正规的商业信贷。')}; } });
   } else { // enterprise / partnership — personal debt only
-    opts.push({ t:'Open 2nd outlet — personal bank loan (+RM25,000, YOUR debt)',
-      h:'No shares to sell. The only route is a loan in your own name, personally guaranteed.',
+    opts.push({ t:T('Open 2nd outlet — personal bank loan (+RM25,000, YOUR debt)','开第二家——个人银行贷款（+RM25,000，你的债）'),
+      h:T('No shares to sell. The only route is a loan in your own name, personally guaranteed.','没有股份可卖。唯一的路是用你自己名字、个人担保的贷款。'),
       go:function(){ S.cash+=25000; S.debts+=25000; S.outlets++; S.bizValue+=48000; S.brand+=7; S.flags.personalLoan=true;
-        note('With no shares to sell, you grew by taking on <b>personal debt</b> — your name on the line.');
-        return {tone:'flat', delta:'+RM25,000 · 2nd outlet', html:'The bank won\'t lend to "the business" — it lends to <b>you</b>. You sign a personal guarantee and open outlet #2.',
-          lesson:'A sole prop / partnership can\'t raise equity. Growth means personal debt — and if it sours, your assets answer for it.'}; } });
+        note(T('With no shares to sell, you grew by taking on <b>personal debt</b> — your name on the line.','没有股份可卖，你靠背上<b>个人债务</b>成长——签的是你的名。'));
+        return {tone:'flat', delta:T('+RM25,000 · 2nd outlet','+RM25,000 · 第二家分店'), html:T('The bank won\'t lend to "the business" — it lends to <b>you</b>. You sign a personal guarantee and open outlet #2.','银行不贷给“生意”——它贷给<b>你</b>。你签下个人担保，开出第二家分店。'),
+          lesson:T('A sole prop / partnership can\'t raise equity. Growth means personal debt — and if it sours, your assets answer for it.','独资／合伙不能募股。成长意味着个人债务——一旦出事，你的财产要买单。')}; } });
   }
   return {
-    title:'Year 2 · The Second Outlet',
-    tags:'<span class="tag n">💰 Financing</span>',
-    flavor:'Demand outstrips one kitchen. A second lot opens nearby for RM25,000 in fit-out and stock. How you fund it depends entirely on your vehicle.',
+    title:T('Year 2 · The Second Outlet','第 2 年 · 第二家分店'),
+    tags:'<span class="tag n">💰 '+T('Financing','融资')+'</span>',
+    flavor:T('Demand outstrips one kitchen. A second lot opens nearby for RM25,000 in fit-out and stock. How you fund it depends entirely on your vehicle.','需求超出一间厨房的产能。附近有个铺位，RM25,000 的装修和存货就能开第二家。怎么筹这笔钱，完全取决于你的载体。'),
     options:opts
   };
 }
 function yr2Event(){
   var v = V();
   var claim = 30000;
-  var flavor = 'A customer is hospitalised after a bad batch of sambal and sues for '+fmt(claim)+' in damages. This is the moment your choice of liability matters most.';
-  var options = [ { t:'Face the claim', h:'See how far it reaches.', go:function(){
+  var flavor = T('A customer is hospitalised after a bad batch of sambal and sues for '+fmt(claim)+' in damages. This is the moment your choice of liability matters most.','一位顾客因一批坏参峇入院，索赔 '+fmt(claim)+'。这正是你的责任选择最要紧的时刻。');
+  var options = [ { t:T('Face the claim','面对索赔'), h:T('See how far it reaches.','看看它能追到多远。'), go:function(){
     if(v.limited){
       var hit = 9000;
       S.cash -= hit;
-      note('When the lawsuit struck, <b>limited liability</b> capped the damage to the business — your home and savings were untouched.');
-      return {tone:'down', delta:fmt(-hit), html:'Your '+v.name+' is a <b>separate legal person</b>. Insurance and the company absorb the claim; your personal assets are ring-fenced. Net exposure '+fmt(hit)+'.',
-        lesson:'This is the whole point of an LLP / Sdn Bhd: the company is liable, <b>not you</b>. Your downside is capped at what\'s in the business.'};
+      note(T('When the lawsuit struck, <b>limited liability</b> capped the damage to the business — your home and savings were untouched.','诉讼来袭时，<b>有限责任</b>把损失封在生意里——你的房子和积蓄毫发无损。'));
+      return {tone:'down', delta:fmt(-hit), html:T('Your '+v.name+' is a <b>separate legal person</b>. Insurance and the company absorb the claim; your personal assets are ring-fenced. Net exposure '+fmt(hit)+'.','你的'+vn(v)+'是<b>独立法律人格</b>。保险和公司吸收了索赔；你的个人财产被隔离。净敞口 '+fmt(hit)+'。'),
+        lesson:T('This is the whole point of an LLP / Sdn Bhd: the company is liable, <b>not you</b>. Your downside is capped at what\'s in the business.','这正是 LLP／Sdn Bhd 的意义所在：负责的是公司，<b>不是你</b>。你的下行上限止于生意里的资产。')};
     } else {
       var hitU = Math.min(claim, S.cash + 12000); // can push you into personal debt
       S.cash -= hitU;
       if(S.cash < 0){ S.debts += -S.cash; S.cash = 0; }
-      note('The lawsuit reached <b>past the business into your personal money</b> — the price of unlimited liability.');
-      return {tone:'down', delta:fmt(-hitU), html:'As a '+v.name.toLowerCase()+' you and the business are the <b>same</b> in law. The claim comes after your personal savings — and keeps coming. Exposure '+fmt(hitU)+'.',
-        lesson:'Unlimited liability means one disaster can take your <b>personal</b> assets. A limited vehicle would have capped this.'};
+      note(T('The lawsuit reached <b>past the business into your personal money</b> — the price of unlimited liability.','诉讼<b>越过生意追进了你的个人钱财</b>——无限责任的代价。'));
+      return {tone:'down', delta:fmt(-hitU), html:T('As a '+v.name.toLowerCase()+' you and the business are the <b>same</b> in law. The claim comes after your personal savings — and keeps coming. Exposure '+fmt(hitU)+'.','作为'+vn(v)+'，在法律上你和生意是<b>同一体</b>。索赔追向你的个人积蓄——而且不会停。敞口 '+fmt(hitU)+'。'),
+        lesson:T('Unlimited liability means one disaster can take your <b>personal</b> assets. A limited vehicle would have capped this.','无限责任意味着一场灾难就能夺走你的<b>个人</b>财产。有限责任的载体本可封顶。')};
     }
   }}];
-  return { title:'Year 2 · Food-Poisoning Lawsuit', tags:'<span class="tag n">⚖️ Liability</span>', flavor:flavor, options:options };
+  return { title:T('Year 2 · Food-Poisoning Lawsuit','第 2 年 · 食物中毒诉讼'), tags:'<span class="tag n">⚖️ '+T('Liability','责任')+'</span>', flavor:flavor, options:options };
 }
 
 /* Year 2 close — SST / indirect-tax threshold arrives with scale */
@@ -907,43 +984,43 @@ function yr2SST(){
   if(S.outlets>=2){
     S.sstReg = true;
     return {
-      title:'Year 2 · Crossing the Tax Threshold',
+      title:T('Year 2 · Crossing the Tax Threshold','第 2 年 · 跨过税务门槛'),
       tags:'<span class="tag n">🧾 SST</span>',
-      flavor:'With a second outlet, your prepared-food turnover is heading past the RM500,000 <b>service tax</b> registration threshold. Registering isn\'t optional once you cross it — and it applies whatever your vehicle.',
+      flavor:T('With a second outlet, your prepared-food turnover is heading past the RM500,000 <b>service tax</b> registration threshold. Registering isn\'t optional once you cross it — and it applies whatever your vehicle.','有了第二家分店，你的熟食营业额正逼近 RM500,000 的<b>服务税</b>登记门槛。一旦跨过，登记就不是可选项——而且不论你用哪种载体都适用。'),
       options:[
-        { t:'Register for service tax and charge it correctly',
-          h:'Add SST on eligible sales; file returns on time.',
+        { t:T('Register for service tax and charge it correctly','登记服务税并正确收取'),
+          h:T('Add SST on eligible sales; file returns on time.','对应税销售加收 SST；按时报税。'),
           go:function(){ S.brand+=2;
-            note('Growth pushed you past the SST threshold — an indirect-tax cost that arrives with scale, whatever the vehicle.');
-            return {tone:'flat', delta:'SST registered', html:'You register for <b>service tax</b>, charge it on eligible sales and remit to Customs. Another filing duty — and a sign you\'ve grown.',
-              lesson:'Indirect tax (SST) is triggered by <b>turnover</b>, not by your entity type. As you scale, tax and compliance multiply — budget for both.',
+            note(T('Growth pushed you past the SST threshold — an indirect-tax cost that arrives with scale, whatever the vehicle.','成长把你推过 SST 门槛——这是随规模而来的间接税成本，与载体无关。'));
+            return {tone:'flat', delta:T('SST registered','已登记 SST'), html:T('You register for <b>service tax</b>, charge it on eligible sales and remit to Customs. Another filing duty — and a sign you\'ve grown.','你登记<b>服务税</b>，对应税销售收取并上缴关税局。多了一项申报义务——也是你长大的标志。'),
+              lesson:T('Indirect tax (SST) is triggered by <b>turnover</b>, not by your entity type. As you scale, tax and compliance multiply — budget for both.','间接税（SST）由<b>营业额</b>触发，与你的实体类型无关。规模一大，税与合规都翻倍——两者都要预算。'),
               pnl: yearEnd()}; } },
-        { t:'Ignore it and hope nobody notices',
-          h:'Customs penalties are steep.',
+        { t:T('Ignore it and hope nobody notices','无视它，寄望没人发现'),
+          h:T('Customs penalties are steep.','关税局的罚则很重。'),
           go:function(){
             if(chance(0.5)){ S.cash-=18000; S.brand-=6;
-              note('You skipped SST registration and were penalised — indirect-tax non-compliance is expensive and no liability shield stops it.');
-              return {tone:'down', delta:'−RM18,000 penalty', html:'A Customs audit catches the unregistered turnover. Back-tax plus penalties land hard.',
-                lesson:'SST is compulsory above the threshold. Non-compliance risks penalties that <b>no limited-liability shield protects you from</b> — this is tax law, not contract.',
+              note(T('You skipped SST registration and were penalised — indirect-tax non-compliance is expensive and no liability shield stops it.','你略过 SST 登记并被罚——间接税不合规代价高昂，没有责任保护罩挡得住。'));
+              return {tone:'down', delta:T('−RM18,000 penalty','−RM18,000 罚款'), html:T('A Customs audit catches the unregistered turnover. Back-tax plus penalties land hard.','一次关税局审计抓到了未登记的营业额。补税加罚款重重落下。'),
+                lesson:T('SST is compulsory above the threshold. Non-compliance risks penalties that <b>no limited-liability shield protects you from</b> — this is tax law, not contract.','超过门槛，SST 就是强制的。不合规的罚款<b>没有任何有限责任保护罩能替你挡</b>——这是税法，不是合约。'),
                 pnl: yearEnd()}; }
-            note('You dodged SST this year — a liability quietly accruing in the background.');
-            return {tone:'flat', delta:'Got away with it — for now', html:'No audit this year, but the unregistered liability keeps accruing.',
-              lesson:'Skipping an indirect-tax registration is a ticking clock, not a saving. It usually catches up with interest.',
+            note(T('You dodged SST this year — a liability quietly accruing in the background.','你今年躲过了 SST——一笔在背后悄悄累积的负债。'));
+            return {tone:'flat', delta:T('Got away with it — for now','暂时蒙混过关'), html:T('No audit this year, but the unregistered liability keeps accruing.','今年没被审计，但未登记的负债仍在累积。'),
+              lesson:T('Skipping an indirect-tax registration is a ticking clock, not a saving. It usually catches up with interest.','略过间接税登记是一颗定时炸弹，不是节省。它通常会连本带利追上你。'),
               pnl: yearEnd()}; } }
       ]
     };
   }
   return {
-    title:'Year 2 · Below the Tax Threshold',
+    title:T('Year 2 · Below the Tax Threshold','第 2 年 · 门槛之下'),
     tags:'<span class="tag n">🧾 SST</span>',
-    flavor:'You stayed lean at one outlet, so turnover sits comfortably below the RM500,000 service-tax threshold — one quiet upside of not scaling.',
+    flavor:T('You stayed lean at one outlet, so turnover sits comfortably below the RM500,000 service-tax threshold — one quiet upside of not scaling.','你守着一家分店保持精简，营业额舒舒服服待在 RM500,000 服务税门槛之下——不扩张的一个小好处。'),
     options:[
-      { t:'Keep the books simple',
-        h:'No SST registration needed yet.',
+      { t:T('Keep the books simple','把账目保持简单'),
+        h:T('No SST registration needed yet.','暂时不需登记 SST。'),
         go:function(){
-          note('Staying small kept you under the SST threshold — less tax admin, but also less scale.');
-          return {tone:'flat', delta:'No SST yet', html:'Below the threshold, you skip service-tax registration entirely. Simpler books — the trade-off is you\'ve chosen not to grow this year.',
-            lesson:'Indirect-tax duties scale with turnover. Small can mean simpler — a legitimate strategy, just not a growth one.',
+          note(T('Staying small kept you under the SST threshold — less tax admin, but also less scale.','守小让你留在 SST 门槛之下——税务事务更少，但规模也更小。'));
+          return {tone:'flat', delta:T('No SST yet','暂无 SST'), html:T('Below the threshold, you skip service-tax registration entirely. Simpler books — the trade-off is you\'ve chosen not to grow this year.','在门槛之下，你完全无需登记服务税。账目更简单——代价是你今年选择了不成长。'),
+            lesson:T('Indirect-tax duties scale with turnover. Small can mean simpler — a legitimate strategy, just not a growth one.','间接税义务随营业额而增。小可以意味着简单——一个正当的策略，只是不属于成长型。'),
             pnl: yearEnd()}; } }
     ]
   };
@@ -956,99 +1033,99 @@ function yr3Decision(){
   var v = V();
   var opts = [];
   if(v.equity){
-    opts.push({ t:'Take RM250,000 growth investment for equity',
-      h:'A private-equity firm buys 30% of your Sdn Bhd to fund a jump to 8 outlets + a central kitchen.',
+    opts.push({ t:T('Take RM250,000 growth investment for equity','以股权换取 RM250,000 成长投资'),
+      h:T('A private-equity firm buys 30% of your Sdn Bhd to fund a jump to 8 outlets + a central kitchen.','一家私募基金买你 Sdn Bhd 的 30%，资助你跃升到 8 家分店 + 一个中央厨房。'),
       go:function(){ S.cash+=250000; S.ownership*=0.70; S.outlets+=6; S.bizValue+=400000; S.brand+=12; S.flags.raised=true; S.equipInvest=true;
-        note('A Sdn Bhd could sell shares to a PE investor — RM250k of growth capital with no debt. This is how you build toward a listing.');
-        return {tone:'up', delta:'+RM250,000 · 8 outlets', html:'You issue new shares for RM250,000. A central kitchen and six more outlets follow. You now own 70% of a much bigger company — and your investor takes a <b>board seat</b>.',
-          lesson:'Equity turns ownership into fuel — but it isn\'t free money. Your investor is now a part-owner with real power. Sort a <b>shareholders\' agreement</b> (the succession step) or a dispute later could get ugly.'}; } });
-    opts.push({ t:'Grow slowly on your own cash instead',
-      h:'Keep 100% control, but stay small and unlisted-in-practice.',
+        note(T('A Sdn Bhd could sell shares to a PE investor — RM250k of growth capital with no debt. This is how you build toward a listing.','Sdn Bhd 能向私募投资人售股——RM250k 成长资本、零债务。这就是你朝上市迈进的方式。'));
+        return {tone:'up', delta:T('+RM250,000 · 8 outlets','+RM250,000 · 8 家分店'), html:T('You issue new shares for RM250,000. A central kitchen and six more outlets follow. You now own 70% of a much bigger company — and your investor takes a <b>board seat</b>.','你发新股换 RM250,000。一个中央厨房和另外六家分店随之而来。你现在持有一家大得多的公司的 70%——而你的投资人拿了一个<b>董事席位</b>。'),
+          lesson:T('Equity turns ownership into fuel — but it isn\'t free money. Your investor is now a part-owner with real power. Sort a <b>shareholders\' agreement</b> (the succession step) or a dispute later could get ugly.','股权把股份变成燃料——但不是免费的钱。你的投资人现在是有实权的共同所有者。理好<b>股东协议</b>（传承那一步），否则日后纠纷会很难看。')}; } });
+    opts.push({ t:T('Grow slowly on your own cash instead','改为靠自有现金慢慢成长'),
+      h:T('Keep 100% control, but stay small and unlisted-in-practice.','保留 100% 控制权，但保持小、实际上不上市。'),
       go:function(){ S.outlets+=1; S.bizValue+=45000; S.brand+=6; S.cash-=15000;
-        return {tone:'flat', delta:'+1 outlet', html:'You self-fund a third outlet and keep every share. Slower, but wholly yours.',
-          lesson:'Declining equity keeps control — the trade-off is a lower growth ceiling. Both can be valid; know which you\'re choosing.'}; } });
+        return {tone:'flat', delta:T('+1 outlet','+1 家分店'), html:T('You self-fund a third outlet and keep every share. Slower, but wholly yours.','你自筹开出第三家分店、保留每一股。更慢，但全归你。'),
+          lesson:T('Declining equity keeps control — the trade-off is a lower growth ceiling. Both can be valid; know which you\'re choosing.','拒绝股权能保住控制权——代价是更低的成长天花板。两者都可行；关键是知道自己在选哪个。')}; } });
   } else if(v.limited){ // LLP
-    opts.push({ t:'Franchise the brand (needs a credible entity)',
-      h:'Your LLP\'s standing lets you licence the recipe to 3 franchisees for fees + royalties.',
+    opts.push({ t:T('Franchise the brand (needs a credible entity)','把品牌特许经营（需要有公信力的实体）'),
+      h:T('Your LLP\'s standing lets you licence the recipe to 3 franchisees for fees + royalties.','你 LLP 的公信力让你把配方授权给 3 家加盟商，收取加盟费 + 权利金。'),
       go:function(){ S.cash+=45000; S.outlets+=2; S.bizValue+=110000; S.brand+=10; S.flags.franchise=true;
-        note('Your LLP was credible enough to franchise — limited liability and a real registration reassured franchisees.');
-        return {tone:'up', delta:'+RM45,000 franchise fees', html:'Three franchisees sign up under your LLP\'s brand. Fees now, royalties later, and the network grows without you funding every outlet.',
-          lesson:'An LLP can license and franchise credibly — but it still <b>can\'t issue shares</b>, so a big equity raise (or IPO) needs converting to Sdn Bhd first.'}; } });
-    opts.push({ t:'An investor offers RM60,000 — for shares you can\'t give',
-      h:'They want equity; an LLP has no shares to sell.',
+        note(T('Your LLP was credible enough to franchise — limited liability and a real registration reassured franchisees.','你的 LLP 有足够公信力做特许经营——有限责任和真正的注册让加盟商放心。'));
+        return {tone:'up', delta:T('+RM45,000 franchise fees','+RM45,000 加盟费'), html:T('Three franchisees sign up under your LLP\'s brand. Fees now, royalties later, and the network grows without you funding every outlet.','三家加盟商在你 LLP 的品牌下签约。现在收费、日后收权利金，网络扩张而无需你为每家分店出资。'),
+          lesson:T('An LLP can license and franchise credibly — but it still <b>can\'t issue shares</b>, so a big equity raise (or IPO) needs converting to Sdn Bhd first.','LLP 能有公信力地授权和特许经营——但它仍<b>不能发股</b>，所以大额募股（或 IPO）需先转为 Sdn Bhd。')}; } });
+    opts.push({ t:T('An investor offers RM60,000 — for shares you can\'t give','投资人出 RM60,000——换你给不了的股份'),
+      h:T('They want equity; an LLP has no shares to sell.','他们要股权；LLP 没有股份可卖。'),
       go:function(){ S.cash+=30000; S.debts+=30000; S.outlets+=1; S.bizValue+=45000;
-        note('The investor wanted shares; an LLP has none, so the deal shrank to a loan.');
-        return {tone:'flat', delta:'+RM30,000 (as debt)', html:'"We\'d buy equity, but an LLP has no shares." The deal falls back to a RM30,000 loan instead of an investment.',
-          lesson:'No share capital = no equity investors. That ceiling is exactly why growth-hungry firms pick a <b>Sdn Bhd</b>.'}; } });
+        note(T('The investor wanted shares; an LLP has none, so the deal shrank to a loan.','投资人想要股份；LLP 没有，于是交易缩水成一笔贷款。'));
+        return {tone:'flat', delta:T('+RM30,000 (as debt)','+RM30,000（作为债务）'), html:T('"We\'d buy equity, but an LLP has no shares." The deal falls back to a RM30,000 loan instead of an investment.','“我们本想买股权，但 LLP 没有股份。”交易退回成一笔 RM30,000 的贷款，而非投资。'),
+          lesson:T('No share capital = no equity investors. That ceiling is exactly why growth-hungry firms pick a <b>Sdn Bhd</b>.','没有股本 = 没有股权投资人。这道天花板正是渴望成长的公司选择 <b>Sdn Bhd</b> 的原因。')}; } });
   } else { // enterprise / partnership
-    opts.push({ t:'Pitch an investor for RM150,000',
-      h:'You have the growth story. Do they bite?',
+    opts.push({ t:T('Pitch an investor for RM150,000','向投资人争取 RM150,000'),
+      h:T('You have the growth story. Do they bite?','你有成长故事。他们会上钩吗？'),
       go:function(){
-        note('Investors declined: a sole prop / partnership has no shares and unlimited liability — uninvestable at this scale.');
-        return {tone:'down', delta:'Declined', html:'"We only invest in companies. There are no shares to buy, and we won\'t take on your unlimited liability." They pass. Your only route to cash is more personal debt.',
-          lesson:'This is the hard ceiling: without shares, <b>you cannot raise equity</b>. The vehicle now limits the whole business, not just today.',
+        note(T('Investors declined: a sole prop / partnership has no shares and unlimited liability — uninvestable at this scale.','投资人婉拒：独资／合伙没有股份、又是无限责任——到这个规模无法被投资。'));
+        return {tone:'down', delta:T('Declined','被拒'), html:T('"We only invest in companies. There are no shares to buy, and we won\'t take on your unlimited liability." They pass. Your only route to cash is more personal debt.','“我们只投公司。没有股份可买，我们也不会接你的无限责任。”他们不投。你唯一的现金来源是更多个人债务。'),
+          lesson:T('This is the hard ceiling: without shares, <b>you cannot raise equity</b>. The vehicle now limits the whole business, not just today.','这就是硬天花板：没有股份，<b>你就募不到股权</b>。此刻载体限制的是整门生意，而不只是今天。'),
           }; } });
-    opts.push({ t:'Self-fund a third outlet on personal debt (+RM30,000 debt)',
-      h:'Push on with another personal loan.',
+    opts.push({ t:T('Self-fund a third outlet on personal debt (+RM30,000 debt)','靠个人债务自筹第三家分店（+RM30,000 债务）'),
+      h:T('Push on with another personal loan.','再借一笔个人贷款继续推进。'),
       go:function(){ S.cash+=30000; S.debts+=30000; S.outlets++; S.bizValue+=42000; S.brand+=5; S.flags.personalLoan=true;
-        return {tone:'flat', delta:'+1 outlet · +RM30k debt', html:'You borrow again in your own name and open a third outlet. Growing, but every ringgit of debt is personally yours.',
-          lesson:'Debt-only growth is slower and riskier. Compare this with the Sdn Bhd player raising RM150k of equity with no personal guarantee.'}; } });
+        return {tone:'flat', delta:T('+1 outlet · +RM30k debt','+1 家分店 · +RM30k 债务'), html:T('You borrow again in your own name and open a third outlet. Growing, but every ringgit of debt is personally yours.','你又以自己名字借款，开出第三家分店。在成长，但每一令吉的债都是你个人的。'),
+          lesson:T('Debt-only growth is slower and riskier. Compare this with the Sdn Bhd player raising RM150k of equity with no personal guarantee.','只靠债务成长更慢也更险。对比一下用 Sdn Bhd、无个人担保就募到 RM150k 股权的玩家。')}; } });
   }
   return {
-    title:'Year 3 · The Investor Knocks',
-    tags:'<span class="tag n">📈 Raising capital</span>',
-    flavor:'Your nasi lemak is a local name now. A well-dressed investor slides a term sheet across the table — RM150,000 to scale fast. Whether you can even take it depends on your vehicle.',
+    title:T('Year 3 · The Investor Knocks','第 3 年 · 投资人上门'),
+    tags:'<span class="tag n">📈 '+T('Raising capital','募资')+'</span>',
+    flavor:T('Your nasi lemak is a local name now. A well-dressed investor slides a term sheet across the table — RM150,000 to scale fast. Whether you can even take it depends on your vehicle.','你的椰浆饭如今是本地名号。一位衣着讲究的投资人把一份条款清单推过桌面——RM150,000 助你快速扩张。你能不能接得住，取决于你的载体。'),
     options:opts
   };
 }
 function yr3Event(){
   var v = V();
   if(v.key==='partnership' && !S.flags.dispute){
-    return { title:'Year 3 · Partners Fall Out', tags:'<span class="tag n">🤝 Governance</span>',
-      flavor:'You and your partner disagree hard over expansion. With no written agreement, the argument drags — and it\'s costing the business.',
+    return { title:T('Year 3 · Partners Fall Out','第 3 年 · 合伙人翻脸'), tags:'<span class="tag n">🤝 '+T('Governance','治理')+'</span>',
+      flavor:T('You and your partner disagree hard over expansion. With no written agreement, the argument drags — and it\'s costing the business.','你和合伙人在扩张上严重分歧。没有书面协议，争执拖着——而这正在拖累生意。'),
       options:[
-        { t:'Settle privately and carry on (−RM12,000)',
-          h:'Painful, but you keep the business together.',
+        { t:T('Settle privately and carry on (−RM12,000)','私下和解、继续经营（−RM12,000）'),
+          h:T('Painful, but you keep the business together.','很痛，但你保住了生意的完整。'),
           go:function(){ S.cash-=12000; S.brand-=4; S.flags.dispute=true;
-            note('A partnership dispute with no clear agreement cost real money — shared control cuts both ways.');
-            return {tone:'down', delta:'−RM12,000', html:'You buy peace with a cash settlement and a hasty written understanding. Momentum lost.',
-              lesson:'Partnerships share control <b>and</b> unlimited liability. Without governance in writing, disputes get expensive fast.',
+            note(T('A partnership dispute with no clear agreement cost real money — shared control cuts both ways.','没有明确协议的合伙纠纷花了真金白银——共享控制权是把双刃剑。'));
+            return {tone:'down', delta:'−RM12,000', html:T('You buy peace with a cash settlement and a hasty written understanding. Momentum lost.','你用现金和解加一份仓促的书面谅解买来平静。势头没了。'),
+              lesson:T('Partnerships share control <b>and</b> unlimited liability. Without governance in writing, disputes get expensive fast.','合伙既共享控制权<b>也</b>共担无限责任。没有白纸黑字的治理，纠纷很快就变贵。'),
               pnl: yearEnd()}; } }
       ] };
   }
   // Management / key-person / governance — the business is straining on one person: you.
   return {
-    title:'Year 3 · You Can\'t Do It All',
-    tags:'<span class="tag n">👥 Management</span>',
-    flavor:'You open early, close late, and the only copy of the recipe lives in your head. The business now depends entirely on one person — you. How do you manage as it grows?',
+    title:T('Year 3 · You Can\'t Do It All','第 3 年 · 你一个人忙不过来'),
+    tags:'<span class="tag n">👥 '+T('Management','管理')+'</span>',
+    flavor:T('You open early, close late, and the only copy of the recipe lives in your head. The business now depends entirely on one person — you. How do you manage as it grows?','你早开门、晚关店，配方的唯一副本只在你脑子里。这门生意如今完全系于一个人——你。规模变大，你怎么管？'),
     options:[
-      { t:'Hire a professional manager + internal controls (−RM20,000)',
-        h:'Delegate operations; put cash-handling and governance controls in place.',
+      { t:T('Hire a professional manager + internal controls (−RM20,000)','聘请专业经理 + 内部管控（−RM20,000）'),
+        h:T('Delegate operations; put cash-handling and governance controls in place.','下放运营；建立现金处理与治理管控。'),
         go:function(){ S.cash-=20000; S.hasManager=true; S.governance=true; S.brand+=5; S.bizValue+=30000;
-          var extra = v.corporate ? ' As a company you formalise it with a board and a company secretary overseeing compliance.' : ' You document processes and set spending controls, though there\'s no formal board to answer to.';
-          note('You brought in professional management and controls — cutting key-person risk and making the business investable and listable.');
-          return {tone:'up', delta:'Manager hired · governed', html:'A seasoned F&B manager runs daily operations and you finally write the recipe and SOPs down.'+extra,
-            lesson:'A business that depends on one person is fragile <b>and</b> hard to sell or list. Delegation + governance turn a job into a company Bursa would consider.',
+          var extra = v.corporate ? T(' As a company you formalise it with a board and a company secretary overseeing compliance.','作为公司，你用董事会和公司秘书监督合规，把它正规化。') : T(' You document processes and set spending controls, though there\'s no formal board to answer to.','你把流程记录下来、设定支出管控，尽管没有正式董事会需要交代。');
+          note(T('You brought in professional management and controls — cutting key-person risk and making the business investable and listable.','你引入了专业管理和管控——降低关键人风险，让生意变得可投资、可上市。'));
+          return {tone:'up', delta:T('Manager hired · governed','已聘经理 · 有治理'), html:T('A seasoned F&B manager runs daily operations and you finally write the recipe and SOPs down.','一位资深餐饮经理接管日常运营，你终于把配方和标准作业流程写了下来。')+extra,
+            lesson:T('A business that depends on one person is fragile <b>and</b> hard to sell or list. Delegation + governance turn a job into a company Bursa would consider.','系于一人的生意既脆弱<b>又</b>难卖难上市。授权 + 治理，把一份工作变成交易所会考虑的公司。'),
             pnl: yearEnd()}; } },
-      { t:'Systematise with SOPs & shift leads (−RM10,000)',
-        h:'Lighter than a management team, but reduces key-person risk.',
+      { t:T('Systematise with SOPs & shift leads (−RM10,000)','用标准流程与班组长系统化（−RM10,000）'),
+        h:T('Lighter than a management team, but reduces key-person risk.','比一整个管理层轻，但能降低关键人风险。'),
         go:function(){ S.cash-=10000; S.hasManager=true; S.brand+=3; S.bizValue+=15000;
-          note('You systematised operations so outlets run without you — partial delegation, less overhead.');
-          return {tone:'flat', delta:'Systems in place', html:'Training, checklists and shift leads let outlets run without you hovering — cheaper than a full management layer.',
-            lesson:'Even on a budget, documenting and delegating reduces <b>key-person risk</b> — the first step toward an investable business.',
+          note(T('You systematised operations so outlets run without you — partial delegation, less overhead.','你把运营系统化，让分店离了你也能转——部分授权、开销更低。'));
+          return {tone:'flat', delta:T('Systems in place','系统就位'), html:T('Training, checklists and shift leads let outlets run without you hovering — cheaper than a full management layer.','培训、清单和班组长让分店不用你盯着也能运转——比一整层管理便宜。'),
+            lesson:T('Even on a budget, documenting and delegating reduces <b>key-person risk</b> — the first step toward an investable business.','即使预算有限，记录和授权也能降低<b>关键人风险</b>——迈向可投资生意的第一步。'),
             pnl: yearEnd()}; } },
-      { t:'Stay hands-on — you ARE the business',
-        h:'Save the salary, keep total control. But you\'re the single point of failure.',
+      { t:T('Stay hands-on — you ARE the business','事必躬亲——你就是生意本身'),
+        h:T('Save the salary, keep total control. But you\'re the single point of failure.','省下工资、保住全部控制权。但你是唯一的故障点。'),
         go:function(){
           if(chance(0.6)){ S.cash-=15000; S.brand-=8; S.flags.keyperson=true;
-            var ln = v.limited ? 'The company kept trading because staff and directors could act for it.' : 'Because a '+v.name.toLowerCase()+' legally <b>is</b> you, no one could sign, bank or contract in your place — everything stalled.';
-            note('Key-person risk hit: you burned out and the business dipped because everything depended on you alone.');
-            return {tone:'down', delta:'−RM15,000 · you burned out', html:'Midway through the year you fall ill for six weeks. '+ln,
-              lesson:'<b>Key-person risk</b>: if the business can\'t run without you, one illness is a crisis — and it caps your value, because buyers and Bursa want a business, not a person.',
+            var ln = v.limited ? T('The company kept trading because staff and directors could act for it.','公司照常营业，因为员工和董事能代表它行事。') : T('Because a '+v.name.toLowerCase()+' legally <b>is</b> you, no one could sign, bank or contract in your place — everything stalled.','因为'+vn(v)+'在法律上<b>就是</b>你，没人能代你签字、办银行或签合同——一切都停摆了。');
+            note(T('Key-person risk hit: you burned out and the business dipped because everything depended on you alone.','关键人风险爆发：你累垮了，生意因一切都靠你一人而下滑。'));
+            return {tone:'down', delta:T('−RM15,000 · you burned out','−RM15,000 · 你累垮了'), html:T('Midway through the year you fall ill for six weeks. ','年中你病倒了六周。')+ln,
+              lesson:T('<b>Key-person risk</b>: if the business can\'t run without you, one illness is a crisis — and it caps your value, because buyers and Bursa want a business, not a person.','<b>关键人风险</b>：如果生意离了你就转不动，一场病就是危机——它还封顶你的价值，因为买家和交易所要的是一门生意，不是一个人。'),
               pnl: yearEnd()}; }
           S.brand+=2;
-          return {tone:'flat', delta:'Held together', html:'You grind through the year on sheer willpower. It holds — this time.',
-            lesson:'Running lean works until it doesn\'t. Betting the business on your own stamina is a risk that compounds as you scale.',
+          return {tone:'flat', delta:T('Held together','勉强撑住'), html:T('You grind through the year on sheer willpower. It holds — this time.','你凭纯粹的意志力熬过这一年。撑住了——这一次。'),
+            lesson:T('Running lean works until it doesn\'t. Betting the business on your own stamina is a risk that compounds as you scale.','精简经营有用，直到不再有用。把生意押在你自己的体力上，是一个随规模复利的风险。'),
             pnl: yearEnd()}; } }
     ]
   };
@@ -1061,57 +1138,57 @@ function yr4Decision(){
   var v = V();
   var opts = [];
   if(v.cred>=3 && S.halal){ // sdnbhd with halal cert — full contract
-    opts.push({ t:'Win the supermarket ready-meal contract (+RM200,000/yr)',
-      h:'A national grocer wants your nasi lemak on its shelves. They require audited accounts, a registered company, liability cover — and halal certification. You have it all.',
+    opts.push({ t:T('Win the supermarket ready-meal contract (+RM200,000/yr)','拿下超市即食餐合同（+RM200,000／年）'),
+      h:T('A national grocer wants your nasi lemak on its shelves. They require audited accounts, a registered company, liability cover — and halal certification. You have it all.','一家全国杂货连锁想把你的椰浆饭摆上货架。他们要求审计账目、注册公司、责任险——以及清真认证。你全都有。'),
       go:function(){ S.cash+=120000; S.bizValue+=300000; S.brand+=14; S.flags.contract=true;
-        note('Your Sdn Bhd\'s audited accounts, insurance and <b>halal certification</b> won a contract a smaller or uncertified business couldn\'t sign.');
-        return {tone:'up', delta:'+RM120,000 · major contract', html:'You sign a RM200,000/year supply deal. Procurement is satisfied by your company accounts, insurance and <b>halal cert</b>. Revenue and company value jump.',
-          lesson:'Big corporate buyers demand a <b>credible, audited, halal-certified company</b>. The right vehicle <i>and</i> the right licences unlock deals others can\'t reach.'}; } });
+        note(T('Your Sdn Bhd\'s audited accounts, insurance and <b>halal certification</b> won a contract a smaller or uncertified business couldn\'t sign.','你 Sdn Bhd 的审计账目、保险和<b>清真认证</b>赢得了一份更小或未认证的生意签不下的合同。'));
+        return {tone:'up', delta:T('+RM120,000 · major contract','+RM120,000 · 大合同'), html:T('You sign a RM200,000/year supply deal. Procurement is satisfied by your company accounts, insurance and <b>halal cert</b>. Revenue and company value jump.','你签下一份 RM200,000／年 的供货合同。采购部对你的公司账目、保险和<b>清真认证</b>都满意。营收和公司价值跃升。'),
+          lesson:T('Big corporate buyers demand a <b>credible, audited, halal-certified company</b>. The right vehicle <i>and</i> the right licences unlock deals others can\'t reach.','大企业买家要求一家<b>有公信力、经审计、有清真认证的公司</b>。对的载体<i>加上</i>对的执照，才能解锁别人够不着的生意。')}; } });
   } else if(v.cred>=3 && !S.halal){ // sdnbhd but no halal — blocked at the last hurdle
-    opts.push({ t:'Chase the supermarket contract',
-      h:'You have the company — but do you have the certification they demand?',
+    opts.push({ t:T('Chase the supermarket contract','争取超市合同'),
+      h:T('You have the company — but do you have the certification they demand?','你有公司——但你有他们要的认证吗？'),
       go:function(){ S.brand-=2;
-        note('You lost the national contract for lack of <b>halal certification</b> — the right vehicle isn\'t enough if you skipped the licence that unlocks the market.');
-        return {tone:'down', delta:'Blocked · no halal cert', html:'Procurement loves your company accounts — then asks for your <b>JAKIM halal certificate</b>. You chose basic licensing back at setup and don\'t have it. They award the deal to a certified rival.',
-          lesson:'A great vehicle still needs the right <b>licences</b>. Halal certification is the key that opens Malaysia\'s biggest F&B buyers — a setup choice that echoes for years.'}; } });
-    opts.push({ t:'Rush a halal certification now (−RM12,000)',
-      h:'Late and pricey, but salvage a smaller deal.',
+        note(T('You lost the national contract for lack of <b>halal certification</b> — the right vehicle isn\'t enough if you skipped the licence that unlocks the market.','你因缺<b>清真认证</b>而丢了全国合同——若略过了打开市场的执照，光有对的载体也不够。'));
+        return {tone:'down', delta:T('Blocked · no halal cert','受阻 · 无清真认证'), html:T('Procurement loves your company accounts — then asks for your <b>JAKIM halal certificate</b>. You chose basic licensing back at setup and don\'t have it. They award the deal to a certified rival.','采购部很喜欢你的公司账目——然后要你的 <b>JAKIM 清真证书</b>。你当初在设置时选了基本执照，没有它。他们把合同给了有认证的对手。'),
+          lesson:T('A great vehicle still needs the right <b>licences</b>. Halal certification is the key that opens Malaysia\'s biggest F&B buyers — a setup choice that echoes for years.','再好的载体也需要对的<b>执照</b>。清真认证是打开马来西亚最大餐饮买家的钥匙——一个回响多年的设置选择。')}; } });
+    opts.push({ t:T('Rush a halal certification now (−RM12,000)','现在赶办清真认证（−RM12,000）'),
+      h:T('Late and pricey, but salvage a smaller deal.','迟了又贵，但能抢回一笔较小的生意。'),
       go:function(){ S.cash-=12000; S.halal=true; S.cash+=40000; S.bizValue+=90000; S.brand+=6; S.flags.contract=true;
-        note('You scrambled for halal certification late — recovering part of the deal, but at a premium and after losing ground.');
-        return {tone:'flat', delta:'−RM12,000 then +RM40,000', html:'You fast-track JAKIM certification at a rush premium and salvage a reduced first-year order. Doing it at setup would have been far cheaper.',
-          lesson:'You <i>can</i> fix a missing licence later — but always dearer than getting it right at the start.'}; } });
+        note(T('You scrambled for halal certification late — recovering part of the deal, but at a premium and after losing ground.','你临时赶办清真认证——抢回了部分生意，但付了溢价，还先失了一城。'));
+        return {tone:'flat', delta:T('−RM12,000 then +RM40,000','−RM12,000 再 +RM40,000'), html:T('You fast-track JAKIM certification at a rush premium and salvage a reduced first-year order. Doing it at setup would have been far cheaper.','你加急办 JAKIM 认证、付了赶工溢价，抢回一份缩水的首年订单。当初在设置时办会便宜得多。'),
+          lesson:T('You <i>can</i> fix a missing licence later — but always dearer than getting it right at the start.','缺的执照事后<i>能</i>补——但总比一开始就办好要贵。')}; } });
   } else if(v.cred===2){ // llp
-    opts.push({ t:'Win a smaller supply deal (+RM70,000/yr)',
-      h:'Your LLP is credible enough for a regional buyer, though not the national grocer\'s full programme.',
+    opts.push({ t:T('Win a smaller supply deal (+RM70,000/yr)','拿下一份较小的供货合同（+RM70,000／年）'),
+      h:T('Your LLP is credible enough for a regional buyer, though not the national grocer\'s full programme.','你的 LLP 对区域买家足够有公信力，但够不上全国连锁的完整计划。'),
       go:function(){ S.cash+=45000; S.bizValue+=90000; S.brand+=8; S.flags.contract=true;
-        note('The LLP was credible enough for a mid-size contract — more than a sole prop could land, less than a Sdn Bhd.');
-        return {tone:'up', delta:'+RM45,000 · regional deal', html:'A regional chain takes you on. Your LLP registration and limited liability clear their basic checks — but the national grocer wants audited-company scale.',
-          lesson:'Credibility is a ladder. LLP beats an informal vehicle; a Sdn Bhd with audited accounts sits a rung higher again.'}; } });
+        note(T('The LLP was credible enough for a mid-size contract — more than a sole prop could land, less than a Sdn Bhd.','LLP 对一份中型合同足够有公信力——比独资能拿的多，比 Sdn Bhd 能拿的少。'));
+        return {tone:'up', delta:T('+RM45,000 · regional deal','+RM45,000 · 区域合同'), html:T('A regional chain takes you on. Your LLP registration and limited liability clear their basic checks — but the national grocer wants audited-company scale.','一家区域连锁接了你。你的 LLP 注册和有限责任通过了他们的基本审查——但全国杂货连锁要的是经审计公司的规模。'),
+          lesson:T('Credibility is a ladder. LLP beats an informal vehicle; a Sdn Bhd with audited accounts sits a rung higher again.','公信力是一架梯子。LLP 胜过非正规载体；有审计账目的 Sdn Bhd 又高一级。')}; } });
   } else {
-    opts.push({ t:'Try for the supermarket contract',
-      h:'They\'ll check who they\'re dealing with.',
+    opts.push({ t:T('Try for the supermarket contract','试试超市合同'),
+      h:T('They\'ll check who they\'re dealing with.','他们会核查跟谁打交道。'),
       go:function(){ S.brand-=2;
-        note('The supermarket contract was lost: buyers wouldn\'t deal with an unregistered, unlimited-liability vehicle.');
-        return {tone:'down', delta:'Rejected', html:'Procurement asks for audited accounts, a company registration and product-liability cover. As a '+v.name.toLowerCase()+' you can\'t provide them. They decline.',
-          lesson:'The wrong vehicle <b>closes doors</b>. Corporate customers need a company they can contract with safely.'}; } });
+        note(T('The supermarket contract was lost: buyers wouldn\'t deal with an unregistered, unlimited-liability vehicle.','超市合同没了：买家不愿与一个未注册、无限责任的载体打交道。'));
+        return {tone:'down', delta:T('Rejected','被拒'), html:T('Procurement asks for audited accounts, a company registration and product-liability cover. As a '+v.name.toLowerCase()+' you can\'t provide them. They decline.','采购部要审计账目、公司注册和产品责任险。作为'+vn(v)+'，你都给不了。他们拒绝。'),
+          lesson:T('The wrong vehicle <b>closes doors</b>. Corporate customers need a company they can contract with safely.','错的载体会<b>把门关上</b>。企业客户需要一家能安全签约的公司。')}; } });
   }
   if(v.canList){
-    opts.push({ t:'Pre-IPO regional rollout — go big (−RM220,000)',
-      h:'Aggressively open outlets to reach listing scale. Deep pockets (or debt) required.',
+    opts.push({ t:T('Pre-IPO regional rollout — go big (−RM220,000)','上市前区域铺开——放手一搏（−RM220,000）'),
+      h:T('Aggressively open outlets to reach listing scale. Deep pockets (or debt) required.','激进开店以达到上市规模。需要深口袋（或债务）。'),
       go:function(){ S.cash-=220000; if(S.cash<0){S.debts+=-S.cash;S.cash=0;} S.outlets+=6; S.bizValue+=420000; S.brand+=6; S.flags.rollout=true; S.equipInvest=true;
-        note('You spent heavily on a pre-IPO rollout to reach listing scale — going public demands real size, and real size costs real money.');
-        return {tone:'up', delta:'−RM220,000 · +6 outlets', html:'You blitz-open six more outlets and a bigger central kitchen to reach the scale a listing needs. Expensive — often debt-funded — but it\'s the price of the Bursa dream.',
-          lesson:'Listing has a high bar: you must <b>spend to reach scale</b> first. Firms routinely take on debt or another raise just to become big enough to IPO.'}; } });
+        note(T('You spent heavily on a pre-IPO rollout to reach listing scale — going public demands real size, and real size costs real money.','你在上市前铺开上重金以达上市规模——上市要真规模，而真规模要真金白银。'));
+        return {tone:'up', delta:T('−RM220,000 · +6 outlets','−RM220,000 · +6 家分店'), html:T('You blitz-open six more outlets and a bigger central kitchen to reach the scale a listing needs. Expensive — often debt-funded — but it\'s the price of the Bursa dream.','你闪电般再开六家分店和一个更大的中央厨房，以达到上市所需的规模。昂贵——往往靠举债——但这是交易所梦想的代价。'),
+          lesson:T('Listing has a high bar: you must <b>spend to reach scale</b> first. Firms routinely take on debt or another raise just to become big enough to IPO.','上市门槛很高：你必须先<b>花钱做到规模</b>。公司常常再举债或再融资，只为大到够格 IPO。')}; } });
   }
-  opts.push({ t:'Skip contracts — focus on your own outlets',
-    h:'Deepen what you have rather than chase big buyers.',
+  opts.push({ t:T('Skip contracts — focus on your own outlets','放弃合同——专注自家分店'),
+    h:T('Deepen what you have rather than chase big buyers.','深耕现有，而非追大买家。'),
     go:function(){ S.brand+=6; S.bizValue+=25000;
-      return {tone:'flat', delta:'Brand +6', html:'You pour energy into service and menu. Your existing outlets get stronger and better-loved.',
-        lesson:'Focus is legitimate — but note which growth avenues your vehicle leaves open or shut.'}; } });
+      return {tone:'flat', delta:T('Brand +6','品牌 +6'), html:T('You pour energy into service and menu. Your existing outlets get stronger and better-loved.','你把精力倾注在服务和菜单上。现有分店更强、更受喜爱。'),
+        lesson:T('Focus is legitimate — but note which growth avenues your vehicle leaves open or shut.','专注是正当的——但要留意你的载体给你留了哪些成长通道、又关上了哪些。')}; } });
   return {
-    title:'Year 4 · The Supermarket Contract',
-    tags:'<span class="tag n">🏦 Credibility</span>',
-    flavor:'A national supermarket chain wants a signature nasi lemak ready-meal. It\'s a company-making deal — but their procurement team only contracts with entities that can prove they\'re real, audited and insured.',
+    title:T('Year 4 · The Supermarket Contract','第 4 年 · 超市合同'),
+    tags:'<span class="tag n">🏦 '+T('Credibility','公信力')+'</span>',
+    flavor:T('A national supermarket chain wants a signature nasi lemak ready-meal. It\'s a company-making deal — but their procurement team only contracts with entities that can prove they\'re real, audited and insured.','一家全国超市连锁想要一款招牌椰浆饭即食餐。这是一笔能成就公司的生意——但他们的采购团队只与能证明自己真实、经审计、有投保的实体签约。'),
     options:opts
   };
 }
@@ -1120,48 +1197,48 @@ function yr4Succession(){
   var v = V();
   var opts = [];
   if(v.key==='sdnbhd'){
-    opts.push({ t:'Shareholders\' agreement + estate plan (−RM8,000)',
-      h:'Decide how shares pass on death or exit; consider a family trust.',
+    opts.push({ t:T('Shareholders\' agreement + estate plan (−RM8,000)','股东协议 + 遗产规划（−RM8,000）'),
+      h:T('Decide how shares pass on death or exit; consider a family trust.','决定股份在身故或退出时如何传承；考虑家族信托。'),
       go:function(){ S.cash-=8000; S.succession=true; S.bizValue+=40000;
-        note('You planned succession: a company enjoys <b>perpetual succession</b>, and its shares pass by will or trust — the cleanest continuity of any vehicle.');
-        return {tone:'up', delta:'Succession secured', html:'Your Sdn Bhd is a separate legal person with <b>perpetual succession</b>. A shareholders\' agreement and estate plan mean ownership passes cleanly to whomever you choose — the business never skips a beat.',
-          lesson:'Companies don\'t die with their owners. Shares are property you can gift, will or place in trust — and this continuity is exactly what buyers and Bursa want to see.'}; } });
+        note(T('You planned succession: a company enjoys <b>perpetual succession</b>, and its shares pass by will or trust — the cleanest continuity of any vehicle.','你做了传承规划：公司享有<b>永续存续</b>，其股份可经遗嘱或信托传承——所有载体中最干净的延续。'));
+        return {tone:'up', delta:T('Succession secured','传承落定'), html:T('Your Sdn Bhd is a separate legal person with <b>perpetual succession</b>. A shareholders\' agreement and estate plan mean ownership passes cleanly to whomever you choose — the business never skips a beat.','你的 Sdn Bhd 是拥有<b>永续存续</b>的独立法律人格。一份股东协议加遗产规划，意味着所有权能干净地传给你选定的人——生意一拍不落。'),
+          lesson:T('Companies don\'t die with their owners. Shares are property you can gift, will or place in trust — and this continuity is exactly what buyers and Bursa want to see.','公司不会随所有者而消亡。股份是你可以赠与、立遗嘱或放入信托的财产——而这种延续正是买家和交易所想看到的。')}; } });
   } else if(v.key==='llp'){
-    opts.push({ t:'Update the LLP agreement for partner succession (−RM4,000)',
-      h:'Spell out what happens when a partner leaves or dies.',
+    opts.push({ t:T('Update the LLP agreement for partner succession (−RM4,000)','更新 LLP 协议以安排合伙人传承（−RM4,000）'),
+      h:T('Spell out what happens when a partner leaves or dies.','写明合伙人退出或身故时会怎样。'),
       go:function(){ S.cash-=4000; S.succession=true; S.bizValue+=20000;
-        note('Your LLP also has <b>perpetual succession</b> — unlike a conventional partnership, it survives changes of partner.');
-        return {tone:'up', delta:'Continuity secured', html:'An LLP is a separate legal person too. With the agreement updated, it carries on seamlessly when partners change — a key reason the PLT form exists. (To hand equity to outside heirs, a Sdn Bhd\'s shares are simpler still.)',
-          lesson:'LLPs have perpetual succession; conventional partnerships do not. That continuity is a core advantage of the limited forms.'}; } });
+        note(T('Your LLP also has <b>perpetual succession</b> — unlike a conventional partnership, it survives changes of partner.','你的 LLP 也拥有<b>永续存续</b>——不像传统合伙，它能在合伙人更替中存续。'));
+        return {tone:'up', delta:T('Continuity secured','延续落定'), html:T('An LLP is a separate legal person too. With the agreement updated, it carries on seamlessly when partners change — a key reason the PLT form exists. (To hand equity to outside heirs, a Sdn Bhd\'s shares are simpler still.)','LLP 同样是独立法律人格。更新协议后，合伙人更替时它无缝延续——这正是 PLT 形式存在的关键原因。（若要把股权交给外部继承人，Sdn Bhd 的股份还更简单。）'),
+          lesson:T('LLPs have perpetual succession; conventional partnerships do not. That continuity is a core advantage of the limited forms.','LLP 有永续存续；传统合伙没有。这种延续是有限责任形式的核心优势。')}; } });
   } else if(v.key==='partnership'){
-    opts.push({ t:'Add survivorship terms to a partnership agreement (−RM3,000)',
-      h:'By default a partnership DISSOLVES when a partner dies. Contract around it.',
+    opts.push({ t:T('Add survivorship terms to a partnership agreement (−RM3,000)','在合伙协议中加入存续条款（−RM3,000）'),
+      h:T('By default a partnership DISSOLVES when a partner dies. Contract around it.','按默认规则，合伙人身故时合伙会解散。用合同去绕开它。'),
       go:function(){ S.cash-=3000; S.succession=true; S.brand+=2;
-        note('A conventional partnership <b>dissolves on a partner\'s death</b> by default; you papered over it, but it stays fragile.');
-        return {tone:'flat', delta:'Patched', html:'You add survivorship clauses. It helps — but a conventional partnership has <b>no perpetual succession</b> in law, so the firm can still end if the arrangement breaks down.',
-          lesson:'A conventional partnership legally dissolves when a partner dies or leaves, unless the agreement says otherwise. Fragile by default.'}; } });
-    opts.push({ t:'Do nothing — deal with it later',
-      h:'Cheapest now, riskiest later.',
-      go:function(){ note('You left succession unplanned — a partnership can dissolve overnight on a death or fallout, with unlimited liability still hanging over everyone.');
-        return {tone:'down', delta:'Unplanned', html:'You put it off. If a partner dies or walks, the firm can dissolve and assets scramble — and unlimited liability follows each of you.',
-          lesson:'No plan + no perpetual succession = the business can vanish with one exit. This is the partnership\'s hidden weakness.'}; } });
+        note(T('A conventional partnership <b>dissolves on a partner\'s death</b> by default; you papered over it, but it stays fragile.','传统合伙默认<b>在合伙人身故时解散</b>；你用文件补了补，但它依旧脆弱。'));
+        return {tone:'flat', delta:T('Patched','已打补丁'), html:T('You add survivorship clauses. It helps — but a conventional partnership has <b>no perpetual succession</b> in law, so the firm can still end if the arrangement breaks down.','你加了存续条款。有帮助——但传统合伙在法律上<b>没有永续存续</b>，所以一旦安排破裂，公司仍可能终结。'),
+          lesson:T('A conventional partnership legally dissolves when a partner dies or leaves, unless the agreement says otherwise. Fragile by default.','除非协议另有规定，传统合伙在合伙人身故或退出时依法解散。默认就脆弱。')}; } });
+    opts.push({ t:T('Do nothing — deal with it later','什么都不做——以后再说'),
+      h:T('Cheapest now, riskiest later.','现在最便宜，以后最危险。'),
+      go:function(){ note(T('You left succession unplanned — a partnership can dissolve overnight on a death or fallout, with unlimited liability still hanging over everyone.','你没规划传承——合伙可能因一场身故或翻脸一夜解散，而无限责任仍悬在每个人头上。'));
+        return {tone:'down', delta:T('Unplanned','未规划'), html:T('You put it off. If a partner dies or walks, the firm can dissolve and assets scramble — and unlimited liability follows each of you.','你一拖再拖。若合伙人身故或走人，公司可能解散、资产乱作一团——而无限责任仍跟着你们每个人。'),
+          lesson:T('No plan + no perpetual succession = the business can vanish with one exit. This is the partnership\'s hidden weakness.','没有规划 + 没有永续存续 = 一次退出就能让生意消失。这是合伙隐藏的弱点。')}; } });
   } else { // enterprise
-    opts.push({ t:'You want your child to inherit — but legally the business IS you',
-      h:'Learn the hard limit of a sole proprietorship.',
-      go:function(){ note('A sole proprietorship has <b>no perpetual succession</b> — it ends with the owner; the registration lapses and licences don\'t transfer.');
-        return {tone:'down', delta:'Can\'t transfer as-is', html:'Your lawyer explains: a sole proprietorship <b>is</b> you. It can\'t be inherited as a going concern — the SSM registration ends, licences lapse, and your heirs must start a brand-new business and re-apply for everything.',
-          lesson:'Sole proprietorships have <b>no perpetual succession</b>. The business legally ends with the owner — the exact opposite of a company.'}; } });
-    opts.push({ t:'Convert to a Sdn Bhd now for continuity (−RM5,000)',
-      h:'Incorporate late to gain perpetual succession & limited liability.',
+    opts.push({ t:T('You want your child to inherit — but legally the business IS you','你想让孩子继承——但法律上生意就是你'),
+      h:T('Learn the hard limit of a sole proprietorship.','认识独资经营的硬性局限。'),
+      go:function(){ note(T('A sole proprietorship has <b>no perpetual succession</b> — it ends with the owner; the registration lapses and licences don\'t transfer.','独资经营<b>没有永续存续</b>——它随所有者终结；注册失效、执照不可转让。'));
+        return {tone:'down', delta:T('Can\'t transfer as-is','无法原样转让'), html:T('Your lawyer explains: a sole proprietorship <b>is</b> you. It can\'t be inherited as a going concern — the SSM registration ends, licences lapse, and your heirs must start a brand-new business and re-apply for everything.','你的律师解释：独资经营<b>就是</b>你。它无法作为持续经营的生意被继承——SSM 注册终止、执照失效，你的继承人必须重新开一门全新的生意、一切重新申请。'),
+          lesson:T('Sole proprietorships have <b>no perpetual succession</b>. The business legally ends with the owner — the exact opposite of a company.','独资经营<b>没有永续存续</b>。生意在法律上随所有者终结——与公司恰恰相反。')}; } });
+    opts.push({ t:T('Convert to a Sdn Bhd now for continuity (−RM5,000)','现在转为 Sdn Bhd 以求延续（−RM5,000）'),
+      h:T('Incorporate late to gain perpetual succession & limited liability.','迟到地公司化，以获得永续存续与有限责任。'),
       go:function(){ S.cash-=5000; S.succession=true; S.governance=true; S.bizValue+=25000; S.flags.convertedLate=true;
-        note('You finally incorporated — gaining perpetual succession and limited liability, though years later than a growth-minded founder would have.');
-        return {tone:'up', delta:'Incorporated (late)', html:'You transfer the business into a new Sdn Bhd. Now it\'s a separate legal person that can outlive you, shield your assets, and one day even list — though you\'ve lost years on that path.',
-          lesson:'You can convert <b>up</b> the ladder any time — but doing it early lets a company\'s advantages compound. Late is better than never.'}; } });
+        note(T('You finally incorporated — gaining perpetual succession and limited liability, though years later than a growth-minded founder would have.','你终于公司化了——获得永续存续和有限责任，尽管比一个有成长心态的创办人晚了好几年。'));
+        return {tone:'up', delta:T('Incorporated (late)','已公司化（迟了）'), html:T('You transfer the business into a new Sdn Bhd. Now it\'s a separate legal person that can outlive you, shield your assets, and one day even list — though you\'ve lost years on that path.','你把生意转入一家新的 Sdn Bhd。现在它是能比你活得久、能保护你财产、有朝一日甚至能上市的独立法律人格——尽管你在这条路上已损失了几年。'),
+          lesson:T('You can convert <b>up</b> the ladder any time — but doing it early lets a company\'s advantages compound. Late is better than never.','你随时可以沿梯子<b>向上</b>转制——但趁早做能让公司的优势复利。迟做总比不做好。')}; } });
   }
   return {
-    title:'Year 4 · Who Continues After You?',
-    tags:'<span class="tag n">🧬 Succession</span>',
-    flavor:'A health scare makes you think about the future. If something happened to you tomorrow, what becomes of the business — and can your family keep it? The answer is written into your vehicle.',
+    title:T('Year 4 · Who Continues After You?','第 4 年 · 你之后谁来接？'),
+    tags:'<span class="tag n">🧬 '+T('Succession','传承')+'</span>',
+    flavor:T('A health scare makes you think about the future. If something happened to you tomorrow, what becomes of the business — and can your family keep it? The answer is written into your vehicle.','一场健康惊吓让你开始想未来。若明天你出了事，生意会怎样——你的家人保得住吗？答案就写在你的载体里。'),
     options:opts
   };
 }
@@ -1172,23 +1249,23 @@ function yr4Event(){
   if(v.corporate){
     // A company's profit and your pocket are separate — extracting it is a second tax layer.
     return {
-      title:'Year 4 · Tax Season (LHDN)',
-      tags:'<span class="tag n">🧾 Taxation</span>',
-      flavor:'Your '+v.name+' pays a flat SME corporate rate and can retain profit to reinvest. But to put money in <b>your own</b> pocket you must extract it — and how you extract it is taxed differently.',
+      title:T('Year 4 · Tax Season (LHDN)','第 4 年 · 报税季（LHDN）'),
+      tags:'<span class="tag n">🧾 '+T('Taxation','税务')+'</span>',
+      flavor:T('Your '+v.name+' pays a flat SME corporate rate and can retain profit to reinvest. But to put money in <b>your own</b> pocket you must extract it — and how you extract it is taxed differently.','你的'+vn(v)+'按统一的中小企业公司税率纳税，并可保留利润再投资。但要把钱放进<b>你自己的</b>口袋，你必须把它提出来——而提取方式的征税各不相同。'),
       options:[
-        { t:'Pay yourself a salary / director\'s fee',
-          h:'Deductible to the company, taxed as your personal income (EPF/SOCSO apply).',
+        { t:T('Pay yourself a salary / director\'s fee','给自己发薪金／董事酬金'),
+          h:T('Deductible to the company, taxed as your personal income (EPF/SOCSO apply).','公司可抵税，但按你的个人所得征税（需缴 EPF／SOCSO）。'),
           go:function(){ var t=Math.round(base*0.11); S.cash-=t;
-            note('You extracted profit as salary — deductible for the company, but taxed as your personal income.');
-            return {tone:'flat', delta:fmt(-t)+' personal tax', html:'A salary is a tax-deductible expense for the company, but it\'s <b>your</b> income at personal rates (plus EPF/SOCSO). Personal tax on it this year: '+fmt(t)+'.',
-              lesson:'A company separates business profit from your pocket. Salary is deductible but personally taxed — one of two extraction routes.',
+            note(T('You extracted profit as salary — deductible for the company, but taxed as your personal income.','你以薪金方式提取利润——公司可抵税，但按你的个人所得征税。'));
+            return {tone:'flat', delta:fmt(-t)+T(' personal tax',' 个人税'), html:T('A salary is a tax-deductible expense for the company, but it\'s <b>your</b> income at personal rates (plus EPF/SOCSO). Personal tax on it this year: '+fmt(t)+'.','薪金对公司是可抵税支出，但它是<b>你的</b>收入、按个人税率（外加 EPF／SOCSO）征税。今年就此缴的个人税：'+fmt(t)+'。'),
+              lesson:T('A company separates business profit from your pocket. Salary is deductible but personally taxed — one of two extraction routes.','公司把生意利润和你的口袋分开。薪金可抵税但要按个人纳税——两种提取路径之一。'),
               pnl: yearEnd()}; } },
-        { t:'Pay yourself dividends from after-tax profit',
-          h:'Company already paid corporate tax; from 2025 a 2% dividend tax applies above RM100k/yr.',
+        { t:T('Pay yourself dividends from after-tax profit','用税后利润给自己派股息'),
+          h:T('Company already paid corporate tax; from 2025 a 2% dividend tax applies above RM100k/yr.','公司已缴公司税；自 2025 年起，年逾 RM100k 的部分加征 2% 股息税。'),
           go:function(){ var t=Math.round(Math.max(0, base-100000)*0.02); S.cash-=t;
-            note('You took dividends — from profit the company was already taxed on, now with the 2025 dividend tax on the portion above RM100k.');
-            return {tone:'flat', delta:(t?fmt(-t)+' dividend tax':'No dividend tax'), html:'Dividends come from profit the company <b>already paid corporate tax on</b>. From 2025, individual dividends above RM100k/year carry a 2% dividend tax'+(t?' — '+fmt(t)+' here':' — you\'re under the threshold this year')+'.',
-              lesson:'The company/owner split creates a two-step tax picture (corporate, then dividend). An <b>LLP</b> avoids that second layer — its distributions to partners aren\'t taxed again.',
+            note(T('You took dividends — from profit the company was already taxed on, now with the 2025 dividend tax on the portion above RM100k.','你派了股息——出自公司已纳税的利润，如今超过 RM100k 的部分还要缴 2025 年起的股息税。'));
+            return {tone:'flat', delta:(t?fmt(-t)+T(' dividend tax',' 股息税'):T('No dividend tax','无股息税')), html:T('Dividends come from profit the company <b>already paid corporate tax on</b>. From 2025, individual dividends above RM100k/year carry a 2% dividend tax','股息出自公司<b>已缴过公司税</b>的利润。自 2025 年起，个人年逾 RM100k 的股息加征 2% 股息税')+(t?T(' — '+fmt(t)+' here','——此处 '+fmt(t)):T(' — you\'re under the threshold this year','——你今年在门槛之下'))+'。',
+              lesson:T('The company/owner split creates a two-step tax picture (corporate, then dividend). An <b>LLP</b> avoids that second layer — its distributions to partners aren\'t taxed again.','公司／所有者的分离造成两段式税负（先公司、后股息）。<b>LLP</b> 避开了第二层——它分配给合伙人的部分不再重复征税。'),
               pnl: yearEnd()}; } }
       ]
     };
@@ -1197,14 +1274,14 @@ function yr4Event(){
   var rate = base>150000?0.26 : base>80000?0.19 : 0.12;
   var tax = Math.round(base*rate); S.cash -= tax;
   return {
-    title:'Year 4 · Tax Season (LHDN)',
-    tags:'<span class="tag n">🧾 Taxation</span>',
-    flavor:'As a '+v.name.toLowerCase()+', the entire profit is simply <b>your personal income</b> — there\'s no company/owner split and no dividends. Simple, but progressive rates bite as profits climb.',
+    title:T('Year 4 · Tax Season (LHDN)','第 4 年 · 报税季（LHDN）'),
+    tags:'<span class="tag n">🧾 '+T('Taxation','税务')+'</span>',
+    flavor:T('As a '+v.name.toLowerCase()+', the entire profit is simply <b>your personal income</b> — there\'s no company/owner split and no dividends. Simple, but progressive rates bite as profits climb.','作为'+vn(v)+'，全部利润就是<b>你的个人收入</b>——没有公司／所有者之分，也没有股息。简单，但利润越高，累进税率越咬人。'),
     options:[
-      { t:'Settle your personal income tax', h:'Pay what\'s due and close the year.',
+      { t:T('Settle your personal income tax','结清你的个人所得税'), h:T('Pay what\'s due and close the year.','缴清应付、结束这一年。'),
         go:function(){
-          return {tone:'flat', delta:fmt(-tax)+' personal tax', html:'The whole profit is taxed on you at progressive personal rates — <b>'+fmt(tax)+'</b> this year. You can\'t retain profit inside a separate company or split it as salary vs dividends.',
-            lesson:'One tax layer is simple, but you lose corporate planning tools (retained earnings, salary/dividend mix). At scale, personal rates often exceed the SME corporate rate.',
+          return {tone:'flat', delta:fmt(-tax)+T(' personal tax',' 个人税'), html:T('The whole profit is taxed on you at progressive personal rates — <b>'+fmt(tax)+'</b> this year. You can\'t retain profit inside a separate company or split it as salary vs dividends.','全部利润按累进个人税率向你征税——今年 <b>'+fmt(tax)+'</b>。你无法把利润留在一家独立公司里，也无法拆成薪金与股息。'),
+            lesson:T('One tax layer is simple, but you lose corporate planning tools (retained earnings, salary/dividend mix). At scale, personal rates often exceed the SME corporate rate.','单层税负简单，但你失去了公司层面的规划工具（留存收益、薪金／股息组合）。规模一大，个人税率往往高于中小企业公司税率。'),
             pnl: yearEnd()}; } }
     ]
   };
@@ -1221,34 +1298,34 @@ function yr5Exit(){
   if(bigEnough){
     var governed = S.hasManager && S.governance;
     var aceMiss=[];
-    if(cf<ACE_CF) aceMiss.push('RM1.6m cash flow (you have '+fmt(cf)+')');
-    if(S.outlets<10) aceMiss.push('10+ outlets');
-    if(!governed) aceMiss.push('management & governance');
-    var aceLock = aceMiss.length ? ('ACE needs '+aceMiss.join(', ')+'.') : null;
+    if(cf<ACE_CF) aceMiss.push(T('RM1.6m cash flow (you have '+fmt(cf)+')','RM1.6m 现金流（你有 '+fmt(cf)+'）'));
+    if(S.outlets<10) aceMiss.push(T('10+ outlets','10+ 家分店'));
+    if(!governed) aceMiss.push(T('management & governance','管理与治理'));
+    var aceLock = aceMiss.length ? T('ACE needs '+aceMiss.join(', ')+'.','ACE 需要 '+aceMiss.join('、')+'。') : null;
     var mainMiss=[];
-    if(cf<MAIN_CF) mainMiss.push('RM2.6m cash flow (you have '+fmt(cf)+')');
-    if(S.outlets<12) mainMiss.push('12+ outlets');
-    if(!governed) mainMiss.push('management & governance');
-    if(!S.succession) mainMiss.push('a shareholders’ agreement');
-    var mainLock = mainMiss.length ? ('Main needs '+mainMiss.join(', ')+'.') : null;
+    if(cf<MAIN_CF) mainMiss.push(T('RM2.6m cash flow (you have '+fmt(cf)+')','RM2.6m 现金流（你有 '+fmt(cf)+'）'));
+    if(S.outlets<12) mainMiss.push(T('12+ outlets','12+ 家分店'));
+    if(!governed) mainMiss.push(T('management & governance','管理与治理'));
+    if(!S.succession) mainMiss.push(T('a shareholders’ agreement','一份股东协议'));
+    var mainLock = mainMiss.length ? T('Main needs '+mainMiss.join(', ')+'.','主板需要 '+mainMiss.join('、')+'。') : null;
     return {
-      title:'Year 5 · The Bursa Malaysia Opportunity',
-      tags:'<span class="tag g">🏛️ Listing</span>',
-      flavor:'You cleared the entry bar — <b>'+fmt(cf)+' of cumulative cash flow</b> and '+S.outlets+' outlets. Advisers can take you public: convert to a <b>Berhad (Bhd)</b> and float on Bursa Malaysia. But listing isn\'t free — advisers, underwriters and due diligence cost real money, and the bigger boards demand far more scale. Which can you reach?',
+      title:T('Year 5 · The Bursa Malaysia Opportunity','第 5 年 · 马来西亚交易所的机会'),
+      tags:'<span class="tag g">🏛️ '+T('Listing','上市')+'</span>',
+      flavor:T('You cleared the entry bar — <b>'+fmt(cf)+' of cumulative cash flow</b> and '+S.outlets+' outlets. Advisers can take you public: convert to a <b>Berhad (Bhd)</b> and float on Bursa Malaysia. But listing isn\'t free — advisers, underwriters and due diligence cost real money, and the bigger boards demand far more scale. Which can you reach?','你越过了入门门槛——<b>'+fmt(cf)+' 的累计现金流</b>和 '+S.outlets+' 家分店。顾问能带你上市：转为 <b>Berhad (Bhd)</b> 并在马来西亚交易所挂牌。但上市不免费——顾问、承销商和尽职调查都要真金白银，而更大的板块要求高得多的规模。你能够到哪一个？'),
       options:[
-        { t:'LEAP Market — entry board (−RM70,000 fees)',
-          h:'Needs ≥ RM1m cash flow. Modest premium (~2×) and a small raise.',
+        { t:T('LEAP Market — entry board (−RM70,000 fees)','LEAP 市场——入门板（−RM70,000 费用）'),
+          h:T('Needs ≥ RM1m cash flow. Modest premium (~2×) and a small raise.','需 ≥ RM1m 现金流。溢价适中（约 2×）、募资较小。'),
           go:function(){ return doIPO('LEAP Market', 2.0, 150000, 70000); } },
-        { t:'ACE Market — growth board (−RM200,000 fees)',
-          h:'Needs ≥ RM1.6m cash flow, 10+ outlets, governance. Premium ~3.5×.',
+        { t:T('ACE Market — growth board (−RM200,000 fees)','ACE 市场——成长板（−RM200,000 费用）'),
+          h:T('Needs ≥ RM1.6m cash flow, 10+ outlets, governance. Premium ~3.5×.','需 ≥ RM1.6m 现金流、10+ 家分店、有治理。溢价约 3.5×。'),
           locked: aceLock,
           go:function(){ return doIPO('ACE Market', 3.5, 400000, 200000); } },
-        { t:'Main Market — the big board (−RM450,000 fees)',
-          h:'Needs ≥ RM2.6m cash flow, 12+ outlets, governance + succession. Premium ~4.5×.',
+        { t:T('Main Market — the big board (−RM450,000 fees)','主板——大板（−RM450,000 费用）'),
+          h:T('Needs ≥ RM2.6m cash flow, 12+ outlets, governance + succession. Premium ~4.5×.','需 ≥ RM2.6m 现金流、12+ 家分店、治理 + 传承。溢价约 4.5×。'),
           locked: mainLock,
           go:function(){ return doIPO('Main Market', 4.5, 700000, 450000); } },
-        { t:'Stay private — sell 100% to a bigger F&B group',
-          h:'Skip the listing and take a clean trade-sale exit at private multiples.',
+        { t:T('Stay private — sell 100% to a bigger F&B group','保持私有——把 100% 卖给更大的餐饮集团'),
+          h:T('Skip the listing and take a clean trade-sale exit at private multiples.','跳过上市，以私募倍数干净地整体出售退出。'),
           go:function(){ return tradeSale(1.4); } }
       ]
     };
@@ -1256,25 +1333,25 @@ function yr5Exit(){
   // Not able to list
   var reason;
   if(!v.canList){
-    reason = 'A '+v.name+' <b>cannot list on Bursa</b> — it has no shares to offer the public'
-      + (v.key==='llp' ? '. You\'d have had to <b>convert to a Sdn Bhd</b> years earlier to be on this path.' : '. Only a company (Sdn Bhd → Bhd) can IPO.');
+    reason = T('A '+v.name+' <b>cannot list on Bursa</b> — it has no shares to offer the public','一个'+vn(v)+'<b>不能在交易所上市</b>——它没有股份可向公众发售')
+      + (v.key==='llp' ? T('. You\'d have had to <b>convert to a Sdn Bhd</b> years earlier to be on this path.','。你本该在多年前就<b>转为 Sdn Bhd</b> 才能走上这条路。') : T('. Only a company (Sdn Bhd → Bhd) can IPO.','。只有公司（Sdn Bhd → Bhd）才能 IPO。'));
   } else {
-    reason = 'Your Sdn Bhd <b>can</b> list in principle, but you fell short of the bar: a LEAP listing needs at least <b>RM1,000,000 of cumulative cash flow</b> and 8+ outlets. You built '+fmt(S.cashflow||0)+' across '+S.outlets+' outlet'+(S.outlets>1?'s':'')+'. Reaching the Bursa floor takes years of scale — and real spending to get there.';
+    reason = T('Your Sdn Bhd <b>can</b> list in principle, but you fell short of the bar: a LEAP listing needs at least <b>RM1,000,000 of cumulative cash flow</b> and 8+ outlets. You built '+fmt(S.cashflow||0)+' across '+S.outlets+' outlet'+(S.outlets>1?'s':'')+'. Reaching the Bursa floor takes years of scale — and real spending to get there.','你的 Sdn Bhd 原则上<b>可以</b>上市，但你没达标：LEAP 上市至少需要 <b>RM1,000,000 的累计现金流</b>和 8+ 家分店。你在 '+S.outlets+' 家分店上累计做到 '+fmt(S.cashflow||0)+'。够上交易所的门槛需要多年的规模——以及为此的真金白银投入。');
   }
   return {
-    title:'Year 5 · The Ceiling',
-    tags:'<span class="tag n">🚪 Exit</span>',
-    flavor:'Five years in, a national F&B group offers to buy you out. There is no IPO on your table. '+reason,
+    title:T('Year 5 · The Ceiling','第 5 年 · 天花板'),
+    tags:'<span class="tag n">🚪 '+T('Exit','退出')+'</span>',
+    flavor:T('Five years in, a national F&B group offers to buy you out. There is no IPO on your table. ','五年下来，一家全国餐饮集团提出收购你。你桌上没有 IPO 这个选项。')+reason,
     options:[
-      { t:'Accept the trade sale',
-        h:'Take the buyout at a private-market multiple.',
+      { t:T('Accept the trade sale','接受整体出售'),
+        h:T('Take the buyout at a private-market multiple.','以私募市场倍数接受收购。'),
         go:function(){ return tradeSale(v.limited?1.2:1.0); } },
-      { t:'Decline — keep running it privately',
-        h:'Stay independent at your current scale.',
+      { t:T('Decline — keep running it privately','拒绝——继续私下经营'),
+        h:T('Stay independent at your current scale.','以现有规模保持独立。'),
         go:function(){
-          note('You kept the business private at its natural ceiling — a fine outcome, but the big value unlock (a listing) was never available to this vehicle.');
-          return {tone:'flat', delta:'Stay private', html:'You keep the keys and carry on. Steady income, full control, and a clear ceiling.',
-            lesson:'Know your goal before you pick a vehicle: a lifestyle single-outlet business and a would-be listed chain need <b>different vehicles from day one</b>.'}; } }
+          note(T('You kept the business private at its natural ceiling — a fine outcome, but the big value unlock (a listing) was never available to this vehicle.','你让生意在它的天然天花板处保持私有——一个不错的结局，但那次大的价值释放（上市）对这个载体从来就不可得。'));
+          return {tone:'flat', delta:T('Stay private','保持私有'), html:T('You keep the keys and carry on. Steady income, full control, and a clear ceiling.','你握着钥匙继续经营。收入稳定、完全掌控，还有一个明确的天花板。'),
+            lesson:T('Know your goal before you pick a vehicle: a lifestyle single-outlet business and a would-be listed chain need <b>different vehicles from day one</b>.','选载体前先想清目标：一门自给自足的单店生意和一家志在上市的连锁，从第一天起就需要<b>不同的载体</b>。')}; } }
     ]
   };
 }
@@ -1289,12 +1366,12 @@ function doIPO(market, premium, raise, fee){
   if(S.cash<0){ S.debts+=-S.cash; S.cash=0; }
   S.ownership *= 0.7;                 // sell ~30% to the public
   S.flags.ipo = true;
-  note('You reached the top rung: <b>Sdn Bhd → Berhad → listed on Bursa\'s '+market+'</b> — after paying '+fmt(fee)+' in listing costs. A public valuation multiplied your company\'s worth.');
+  note(T('You reached the top rung: <b>Sdn Bhd → Berhad → listed on Bursa\'s '+market+'</b> — after paying '+fmt(fee)+' in listing costs. A public valuation multiplied your company\'s worth.','你登上了最高一级：<b>Sdn Bhd → Berhad → 在交易所 '+market+' 挂牌上市</b>——在支付了 '+fmt(fee)+' 的上市成本之后。公开市场的估值让你公司的价值倍增。'));
   return {
-    tone:'up', delta:'🔔 LISTED on '+market,
-    html:'The bell rings. Your company converts to a <b>Berhad</b> and floats on the <b>'+market+'</b>. '
-      + 'Public investors value the business at '+fmt(S.bizValue)+' (up from ~'+fmt(pre)+'). The IPO raises '+fmt(raise)+', less '+fmt(fee)+' in advisory, underwriting and due-diligence fees. You sell ~30% to the public and keep the rest.',
-    lesson:'The payoff of the Sdn Bhd path: a <b>public market</b> re-prices your business far above private multiples and hands you growth capital — and Malaysia charges <b>no capital gains tax</b> on listed shares. But listing is <b>expensive and hard-won</b>: you must first spend to reach real scale.'
+    tone:'up', delta:T('🔔 LISTED on '+market,'🔔 已在 '+market+' 上市'),
+    html:T('The bell rings. Your company converts to a <b>Berhad</b> and floats on the <b>'+market+'</b>. ','钟声响起。你的公司转为 <b>Berhad</b> 并在 <b>'+market+'</b> 挂牌。')
+      + T('Public investors value the business at '+fmt(S.bizValue)+' (up from ~'+fmt(pre)+'). The IPO raises '+fmt(raise)+', less '+fmt(fee)+' in advisory, underwriting and due-diligence fees. You sell ~30% to the public and keep the rest.','公众投资者把生意估值为 '+fmt(S.bizValue)+'（原约 '+fmt(pre)+'）。IPO 募得 '+fmt(raise)+'，扣除 '+fmt(fee)+' 的顾问、承销和尽职调查费。你向公众售出约 30%，其余留在自己手中。'),
+    lesson:T('The payoff of the Sdn Bhd path: a <b>public market</b> re-prices your business far above private multiples and hands you growth capital — and Malaysia charges <b>no capital gains tax</b> on listed shares. But listing is <b>expensive and hard-won</b>: you must first spend to reach real scale.','Sdn Bhd 之路的回报：<b>公开市场</b>把你的生意重新定价，远高于私募倍数，还给你成长资本——而马来西亚对上市股份<b>不征资本利得税</b>。但上市<b>昂贵且来之不易</b>：你必须先花钱做到真规模。')
   };
 }
 function tradeSale(mult){
@@ -1305,13 +1382,13 @@ function tradeSale(mult){
   var pre = S.bizValue;
   S.bizValue = Math.round(S.bizValue * mult);
   var extra = S.succession
-    ? ' Your succession plan reassured the buyer the business runs without you — they paid up.'
-    : (!V().limited ? ' Because the business is legally tied to you (no perpetual succession), the buyer discounted what they\'d pay.' : '');
-  note('You exited by <b>trade sale</b> at a '+mult.toFixed(1)+'× private multiple — solid, but short of a public-market re-rating.');
+    ? T(' Your succession plan reassured the buyer the business runs without you — they paid up.','你的传承规划让买家相信生意离了你也能转——他们愿意多付。')
+    : (!V().limited ? T(' Because the business is legally tied to you (no perpetual succession), the buyer discounted what they\'d pay.','因为生意在法律上和你绑定（没有永续存续），买家压低了出价。') : '');
+  note(T('You exited by <b>trade sale</b> at a '+mult.toFixed(1)+'× private multiple — solid, but short of a public-market re-rating.','你以 '+mult.toFixed(1)+'× 的私募倍数<b>整体出售</b>退出——扎实，但不及公开市场的重新估值。'));
   return {
-    tone:'flat', delta:'Sold at '+mult.toFixed(1)+'× value',
-    html:'You sell the business privately for '+fmt(S.bizValue)+' (a '+mult.toFixed(1)+'× multiple on ~'+fmt(pre)+' of built-up value).'+extra+' A clean, real exit — just without a listing\'s premium.',
-    lesson:'Private buyers pay private prices, and they pay <b>less</b> for a business that can\'t outlive its owner. A Bursa listing typically values a business at a higher multiple — but only a company can walk that path.'
+    tone:'flat', delta:T('Sold at '+mult.toFixed(1)+'× value','以 '+mult.toFixed(1)+'× 价值售出'),
+    html:T('You sell the business privately for '+fmt(S.bizValue)+' (a '+mult.toFixed(1)+'× multiple on ~'+fmt(pre)+' of built-up value).','你以 '+fmt(S.bizValue)+' 私下卖掉生意（在累积价值约 '+fmt(pre)+' 上的 '+mult.toFixed(1)+'× 倍数）。')+extra+T(' A clean, real exit — just without a listing\'s premium.',' 一次干净、实在的退出——只是没有上市的溢价。'),
+    lesson:T('Private buyers pay private prices, and they pay <b>less</b> for a business that can\'t outlive its owner. A Bursa listing typically values a business at a higher multiple — but only a company can walk that path.','私募买家付私募价，而且对一门活不过所有者的生意会付<b>更少</b>。交易所上市通常以更高的倍数给生意估值——但只有公司能走那条路。')
   };
 }
 
@@ -1330,63 +1407,74 @@ function finale(){
   var rank = board.findIndex(function(e){return e.ts===entry.ts && e.name===entry.name;})+1;
   var medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
 
-  var verdict = S.listed ? 'You built a listed company — the top of the ladder.' :
-    nw>=700000 ? 'A serious, valuable business.' :
-    nw>=250000 ? 'A solid, healthy enterprise.' :
-    nw>=80000 ? 'A modest living built from a stall.' :
-    nw>0 ? 'You survived, but growth stayed capped.' : 'The venture ended underwater.';
+  function verdictText(){ return S.listed ? T('You built a listed company — the top of the ladder.','你建成了一家上市公司——阶梯的顶端。') :
+    nw>=700000 ? T('A serious, valuable business.','一门认真、有价值的生意。') :
+    nw>=250000 ? T('A solid, healthy enterprise.','一家扎实、健康的企业。') :
+    nw>=80000 ? T('A modest living built from a stall.','从一个小摊建起的一份不错生计。') :
+    nw>0 ? T('You survived, but growth stayed capped.','你活下来了，但成长始终受限。') : T('The venture ended underwater.','这门生意以资不抵债收场。'); }
 
-  app.innerHTML = '<div class="card">'
-    + '<div class="finalscore">'
-    +   (medal?'<div class="medal">'+medal+'</div>':'')
-    +   '<div style="color:var(--mute);font-size:13px;letter-spacing:1px;text-transform:uppercase">'+S.name+'\'s net worth after 5 years</div>'
-    +   '<div class="big'+(nw<0?' neg':'')+'">'+fmt(nw)+'</div>'
-    +   '<div class="verdict">'+verdict+' &nbsp;·&nbsp; Rank #'+rank+' of '+board.length+'</div>'
-    + '</div>'
-    + breakdownHTML(nw)
-    + debriefHTML()
-    + ladderHTML()
-    + '<h4 style="margin:22px 0 0;color:var(--navy);font-family:Cambria,Georgia,serif">🏆 Leaderboard'+syncTag(!CLOUD_READY)+'</h4>'
-    + boardTable(board, entry.ts)
-    + boardNote()
-    + '<div class="nav"><span></span><button class="btn gold" onclick="home()">Play again →</button></div>'
-    + '</div>';
-  window.scrollTo(0,0);
+  function renderFinale(){
+    app.innerHTML = '<div class="card">'
+      + '<div class="finalscore">'
+      +   (medal?'<div class="medal">'+medal+'</div>':'')
+      +   '<div style="color:var(--mute);font-size:13px;letter-spacing:1px;text-transform:uppercase">'+T(S.name+'\'s net worth after 5 years',S.name+' 五年后的净资产')+'</div>'
+      +   '<div class="big'+(nw<0?' neg':'')+'">'+fmt(nw)+'</div>'
+      +   '<div class="verdict">'+verdictText()+' &nbsp;·&nbsp; '+T('Rank #'+rank+' of '+board.length,'第 '+rank+' 名，共 '+board.length+' 人')+'</div>'
+      + '</div>'
+      + breakdownHTML(nw)
+      + debriefHTML()
+      + ladderHTML()
+      + '<h4 style="margin:22px 0 0;color:var(--navy);font-family:Cambria,Georgia,serif">🏆 '+T('Leaderboard','排行榜')+syncTag(!CLOUD_READY)+'</h4>'
+      + boardTable(board, entry.ts)
+      + boardNote()
+      + '<div class="nav"><span></span><button class="btn gold" onclick="home()">'+T('Play again →','再玩一次 →')+'</button></div>'
+      + '</div>';
+    window.scrollTo(0,0);
+  }
+  VIEW = renderFinale;
+  renderFinale();
   cloudSubmit(entry);
 }
 
 function breakdownHTML(nw){
   return '<div class="breakdown">'
-    + '<div class="row"><span>💵 Cash on hand</span><span>'+fmt(S.cash)+'</span></div>'
-    + '<div class="row"><span>🏢 Your equity ('+Math.round(S.ownership*100)+'% of '+fmt(S.bizValue)+(S.listed?', listed':'')+')</span><span>'+fmt(S.ownership*S.bizValue)+'</span></div>'
-    + (S.debts>0?'<div class="row"><span>💳 Debts</span><span>'+fmt(-S.debts)+'</span></div>':'')
-    + '<div class="row tot"><span>Net worth</span><span>'+fmt(nw)+'</span></div>'
+    + '<div class="row"><span>💵 '+T('Cash on hand','手头现金')+'</span><span>'+fmt(S.cash)+'</span></div>'
+    + '<div class="row"><span>🏢 '+T('Your equity ('+Math.round(S.ownership*100)+'% of '+fmt(S.bizValue)+(S.listed?', listed':'')+')','你的股权（'+fmt(S.bizValue)+(S.listed?' 已上市':'')+' 的 '+Math.round(S.ownership*100)+'%）')+'</span><span>'+fmt(S.ownership*S.bizValue)+'</span></div>'
+    + (S.debts>0?'<div class="row"><span>💳 '+T('Debts','债务')+'</span><span>'+fmt(-S.debts)+'</span></div>':'')
+    + '<div class="row tot"><span>'+T('Net worth','净资产')+'</span><span>'+fmt(nw)+'</span></div>'
     + '</div>';
 }
 
 function debriefHTML(){
   var v = VEHICLES[S.vk];
   var pts = S.pts.slice();
-  if(!pts.length) pts.push('You ran a steady five years without a defining structural moment.');
+  if(!pts.length) pts.push(T('You ran a steady five years without a defining structural moment.','你平稳地经营了五年，没有决定性的结构时刻。'));
   // Fit verdict: did the vehicle match the ambition shown?
   var fit;
   if(S.listed){
-    fit = '✅ <b>Perfect fit.</b> You chose the one vehicle that can raise equity and list — then backed it with '
+    fit = T('✅ <b>Perfect fit.</b> You chose the one vehicle that can raise equity and list — then backed it with '
       + (S.hasManager?'professional management':'hands-on grit')
       + (S.succession?' and a real succession plan':'')
-      + '. Equity, liability protection, governance and continuity all lined up. The ceiling was the sky.';
+      + '. Equity, liability protection, governance and continuity all lined up. The ceiling was the sky.',
+      '✅ <b>完美契合。</b>你选了唯一能募股又能上市的载体——再用'
+      + (S.hasManager?'专业管理':'亲力亲为的拼劲')
+      + (S.succession?'和一份真正的传承规划':'')
+      + '为它撑腰。股权、责任保护、治理和延续全部对齐。天花板就是天空。');
   } else if(v.canList){
-    var missing=[];
-    if(!(S.hasManager&&S.governance)) missing.push('management & governance');
-    if(!S.succession) missing.push('a succession plan');
-    if(S.outlets<5||S.bizValue<350000) missing.push('scale');
-    fit = '➖ <b>Right vehicle, unfinished business.</b> Your Sdn Bhd <b>could</b> have listed, but the regulator wants more than size — you were short on <b>'+(missing.join(', ')||'a little more growth')+'</b>. The pathway was open; you didn\'t reach the top this time.';
+    var missingEn=[], missingZh=[];
+    if(!(S.hasManager&&S.governance)){ missingEn.push('management & governance'); missingZh.push('管理与治理'); }
+    if(!S.succession){ missingEn.push('a succession plan'); missingZh.push('一份传承规划'); }
+    if(S.outlets<5||S.bizValue<350000){ missingEn.push('scale'); missingZh.push('规模'); }
+    fit = T('➖ <b>Right vehicle, unfinished business.</b> Your Sdn Bhd <b>could</b> have listed, but the regulator wants more than size — you were short on <b>'+(missingEn.join(', ')||'a little more growth')+'</b>. The pathway was open; you didn\'t reach the top this time.',
+      '➖ <b>对的载体，未竟之业。</b>你的 Sdn Bhd <b>本可</b>上市，但监管方要的不止是规模——你还差 <b>'+(missingZh.join('、')||'再多一点成长')+'</b>。通路是敞开的；这次你没登顶。');
   } else if(v.key==='llp'){
-    fit = '⚠️ <b>Capable, but capped.</b> Your LLP gave you limited liability and credibility, yet to list you\'d have needed to <b>convert to a Sdn Bhd</b> early. Fine for a mid-size chain; wrong if the goal was Bursa.';
+    fit = T('⚠️ <b>Capable, but capped.</b> Your LLP gave you limited liability and credibility, yet to list you\'d have needed to <b>convert to a Sdn Bhd</b> early. Fine for a mid-size chain; wrong if the goal was Bursa.',
+      '⚠️ <b>有能力，但有上限。</b>你的 LLP 给了你有限责任和公信力，但要上市你本该趁早<b>转为 Sdn Bhd</b>。做中型连锁没问题；若目标是交易所就选错了。');
   } else {
-    fit = '⚠️ <b>Outgrown.</b> A '+v.name.toLowerCase()+' is cheap and simple — great for a stall — but its <b>unlimited liability</b> and inability to raise equity or list became the ceiling as you grew.';
+    fit = T('⚠️ <b>Outgrown.</b> A '+v.name.toLowerCase()+' is cheap and simple — great for a stall — but its <b>unlimited liability</b> and inability to raise equity or list became the ceiling as you grew.',
+      '⚠️ <b>被撑破了。</b>'+vn(v)+'便宜又简单——摆摊很棒——但它的<b>无限责任</b>以及无法募股或上市，随着你成长成了天花板。');
   }
-  return '<div class="debrief"><h4>What your vehicle did over five years</h4><ul>'
+  return '<div class="debrief"><h4>'+T('What your vehicle did over five years','你的载体在这五年里做了什么')+'</h4><ul>'
     + pts.map(function(p){return '<li>'+p+'</li>';}).join('')
     + '</ul><div class="ideal">'+fit+'</div></div>';
 }
@@ -1395,27 +1483,27 @@ function debriefHTML(){
 function ladderHTML(){
   var v = VEHICLES[S.vk];
   var rungs = [
-    {k:'enterprise', em:'🧍', t:'Sole Proprietorship', s:'Cheapest. Unlimited liability. A stall or two.'},
-    {k:'partnership', em:'🤝', t:'Partnership', s:'Pool capital with partners. Still unlimited liability.'},
-    {k:'llp', em:'🛡️', t:'LLP (PLT)', s:'Limited liability, light compliance. Must convert to list.'},
-    {k:'sdnbhd', em:'🏢', t:'Sdn Bhd', s:'Issues shares, raises equity. The gateway to listing.'},
-    {k:'listed', em:'🏛️', t:'Berhad — Listed on Bursa', s:'Public capital & valuation. LEAP → ACE → Main Market.'}
+    {k:'enterprise', em:'🧍', t:T('Sole Proprietorship','独资经营'), s:T('Cheapest. Unlimited liability. A stall or two.','最便宜。无限责任。一两个摊档。')},
+    {k:'partnership', em:'🤝', t:T('Partnership','合伙企业'), s:T('Pool capital with partners. Still unlimited liability.','与合伙人凑资本。仍是无限责任。')},
+    {k:'llp', em:'🛡️', t:T('LLP (PLT)','有限责任合伙 (PLT)'), s:T('Limited liability, light compliance. Must convert to list.','有限责任、合规负担轻。上市须先转制。')},
+    {k:'sdnbhd', em:'🏢', t:T('Sdn Bhd','私人有限公司 (Sdn Bhd)'), s:T('Issues shares, raises equity. The gateway to listing.','发行股份、募集股权。通往上市的门户。')},
+    {k:'listed', em:'🏛️', t:T('Berhad — Listed on Bursa','Berhad——已在交易所上市'), s:T('Public capital & valuation. LEAP → ACE → Main Market.','公开资本与估值。LEAP → ACE → 主板。')}
   ];
   // How high can this vehicle reach on the ladder?
   var reachIndex = {enterprise:0, partnership:1, llp:2, sdnbhd:4}[v.key];
   var hereIndex = {enterprise:0, partnership:1, llp:2, sdnbhd: (S.listed?4:3)}[v.key];
   var html = rungs.map(function(r, i){
     var cls='rung', badge='';
-    if(i===hereIndex){ cls+=' here'; badge='<span class="badge">You are here</span>'; }
-    else if(i<=reachIndex){ cls+=' reach'; if(i===reachIndex && i!==hereIndex) badge='<span class="badge">Reachable</span>'; }
+    if(i===hereIndex){ cls+=' here'; badge='<span class="badge">'+T('You are here','你在这里')+'</span>'; }
+    else if(i<=reachIndex){ cls+=' reach'; if(i===reachIndex && i!==hereIndex) badge='<span class="badge">'+T('Reachable','可达到')+'</span>'; }
     return '<div class="'+cls+'">'+badge
       + '<div class="rem">'+r.em+'</div>'
       + '<div><div class="rt">'+r.t+'</div><div class="rs">'+r.s+'</div></div></div>';
   }).join('<div style="text-align:center;color:#9aa6bf;font-weight:800;margin:-2px 0">▲</div>');
   var cap = v.canList
-    ? 'Your vehicle can climb all the way to a listing. '+(S.listed?'And you did. 🎉':'You stopped short of the top this time.')
-    : 'Your vehicle tops out below the listing rung. To reach Bursa you\'d convert up to a <b>Sdn Bhd</b> first.';
-  return '<div class="debrief" style="background:#F3F6FE;border-color:#D9E3FA"><h4>📈 The pathway to a listed company</h4>'
+    ? T('Your vehicle can climb all the way to a listing. ','你的载体能一路爬到上市。')+(S.listed?T('And you did. 🎉','而你做到了。🎉'):T('You stopped short of the top this time.','这次你在顶端之前止步了。'))
+    : T('Your vehicle tops out below the listing rung. To reach Bursa you\'d convert up to a <b>Sdn Bhd</b> first.','你的载体在上市那一级之下就到顶了。要够上交易所，你得先向上转为 <b>Sdn Bhd</b>。');
+  return '<div class="debrief" style="background:#F3F6FE;border-color:#D9E3FA"><h4>📈 '+T('The pathway to a listed company','通往上市公司的路径')+'</h4>'
     + '<div class="ladder">'+html+'</div>'
     + '<div class="ideal" style="border-color:#c9d6f2">'+cap+'</div></div>';
 }
@@ -1429,8 +1517,8 @@ function saveBoard(b){ try{localStorage.setItem('nasilemak_leaderboard', JSON.st
 function syncTag(off){ return ''; } // reserved for future cloud "syncing…" hint
 function boardNote(){
   return CLOUD_READY
-    ? '<p class="lead" style="font-size:13px;margin-top:10px">🌐 Live shared leaderboard — every founder who plays appears here.</p>'
-    : '<p class="lead" style="font-size:13px;margin-top:10px">📱 Saved on this device. Ask Muchen to switch on the shared board for a live seminar ranking.</p>';
+    ? '<p class="lead" style="font-size:13px;margin-top:10px">🌐 '+T('Live shared leaderboard — every founder who plays appears here.','实时共享排行榜——每位玩过的创办人都会出现在这里。')+'</p>'
+    : '<p class="lead" style="font-size:13px;margin-top:10px">📱 '+T('Saved on this device. Ask Muchen to switch on the shared board for a live seminar ranking.','保存在本设备。想在研讨会现场做实时排名，请让沐宸开启共享排行榜。')+'</p>';
 }
 /* Placeholder so wiring a shared backend later is a one-liner; safe no-op today. */
 function cloudSubmit(entry){ /* POST to /api/scores?game=nasilemak once the shared board is enabled */ }
@@ -1441,15 +1529,16 @@ function boardTable(board, myTs){
     var badge = e.listed ? ' 🏛️' : '';
     return '<tr class="'+(e.ts===myTs?'me':'')+'"><td>'+medal+'</td><td>'+e.name+'</td><td>'+(e.em||'')+' '+(e.vehicle||'')+badge+'</td><td class="sc">'+fmt(e.score)+'</td></tr>';
   }).join('');
-  return '<div class="lbwrap"><table class="lb"><tr><th>#</th><th>Founder</th><th>Vehicle</th><th style="text-align:right">Net worth</th></tr>'+rows+'</table></div>';
+  return '<div class="lbwrap"><table class="lb"><tr><th>#</th><th>'+T('Founder','创办人')+'</th><th>'+T('Vehicle','载体')+'</th><th style="text-align:right">'+T('Net worth','净资产')+'</th></tr>'+rows+'</table></div>';
 }
 function showBoard(fromHome){
+  VIEW = function(){ showBoard(fromHome); };
   document.getElementById('hud').style.display='none';
   var board = loadBoard();
-  app.innerHTML = '<div class="card"><h2 class="scene-title">🏆 Leaderboard</h2>'
-    + (board.length? boardTable(board,-1) : '<p class="lead">No games played yet. Be the first to build an empire.</p>')
+  app.innerHTML = '<div class="card"><h2 class="scene-title">🏆 '+T('Leaderboard','排行榜')+'</h2>'
+    + (board.length? boardTable(board,-1) : '<p class="lead">'+T('No games played yet. Be the first to build an empire.','还没有人玩过。成为第一个建起帝国的人吧。')+'</p>')
     + boardNote()
-    + '<div class="nav"><span></span><button class="btn gold" onclick="home()">'+(fromHome?'← Back':'Play')+'</button></div></div>';
+    + '<div class="nav"><span></span><button class="btn gold" onclick="home()">'+(fromHome?T('← Back','← 返回'):T('Play','开始'))+'</button></div></div>';
   window.scrollTo(0,0);
 }
 
@@ -1457,41 +1546,43 @@ function showBoard(fromHome){
    Home + vehicle selection
    ============================================================ */
 function home(){
-  S=null; document.getElementById('hud').style.display='none';
+  VIEW=home; S=null; document.getElementById('hud').style.display='none';
   app.innerHTML = '<div class="card">'
     + '<img class="cover" src="/nasi-lemak-cover.jpg" alt="Nasi Lemak Empire" onerror="this.style.display=\'none\'">'
-    + '<p class="lead"><b>You\'ve perfected the family nasi lemak recipe.</b> Everyone says you should sell it. So you will — but first, the question nobody at the pasar asks: <b>what kind of business will you be?</b></p>'
-    + '<p class="lead" style="margin-top:10px">The same recipe, run through four different <b>business vehicles</b>, leads to four very different fates over five years. One path can end on the Bursa Malaysia trading floor. Others can\'t — by law. Build the most net worth, and learn <b>why the vehicle decides the ceiling.</b></p>'
-    + '<p class="lead" style="margin-top:10px">First you\'ll set your strategy — <b>vehicle, location, pricing and licences</b> — then trade for five years. 🎡 Each year you also <b>spin the Wheel of Fate</b>: a random card, fire or fortune, and <b>you choose how to respond</b>. The right setup even changes how hard each blow lands.</p>'
-    + '<div class="nav"><button class="btn ghost" onclick="showBoard(true)">🏆 Leaderboard</button><button class="btn gold" onclick="enterName()">Start cooking →</button></div>'
+    + '<p class="lead">'+T('<b>You\'ve perfected the family nasi lemak recipe.</b> Everyone says you should sell it. So you will — but first, the question nobody at the pasar asks: <b>what kind of business will you be?</b>','<b>你把家传的椰浆饭配方做到了极致。</b>人人都说你该拿去卖。你会的——但先回答一个巴刹里没人问的问题：<b>你要做哪一种生意？</b>')+'</p>'
+    + '<p class="lead" style="margin-top:10px">'+T('The same recipe, run through four different <b>business vehicles</b>, leads to four very different fates over five years. One path can end on the Bursa Malaysia trading floor. Others can\'t — by law. Build the most net worth, and learn <b>why the vehicle decides the ceiling.</b>','同一个配方，套进四种不同的<b>商业载体</b>，五年下来会走向四种截然不同的命运。一条路能通向马来西亚交易所的交易大厅。其他的——依法——不能。做出最高的净资产，并弄懂<b>为什么载体决定天花板。</b>')+'</p>'
+    + '<p class="lead" style="margin-top:10px">'+T('First you\'ll set your strategy — <b>vehicle, location, pricing and licences</b> — then trade for five years. 🎡 Each year you also <b>spin the Wheel of Fate</b>: a random card, fire or fortune, and <b>you choose how to respond</b>. The right setup even changes how hard each blow lands.','你先定策略——<b>载体、地点、定价和执照</b>——再经营五年。🎡 每年你还要<b>转动命运之轮</b>：一张随机卡，或是火灾或是横财，而<b>由你决定如何应对</b>。对的设置甚至能改变每一击落下的力度。')+'</p>'
+    + '<div class="nav"><button class="btn ghost" onclick="showBoard(true)">🏆 '+T('Leaderboard','排行榜')+'</button><button class="btn gold" onclick="enterName()">'+T('Start cooking →','开始下厨 →')+'</button></div>'
     + '</div>';
   window.scrollTo(0,0);
 }
 function enterName(){
-  app.innerHTML = '<div class="card"><h2 class="scene-title">Before we begin…</h2>'
-    + '<p class="lead">What\'s your name, founder? (This is how you\'ll appear on the leaderboard.)</p>'
-    + '<input class="name" id="nm" maxlength="22" placeholder="e.g. Aisha, Team Rendang, Table 4" />'
-    + '<div class="nav"><button class="btn ghost" onclick="home()">← Back</button><button class="btn primary" onclick="chooseVehicle()">Next →</button></div></div>';
-  var el=document.getElementById('nm'); el.focus();
+  VIEW=enterName;
+  app.innerHTML = '<div class="card"><h2 class="scene-title">'+T('Before we begin…','开始之前……')+'</h2>'
+    + '<p class="lead">'+T('What\'s your name, founder? (This is how you\'ll appear on the leaderboard.)','创办人，你叫什么名字？（这将是你在排行榜上的名字。）')+'</p>'
+    + '<input class="name" id="nm" maxlength="22" placeholder="'+T('e.g. Aisha, Team Rendang, Table 4','例如：Aisha、仁当队、4 号桌')+'" />'
+    + '<div class="nav"><button class="btn ghost" onclick="home()">'+T('← Back','← 返回')+'</button><button class="btn primary" onclick="chooseVehicle()">'+T('Next →','下一步 →')+'</button></div></div>';
+  var el=document.getElementById('nm'); if(pendingName) el.value=pendingName; el.focus();
   el.addEventListener('keydown',function(e){ if(e.key==='Enter') chooseVehicle(); });
 }
 var pendingName='';
 function chooseVehicle(){
   var v=(document.getElementById('nm')?document.getElementById('nm').value:'').trim();
   if(document.getElementById('nm')){ if(!v){document.getElementById('nm').focus();return;} pendingName=v; }
+  VIEW=chooseVehicle;
   var cards = Object.keys(VEHICLES).map(function(k){
-    var V=VEHICLES[k];
-    var stats=V.stats.map(function(s){return '<span class="st '+(s[1]||'')+'">'+s[0]+'</span>';}).join('');
+    var Vk=VEHICLES[k];
+    var stats=statz(Vk).map(function(s){return '<span class="st '+(s[1]||'')+'">'+s[0]+'</span>';}).join('');
     return '<div class="pick" onclick="startWith(\''+k+'\')">'
-      + '<div class="em">'+V.em+'</div>'
-      + '<h3>'+V.name+'</h3><div class="my">'+V.my+'</div>'
-      + '<div class="sub">'+V.sub+'</div>'
+      + '<div class="em">'+Vk.em+'</div>'
+      + '<h3>'+nmz(Vk)+'</h3><div class="my">'+myz(Vk)+'</div>'
+      + '<div class="sub">'+subz(Vk)+'</div>'
       + '<div class="stats">'+stats+'</div></div>';
   }).join('');
-  app.innerHTML = '<div class="card"><h2 class="scene-title">Choose your business vehicle</h2>'
-    + '<p class="lead">This single choice decides your starting cash, whether your <b>personal</b> assets are at risk, how you can raise money to grow — and whether you can ever <b>list on Bursa Malaysia</b>. Choose for a nasi lemak business you hope to grow.</p>'
+  app.innerHTML = '<div class="card"><h2 class="scene-title">'+T('Choose your business vehicle','选择你的商业载体')+'</h2>'
+    + '<p class="lead">'+T('This single choice decides your starting cash, whether your <b>personal</b> assets are at risk, how you can raise money to grow — and whether you can ever <b>list on Bursa Malaysia</b>. Choose for a nasi lemak business you hope to grow.','这一个选择决定你的起步现金、你的<b>个人</b>财产是否受险、你如何募资成长——以及你能否有朝一日<b>在马来西亚交易所上市</b>。为一门你希望做大的椰浆饭生意做选择。')+'</p>'
     + '<div class="grid">'+cards+'</div>'
-    + '<div class="nav"><button class="btn ghost" onclick="enterName()">← Back</button><span></span></div></div>';
+    + '<div class="nav"><button class="btn ghost" onclick="enterName()">'+T('← Back','← 返回')+'</button><span></span></div></div>';
   window.scrollTo(0,0);
 }
 var pendingVehicle='', pendingLoc='', pendingPrice='', pendingLicense='';
@@ -1500,41 +1591,45 @@ var pendingVehicle='', pendingLoc='', pendingPrice='', pendingLicense='';
 function setupGrid(step, title, lead, cfg, setter, backFn){
   var cards = Object.keys(cfg).map(function(k){
     var C=cfg[k];
-    var stats=(C.stats||[]).map(function(s){return '<span class="st '+(s[1]||'')+'">'+s[0]+'</span>';}).join('');
+    var stats=statz(C).map(function(s){return '<span class="st '+(s[1]||'')+'">'+s[0]+'</span>';}).join('');
     return '<div class="pick" onclick="'+setter+'(\''+k+'\')">'
       + '<div class="em">'+C.em+'</div>'
-      + '<h3>'+C.name+'</h3><div class="my">'+C.my+'</div>'
-      + '<div class="sub">'+C.sub+'</div>'
+      + '<h3>'+nmz(C)+'</h3><div class="my">'+myz(C)+'</div>'
+      + '<div class="sub">'+subz(C)+'</div>'
       + '<div class="stats">'+stats+'</div></div>';
   }).join('');
-  app.innerHTML = '<div class="card"><div class="setupstep">Setup · step '+step+' of 4</div>'
+  app.innerHTML = '<div class="card"><div class="setupstep">'+T('Setup · step '+step+' of 4','设置 · 第 '+step+' / 4 步')+'</div>'
     + '<h2 class="scene-title">'+title+'</h2>'
     + '<p class="lead">'+lead+'</p>'
     + '<div class="grid">'+cards+'</div>'
-    + '<div class="nav"><button class="btn ghost" onclick="'+backFn+'()">← Back</button><span></span></div></div>';
+    + '<div class="nav"><button class="btn ghost" onclick="'+backFn+'()">'+T('← Back','← 返回')+'</button><span></span></div></div>';
   window.scrollTo(0,0);
 }
 
 function startWith(k){ pendingVehicle=k; chooseLocation(); }
 function chooseLocation(){
-  setupGrid(2, 'Where do you open?',
-    'Location shapes everything downstream: <b>rent</b> (your biggest fixed cost), <b>footfall</b> (your demand), and the prestige of your brand. A mall roars with traffic but the rent can sink a bad month; the heartland is cheap and safe but has a lower ceiling.',
+  VIEW=chooseLocation;
+  setupGrid(2, T('Where do you open?','你在哪里开业？'),
+    T('Location shapes everything downstream: <b>rent</b> (your biggest fixed cost), <b>footfall</b> (your demand), and the prestige of your brand. A mall roars with traffic but the rent can sink a bad month; the heartland is cheap and safe but has a lower ceiling.','地点决定了下游的一切：<b>租金</b>（你最大的固定成本）、<b>人流</b>（你的需求），以及品牌的门面。商场人潮汹涌，但租金能拖垮一个淡月；社区便宜又安全，但天花板更低。'),
     LOCATIONS, 'setLoc', 'chooseVehicle');
 }
 function setLoc(k){ pendingLoc=k; choosePrice(); }
 function choosePrice(){
-  setupGrid(3, 'Your pricing strategy',
-    'How you price sets your <b>margin vs volume</b> — and how you weather a downturn. Premium earns more per plate but empties fast in a recession; value earns little per plate but is nearly recession-proof. Match it to your location and vehicle.',
+  VIEW=choosePrice;
+  setupGrid(3, T('Your pricing strategy','你的定价策略'),
+    T('How you price sets your <b>margin vs volume</b> — and how you weather a downturn. Premium earns more per plate but empties fast in a recession; value earns little per plate but is nearly recession-proof. Match it to your location and vehicle.','你怎么定价，决定了你的<b>利润与走量</b>之间的取舍——以及你怎么熬过下行。高档每盘赚更多，但一遇衰退就迅速冷清；平价每盘赚很少，却几乎不怕衰退。让它匹配你的地点和载体。'),
     PRICING, 'setPrice', 'chooseLocation');
 }
 function setPrice(k){ pendingPrice=k; chooseLicense(); }
 function chooseLicense(){
-  setupGrid(4, 'Licences & certification',
-    'The legal basics to trade — and a strategic fork. <b>Full licensing</b> adds JAKIM <b>halal</b> certification (which many corporate and supermarket buyers <i>require</i>) and <b>insurance</b> that softens fate\'s disasters. <b>Basic</b> is cheaper today but locks you out of those deals and leaves you exposed.',
+  VIEW=chooseLicense;
+  setupGrid(4, T('Licences & certification','执照与认证'),
+    T('The legal basics to trade — and a strategic fork. <b>Full licensing</b> adds JAKIM <b>halal</b> certification (which many corporate and supermarket buyers <i>require</i>) and <b>insurance</b> that softens fate\'s disasters. <b>Basic</b> is cheaper today but locks you out of those deals and leaves you exposed.','经营的法律基础——也是一个战略岔路。<b>完整执照</b>加上 JAKIM <b>清真</b>认证（许多企业和超市买家<i>要求</i>它）和能缓冲命运灾难的<b>保险</b>。<b>基本</b>今天更便宜，但会把你挡在那些生意之外，也让你暴露无保护。'),
     LICENSING, 'setLicense', 'choosePrice');
 }
 function setLicense(k){ pendingLicense=k; newGame(pendingName, pendingVehicle); }
 
+paintLang();
 home();
 </script>
 <audio id="bgm" src="/henesys-floral-life.mp3" loop preload="auto"></audio>

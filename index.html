@@ -39,6 +39,7 @@
   .card{background:var(--paper);border-radius:20px;box-shadow:var(--shadow);padding:28px;animation:pop .3s ease}
   @keyframes pop{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
   .lead{color:var(--mute);font-size:15px;line-height:1.6}
+  .cover{width:100%;height:auto;display:block;border-radius:14px;margin:0 0 16px;box-shadow:0 8px 22px rgba(6,40,24,.22)}
 
   .scene-title{font-family:Cambria,Georgia,serif;color:var(--navy);font-size:23px;font-weight:800;margin:0 0 6px}
   .scene-flavor{font-size:15.5px;line-height:1.62;color:var(--ink);white-space:pre-wrap}
@@ -556,6 +557,7 @@ function money(){ document.getElementById('moneyN').textContent=fmt(S.money); do
 function home(){
   S=null; document.getElementById('hud').style.display='none';
   app.innerHTML='<div class="card">'
+    +'<img class="cover" src="/rm500-cover.jpg" alt="RM500 Startup Challenge" onerror="this.style.display=\'none\'">'
     +'<p class="lead"><b>Your family just handed you the last RM500 they have.</b> No safety net, no second chance. You want to build something. The idea is the easy part — the choice that quietly decides whether you thrive or lose your family\'s money is the one nobody teaches you: <b>what legal structure do you start with?</b></p>'
     +'<p class="lead" style="margin-top:10px">Play through one year of decisions and disasters. At the end, your net worth goes on the leaderboard. Whoever reads their business best — and picks the right structure for it — wins.</p>'
     +'<div class="nav"><button class="btn ghost" onclick="showBoard(true)">🏆 Leaderboard</button><button class="btn gold" onclick="enterName()">Start with RM500 →</button></div>'

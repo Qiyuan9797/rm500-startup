@@ -39,6 +39,7 @@
   .card{background:var(--paper);border-radius:20px;box-shadow:var(--shadow);padding:28px;animation:pop .3s ease}
   @keyframes pop{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
   .lead{color:var(--mute);font-size:15px;line-height:1.6}
+  .cover{width:100%;height:auto;display:block;border-radius:14px;margin:0 0 16px;box-shadow:0 8px 22px rgba(6,40,24,.22)}
 
   .scene-title{font-family:Cambria,Georgia,serif;color:var(--navy);font-size:23px;font-weight:800;margin:0 0 6px}
   .setupstep{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
@@ -1458,6 +1459,7 @@ function showBoard(fromHome){
 function home(){
   S=null; document.getElementById('hud').style.display='none';
   app.innerHTML = '<div class="card">'
+    + '<img class="cover" src="/nasi-lemak-cover.jpg" alt="Nasi Lemak Empire" onerror="this.style.display=\'none\'">'
     + '<p class="lead"><b>You\'ve perfected the family nasi lemak recipe.</b> Everyone says you should sell it. So you will — but first, the question nobody at the pasar asks: <b>what kind of business will you be?</b></p>'
     + '<p class="lead" style="margin-top:10px">The same recipe, run through four different <b>business vehicles</b>, leads to four very different fates over five years. One path can end on the Bursa Malaysia trading floor. Others can\'t — by law. Build the most net worth, and learn <b>why the vehicle decides the ceiling.</b></p>'
     + '<p class="lead" style="margin-top:10px">First you\'ll set your strategy — <b>vehicle, location, pricing and licences</b> — then trade for five years. 🎡 Each year you also <b>spin the Wheel of Fate</b>: a random card, fire or fortune, and <b>you choose how to respond</b>. The right setup even changes how hard each blow lands.</p>'

@@ -1,0 +1,6 @@
+# Kopi Talk is an INTERNAL staff-training tool — do not deploy it publicly.
+# These files stay in the repo (the local server uses them) but are excluded
+# from the Vercel deployment, so /coffee-talk and /api/coffee 404 in public.
+coffee-talk.html
+api/coffee.js
+api/_coffee-core.js

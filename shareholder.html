@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#0E7A46"/>
+<meta name="robots" content="noindex, nofollow"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>Boardroom Betrayal — The Shareholder Dispute RPG</title>
+<style>
+  :root{
+    --navy:#0B6E40; --navy2:#0E7A46; --blue:#12925A; --ice:#BCE8CE; --ice2:#E4F6EC;
+    --gold:#15C06A; --gold2:#46D98F; --ink:#123524; --mute:#5C7A69; --white:#fff;
+    --good:#1f8a54; --bad:#c0392b; --paper:#F7FCF9;
+    --shadow:0 12px 34px rgba(6,40,24,.20);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;font-family:"Segoe UI",Calibri,Arial,sans-serif;color:var(--ink);
+    background:radial-gradient(1200px 600px at 50% -10%,#1FA35E 0%,#0E7A46 40%,#064E2B 100%);
+    background-attachment:fixed;-webkit-tap-highlight-color:transparent;
+    min-height:100vh;min-height:100dvh;
+    padding:22px 14px 70px;
+    padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+  .wrap{max-width:860px;margin:0 auto}
+  header.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .brand .kick{color:var(--gold);font-weight:700;letter-spacing:3px;font-size:11px}
+  .brand h1{margin:2px 0 0;color:#fff;font-family:Cambria,Georgia,serif;font-size:25px;font-weight:800}
+  .brand h1 span{color:var(--gold2)}
+  .hud{display:flex;gap:8px;align-items:center}
+  .hud .money{background:rgba(255,255,255,.08);border:1px solid rgba(202,220,252,.28);border-radius:14px;padding:8px 16px;text-align:center;color:#fff}
+  .hud .money .n{font-size:24px;font-weight:800;line-height:1;color:var(--gold2)}
+  .hud .money .l{font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ice);margin-top:3px}
+  .hud .round{background:rgba(255,255,255,.06);border-radius:12px;padding:8px 12px;color:var(--ice);font-size:12px;text-align:center;min-width:66px}
+  .hud .round b{display:block;color:#fff;font-size:16px}
+
+  .card{background:var(--paper);border-radius:20px;box-shadow:var(--shadow);padding:28px;animation:pop .3s ease}
+  @keyframes pop{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .lead{color:var(--mute);font-size:15px;line-height:1.6}
+  .cover{width:100%;height:auto;display:block;border-radius:14px;margin:0 0 16px;box-shadow:0 8px 22px rgba(6,40,24,.22)}
+  .hero{border-radius:14px;margin:0 0 16px;padding:26px 18px;text-align:center;color:#fff;
+    background:linear-gradient(135deg,#0B6E40,#12925A);box-shadow:0 8px 22px rgba(6,40,24,.22)}
+  .hero .em{font-size:52px;line-height:1}
+  .hero .t{font-family:Cambria,Georgia,serif;font-size:22px;font-weight:800;margin-top:6px}
+  .hero .s{font-size:12.5px;color:var(--ice);letter-spacing:2px;text-transform:uppercase;margin-top:4px}
+
+  .scene-title{font-family:Cambria,Georgia,serif;color:var(--navy);font-size:23px;font-weight:800;margin:0 0 6px}
+  .setupstep{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
+  .scene-flavor{font-size:15.5px;line-height:1.62;color:var(--ink);white-space:pre-wrap}
+  .tagrow{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 14px}
+  .tag{font-size:11px;font-weight:700;border-radius:20px;padding:4px 11px;letter-spacing:.4px}
+  .tag.n{background:var(--ice2);color:var(--navy)}
+  .tag.g{background:#E4F6EC;color:#0B6E40}
+
+  .opts{display:grid;gap:11px;margin-top:18px}
+  .opt{border:2px solid #E1E7F5;border-radius:14px;padding:14px 17px;cursor:pointer;background:#fff;transition:.14s;-webkit-user-select:none;user-select:none}
+  .opt:hover{border-color:var(--blue);background:#F5F9FF;transform:translateX(3px)}
+  .opt:active{border-color:var(--blue);background:#EDF3FF;transform:scale(.99)}
+  .opt.dis{opacity:.6;cursor:not-allowed;background:#F4F5F9}
+  .opt.dis:hover{border-color:#E1E7F5;background:#F4F5F9;transform:none}
+  .opt .t{font-weight:700;font-size:15px}
+  .opt .h{font-size:12.5px;color:var(--mute);margin-top:3px;line-height:1.45}
+  .opt .lock{font-size:11px;font-weight:700;color:var(--bad);margin-top:5px}
+
+  .outcome{border-radius:14px;padding:16px 18px;margin-top:16px;font-size:14.5px;line-height:1.6;animation:pop .3s ease}
+  .outcome.up{background:#E9F6EE;border:1px solid #b8e2c8}
+  .outcome.down{background:#FDECEA;border:1px solid #f2c4bc}
+  .outcome.flat{background:var(--ice2);border:1px solid #cdd9f0}
+  .outcome .delta{font-weight:800;font-size:16px}
+  .outcome .lesson{margin-top:9px;padding-top:9px;border-top:1px dashed rgba(0,0,0,.15);font-size:13px;color:var(--navy)}
+  .outcome .lesson b{color:var(--gold)}
+  .dice{margin:2px 0 8px;font-weight:800;font-size:14px;letter-spacing:.3px}
+  .dice.pass{color:var(--good)} .dice.fail{color:var(--bad)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+  .chip{font-size:11.5px;font-weight:700;background:var(--ice2);color:var(--navy);border-radius:9px;padding:5px 10px}
+  .chip b{color:var(--blue)}
+  .chip.you{background:#E9F6EE;color:#1c6b41}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+  @media(max-width:620px){.grid{grid-template-columns:1fr}}
+  .pick{border:2px solid var(--ice);background:#fff;border-radius:16px;padding:18px;cursor:pointer;transition:.16s;-webkit-user-select:none;user-select:none}
+  .pick:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:var(--shadow)}
+  .pick:active{border-color:var(--gold);transform:scale(.99);box-shadow:var(--shadow)}
+  .pick .em{font-size:30px}
+  .pick h3{margin:6px 0 2px;color:var(--navy);font-size:18px}
+  .pick .my{color:var(--mute);font-size:11.5px;font-style:italic;margin-bottom:4px}
+  .pick .sub{color:var(--mute);font-size:12.5px;line-height:1.5}
+  .pick .stats{margin-top:9px;display:flex;flex-wrap:wrap;gap:6px}
+  .pick .st{font-size:10.5px;font-weight:700;background:var(--ice2);color:var(--navy);border-radius:8px;padding:3px 8px}
+  .pick .st.warn{background:#FDECEA;color:#a5301f}
+  .pick .st.good{background:#E9F6EE;color:#1c6b41}
+
+  .nav{display:flex;justify-content:space-between;gap:10px;margin-top:22px;align-items:center}
+  button.btn{border:0;border-radius:11px;padding:12px 22px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+  button.btn:active{transform:scale(.97)}
+  .btn.primary{background:var(--navy);color:#fff}.btn.primary:hover{background:var(--blue)}
+  .btn.gold{background:var(--gold);color:#fff}.btn.gold:hover{background:var(--gold2)}
+  .btn.ghost{background:#fff;color:var(--navy);border:1.5px solid var(--ice)}.btn.ghost:hover{border-color:var(--blue)}
+  input.name{width:100%;padding:13px 15px;border:2px solid var(--ice);border-radius:12px;font-size:16px;font-family:inherit;margin-top:8px}
+  input.name:focus{outline:none;border-color:var(--gold)}
+
+  .finalscore{text-align:center;padding:6px 0}
+  .finalscore .big{font-family:Cambria,Georgia,serif;font-size:44px;font-weight:800;color:var(--navy);line-height:1}
+  .finalscore .big.neg{color:var(--bad)}
+  .finalscore .verdict{font-size:16px;color:var(--mute);margin-top:6px}
+  .medal{font-size:34px}
+  .debrief{background:#EAF7F0;border:1px solid #BFE6CF;border-radius:14px;padding:16px 18px;margin-top:16px;font-size:14px;line-height:1.6}
+  .debrief h4{margin:0 0 8px;color:var(--navy)}
+  .debrief ul{margin:8px 0 0;padding-left:18px}.debrief li{margin:5px 0}
+  .debrief .ideal{margin-top:10px;padding-top:10px;border-top:1px dashed #bfe0cc}
+  .breakdown{background:#fff;border:1px solid #E1E7F3;border-radius:12px;padding:14px 16px;margin-top:14px;font-size:13.5px}
+  .breakdown .row{display:flex;justify-content:space-between;padding:4px 0}
+  .breakdown .row.tot{border-top:1.5px solid #E7ECF6;margin-top:5px;padding-top:8px;font-weight:800;font-size:15px;color:var(--navy)}
+
+  table.lb{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.lb th,table.lb td{padding:9px 10px;text-align:left;border-bottom:1px solid #E7ECF6}
+  table.lb th{color:var(--mute);font-size:11px;letter-spacing:1px;text-transform:uppercase}
+  table.lb tr.me{background:#FBF1CE}
+  table.lb td.sc{font-weight:800;text-align:right}
+  .lbwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px}
+  .foot{color:var(--ice);text-align:center;font-size:11.5px;margin-top:26px;line-height:1.6}
+  .foot b{color:var(--gold2)} .foot a{color:var(--gold2);text-decoration:none}
+
+  @media(hover:none){
+    .opt:hover{border-color:#E1E7F5;background:#fff;transform:none}
+    .pick:hover{border-color:var(--ice);transform:none;box-shadow:none}
+    .btn.primary:hover{background:var(--navy)}
+    .btn.gold:hover{background:var(--gold)}
+    .btn.ghost:hover{border-color:var(--ice)}
+  }
+  @media(max-width:560px){
+    body{padding:0 12px 60px;
+      padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+    header.top{position:sticky;top:0;z-index:30;flex-wrap:nowrap;align-items:center;
+      margin:0 -12px 14px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));
+      background:rgba(9,74,44,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+      border-bottom:1px solid rgba(202,220,252,.16)}
+    .brand .kick{font-size:9px;letter-spacing:1.5px;line-height:1.25}
+    .brand h1{font-size:20px}
+    .hud{flex-shrink:0}
+    .hud .money{padding:6px 12px}
+    .hud .money .n{font-size:19px}
+    .hud .round{padding:6px 9px;min-width:52px;font-size:11px}
+    .hud .round b{font-size:14px}
+    .card{padding:20px 17px;border-radius:16px}
+    .scene-title{font-size:21px}
+    .scene-flavor{font-size:15px}
+    .lead{font-size:14.5px}
+    .grid{gap:11px;margin-top:16px}
+    .pick{padding:15px}
+    .nav{gap:8px;margin-top:18px}
+    button.btn{flex:1;padding:14px 14px;font-size:14.5px;min-height:48px}
+    .nav>span:empty{display:none}
+    input.name{padding:14px 15px}
+    table.lb{font-size:12.5px}
+    table.lb th,table.lb td{padding:8px 7px}
+    .finalscore .big{font-size:38px}
+  }
+  .bgm-btn{position:fixed;right:14px;bottom:14px;z-index:60;width:44px;height:44px;border-radius:50%;border:0;
+    background:rgba(255,255,255,.92);color:var(--navy);font-size:19px;cursor:pointer;line-height:1;
+    box-shadow:0 5px 16px rgba(6,40,24,.3);transition:.15s}
+  .bgm-btn:active{transform:scale(.92)} .bgm-btn.off{opacity:.55}
+  @media(max-width:560px){.bgm-btn{right:10px;bottom:10px;width:40px;height:40px;font-size:17px}}
+  .lang-btn{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.38);border-radius:999px;
+    padding:6px 15px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;align-self:center;white-space:nowrap}
+  .lang-btn:active{transform:scale(.96)}
+  @media(max-width:560px){.lang-btn{padding:5px 11px;font-size:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="kick" id="kick">MUCHEN CORPORATE SERVICES · SHAREHOLDER DISPUTE RPG</div>
+      <h1>Boardroom <span>Betrayal</span></h1>
+    </div>
+    <div class="hud" id="hud" style="display:none">
+      <div class="round" id="roundBox"><span id="actLbl">Act</span><b id="actN">1</b></div>
+      <div class="money"><div class="n" id="stakeN">RM0</div><div class="l" id="stakeLbl">Your stake</div></div>
+    </div>
+    <button id="langBtn" class="lang-btn" onclick="toggleLang()" aria-label="Language / 语言">中文</button>
+  </header>
+
+  <div id="app"></div>
+
+  <div class="foot" id="foot">
+    A training simulation — not legal advice. Powers &amp; remedies are simplified from the Malaysian Companies Act 2016
+    (oppression s.346, derivative action s.347, removal of directors s.206, requisition s.311).<br>
+    Also try <a href="/">RM500 Startup</a> · <a href="/nasi-lemak">Nasi Lemak Empire</a>. Verify specifics against current law.
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   BOARDROOM BETRAYAL — a shareholder-dispute CRPG.
+   You co-founded Kopiku Sdn Bhd. It's worth ~RM5m and your
+   co-founder-CEO is squeezing you out. Pick an archetype,
+   navigate five acts of a real Malaysian shareholder fight,
+   and walk away with the most value. Teaches minority rights,
+   oppression (s.346), dilution, control thresholds & buy-outs.
+   ============================================================ */
+
+var app = document.getElementById('app');
+function fmt(n){ n=Math.round(n); var s=Math.abs(n).toLocaleString('en-MY'); return (n<0?'−RM':'RM')+s; }
+function rand(a,b){ return a + Math.random()*(b-a); }
+function clamp(x,a,b){ return Math.max(a,Math.min(b,x)); }
+
+/* ---- bilingual helpers (EN / 简体中文) ---- */
+var LANG = (function(){
+  try{ var q=new URLSearchParams(location.search).get('lang'); if(q==='zh'||q==='en'){ try{localStorage.setItem('muchen_lang',q);}catch(e){} return q; } }catch(e){}
+  try{ return localStorage.getItem('muchen_lang')==='zh'?'zh':'en'; }catch(e){ return 'en'; }
+})();
+function T(en,zh){ return LANG==='zh'?zh:en; }
+function nmz(o){ return (LANG==='zh'&&o&&o.nameZh)?o.nameZh:o.name; }
+function subz(o){ return (LANG==='zh'&&o&&o.subZh)?o.subZh:o.sub; }
+function myz(o){ return (LANG==='zh'&&o&&o.myZh)?o.myZh:o.my; }
+function statz(o){ return (LANG==='zh'&&o&&o.statsZh)?o.statsZh:o.stats; }
+var VIEW=null;
+function paintLang(){
+  document.getElementById('langBtn').textContent = LANG==='zh'?'EN':'中文';
+  document.getElementById('kick').textContent = T('MUCHEN CORPORATE SERVICES · SHAREHOLDER DISPUTE RPG','沐宸企业服务 · 股东纷争角色扮演');
+  document.getElementById('actLbl').textContent = T('Act','幕');
+  document.getElementById('stakeLbl').textContent = T('Your stake','你的股权');
+  document.getElementById('foot').innerHTML = T(
+    'A training simulation — not legal advice. Powers &amp; remedies are simplified from the Malaysian Companies Act 2016 (oppression s.346, derivative action s.347, removal of directors s.206, requisition s.311).<br>Also try <a href="/">RM500 Startup</a> · <a href="/nasi-lemak">Nasi Lemak Empire</a>. Verify specifics against current law.',
+    '这是培训模拟——并非法律建议。相关权力与救济取自《2016 年马来西亚公司法令》并作简化（压迫救济 s.346、派生诉讼 s.347、罢免董事 s.206、召集大会 s.311）。<br>也来玩 <a href="/">RM500 创业</a> · <a href="/nasi-lemak">椰浆饭帝国</a>。实际情形请以现行法律为准。');
+}
+function toggleLang(){ LANG = LANG==='zh'?'en':'zh'; try{localStorage.setItem('muchen_lang',LANG);}catch(e){} paintLang(); if(VIEW) VIEW(); }
+
+/* ---------- Archetypes (your "class") ---------- */
+var ARCHES = {
+  visionary: { key:'visionary', em:'🧭', name:'The Visionary Founder', nameZh:'远见创办人',
+    my:'You built the brand & the customers love you', myZh:'你打造了品牌，顾客爱你',
+    equity:40, marcus:45, rose:15, control:55, warchest:30000, leverage:45, reputation:60,
+    sub:'You hold the vision, the product and the loyalty of the market — but not the cash to outspend anyone.',
+    subZh:'你握着愿景、产品和市场的忠诚——但没有比谁都能烧的现金。',
+    stats:[['Equity 40%','st'],['Control high','good'],['Warchest low','warn'],['Reputation high','good']],
+    statsZh:[['股权 40%','st'],['控制力 高','good'],['战备金 低','warn'],['声誉 高','good']] },
+  money: { key:'money', em:'💰', name:'The Money Partner', nameZh:'出资合伙人',
+    my:'You funded the company; deep pockets', myZh:'你出钱建了公司；口袋很深',
+    equity:45, marcus:40, rose:15, control:45, warchest:120000, leverage:35, reputation:50,
+    sub:'Deep pockets and the largest single stake — but you didn\'t build the product, so the team\'s loyalty is elsewhere.',
+    subZh:'口袋最深、单一股权最大——但产品不是你做的，团队的忠诚在别处。',
+    stats:[['Equity 45%','good'],['Warchest deep','good'],['Leverage low','warn'],['Control medium','st']],
+    statsZh:[['股权 45%','good'],['战备金 雄厚','good'],['筹码 低','warn'],['控制力 中','st']] },
+  operator: { key:'operator', em:'🛠️', name:'The Operator (Tech Co-founder)', nameZh:'运营者（技术联创）',
+    my:'You run ops and hold the know-how / IP', myZh:'你管运营、掌握技术与知识产权',
+    equity:35, marcus:50, rose:15, control:40, warchest:25000, leverage:70, reputation:55,
+    sub:'The business runs on what\'s in your head and your systems. That knowledge is your weapon — the smallest stake, the biggest leverage.',
+    subZh:'生意靠的是你脑中的东西和你的系统。这份知识就是你的武器——股权最小，筹码最大。',
+    stats:[['Equity 35%','warn'],['Leverage very high','good'],['Control low','warn'],['You hold the IP','good']],
+    statsZh:[['股权 35%','warn'],['筹码 极高','good'],['控制力 低','warn'],['你握着知识产权','good']] },
+  angel: { key:'angel', em:'📊', name:'The Minority Angel', nameZh:'小股东天使',
+    my:'Early backer, small stake, reads the Act for fun', myZh:'早期投资人，股权小，爱读公司法',
+    equity:18, marcus:57, rose:25, control:30, warchest:90000, leverage:55, reputation:70,
+    sub:'A small slice against a clear majority — the classic squeezed minority. Your route to justice runs through the courts, not the ballot.',
+    subZh:'面对明显多数的一小片股权——典型的被挤压小股东。你伸张正义的路在法庭，不在票数。',
+    stats:[['Equity 18%','warn'],['Reputation high','good'],['Legally sharp','good'],['Outvoted alone','warn']],
+    statsZh:[['股权 18%','warn'],['声誉 高','good'],['精通法律','good'],['单独投票必败','warn']] }
+};
+
+/* ---------- Game state ---------- */
+var S=null, STEP=0, STEPS=[];
+var COMPANY0 = 5000000;
+
+function newGame(name, ak){
+  var A = ARCHES[ak];
+  S = {
+    name:name, ak:ak,
+    equity:A.equity, marcus:A.marcus, rose:A.rose,
+    control:A.control, warchest:A.warchest, leverage:A.leverage, reputation:A.reputation,
+    sha:(pendingSHA==='sha'), preemptive:(pendingSHA==='sha'),
+    company:COMPANY0,
+    roseAlly:false, flags:{}, log:[], pts:[]
+  };
+  // The incorporation choice already tuned stats in setSHA(); nothing more here.
+  STEP=0;
+  STEPS=[act1, act2, act3, act4, act5];
+  document.getElementById('hud').style.display='flex';
+  syncHud();
+  runStep();
+}
+function syncHud(){
+  document.getElementById('actN').textContent = Math.min(STEP+1,5)+' / 5';
+  document.getElementById('stakeN').textContent = fmt(stakeValue());
+}
+function A(){ return ARCHES[S.ak]; }
+function stakeValue(){ return Math.round(S.equity/100 * S.company); }
+function note(en,zh){ var t=T(en,zh); if(S.pts.indexOf(t)<0) S.pts.push(t); }
+function adj(k,v){ S[k]=clamp(S[k]+v, (k==='warchest'?-999999:0), (k==='warchest'?999999999:100)); }
+
+/* ---------- Dice skill checks (CRPG) ---------- */
+function skill(statVal, difficulty){
+  var chance = clamp(statVal + 50 - difficulty, 10, 90);
+  var r = Math.ceil(rand(1,101));
+  return { pass: r<=chance, roll:r, need:Math.round(chance) };
+}
+function diceLine(res, en, zh){
+  return '<div class="dice '+(res.pass?'pass':'fail')+'">🎲 '
+    + T(en,zh) + ' — ' + T('rolled ','掷出 ') + res.roll + T(' vs ',' ／ 需 ≤') + res.need
+    + ' → ' + (res.pass?T('SUCCESS','成功'):T('FAIL','失败')) + '</div>';
+}
+
+/* ---------- Rendering ---------- */
+function chipsBar(){
+  return '<div class="chips">'
+    + '<span class="chip you">'+A().em+' <b>'+T('You','你')+' '+S.equity+'%</b></span>'
+    + '<span class="chip">🎚️ '+T('Control','控制力')+' <b>'+Math.round(S.control)+'</b></span>'
+    + '<span class="chip">💰 '+T('Warchest','战备金')+' <b>'+fmt(S.warchest)+'</b></span>'
+    + '<span class="chip">🗂️ '+T('Leverage','筹码')+' <b>'+Math.round(S.leverage)+'</b></span>'
+    + '<span class="chip">⭐ '+T('Reputation','声誉')+' <b>'+Math.round(S.reputation)+'</b></span>'
+    + '<span class="chip">🏛️ '+T('Company','公司')+' <b>'+fmt(S.company)+'</b></span>'
+    + (S.sha?'<span class="chip">✍️ '+T('Shareholders’ agreement','股东协议')+'</span>':'')
+    + (S.roseAlly?'<span class="chip">🤝 '+T('Rose allied','Rose 结盟')+'</span>':'')
+    + '</div>';
+}
+function renderScene(sc){
+  VIEW = runStep; syncHud();
+  var opts = sc.options.map(function(o,i){
+    if(o.locked){
+      return '<div class="opt dis"><div class="t">'+o.t+'</div>'+(o.h?'<div class="h">'+o.h+'</div>':'')+'<div class="lock">🔒 '+o.locked+'</div></div>';
+    }
+    return '<div class="opt" onclick="choose('+i+')"><div class="t">'+o.t+'</div>'+(o.h?'<div class="h">'+o.h+'</div>':'')+'</div>';
+  }).join('');
+  window.__opts = sc.options;
+  app.innerHTML = '<div class="card">'
+    + '<h2 class="scene-title">'+sc.title+'</h2>'
+    + (sc.tags?'<div class="tagrow">'+sc.tags+'</div>':'')
+    + '<div class="scene-flavor">'+sc.flavor+'</div>'
+    + chipsBar()
+    + '<div class="opts">'+opts+'</div>'
+    + '</div>';
+  window.scrollTo(0,0);
+}
+function choose(i){ var o=window.__opts[i]; if(o.locked) return; renderOutcome(o.go()); }
+function renderOutcome(o){
+  VIEW = null; syncHud();
+  var last = (STEP >= STEPS.length-1);
+  app.innerHTML = '<div class="card">'
+    + '<div class="outcome '+(o.tone||'flat')+'">'
+    +   (o.dice||'')
+    +   (o.delta?'<div class="delta">'+o.delta+'</div>':'')
+    +   '<div>'+o.html+'</div>'
+    +   (o.lesson?'<div class="lesson"><b>'+T('⚖️ Lesson','⚖️ 启示')+':</b> '+o.lesson+'</div>':'')
+    + '</div>'
+    + chipsBar()
+    + '<div class="nav"><span></span><button class="btn gold" onclick="advance()">'
+    +   (last?T('The reckoning →','最终清算 →'):T('Continue →','继续 →'))+'</button></div>'
+    + '</div>';
+  window.scrollTo(0,0);
+}
+function advance(){ STEP++; if(STEP>=STEPS.length){ finale(); return; } runStep(); }
+function runStep(){ renderScene(STEPS[STEP]()); }
+
+/* ============================================================
+   ACT I — The Freeze-Out
+   ============================================================ */
+function act1(){
+  return {
+    title:T('Act I · The Freeze-Out','第一幕 · 冷处理'),
+    tags:'<span class="tag n">☕ Kopiku Sdn Bhd</span><span class="tag g">'+T('Value ~','估值约 ')+fmt(S.company)+'</span>',
+    flavor:T('Kopiku Sdn Bhd — the specialty-coffee chain you co-founded — is finally worth around '+fmt(S.company)+'. But your co-founder-CEO <b>Marcus</b> has gone cold. The quarterly board meeting was "postponed," the management accounts stopped arriving, and word reaches you that a fat "consultancy fee" is being paid to a company owned by Marcus’s cousin. You are being frozen out. What’s your first move?',
+      'Kopiku Sdn Bhd——你共同创办的精品咖啡连锁——如今估值约 '+fmt(S.company)+'。但你的联合创办人兼 CEO <b>Marcus</b> 变冷淡了。季度董事会“延期”，管理账目不再送来，还有风声说一笔丰厚的“咨询费”正流向 Marcus 表亲名下的公司。你正被冷处理。第一步你怎么走？'),
+    options:[
+      { t:T('Confront Marcus, founder to founder','以创办人身份直接找 Marcus 谈'),
+        h:T('A quiet coffee. Preserve the relationship — if he’ll listen.','一杯安静的咖啡。若他肯听，先保住关系。'),
+        go:function(){
+          var r = skill(S.reputation, 45);
+          if(r.pass){ adj('leverage',8); adj('reputation',4); S.flags.talked=true;
+            return {tone:'flat', dice:diceLine(r,'Persuasion check (Reputation)','说服检定（声誉）'), delta:'🗂️ +8 · ⭐ +4',
+              html:T('Marcus is smooth but you read him. He lets slip that a "strategic investor" is coming in "to strengthen the cap table." Now you know the play <i>before</i> it happens.','Marcus 很圆滑，但你看穿了他。他不小心透露有个“战略投资人”将进来“优化股权结构”。你在事情发生<i>之前</i>就知道了套路。'),
+              lesson:T('Talk first — a quiet conversation preserves value and buys information. But a co-founder acting in bad faith rarely talks himself out of it; treat the chat as intelligence-gathering, not a fix.','先谈——一次安静的对话能保住价值、换来情报。但心怀不轨的联创很少会被谈明白；把这次谈话当作情报收集，而非解决方案。')}; }
+          adj('reputation',-4); S.flags.alerted=true;
+          return {tone:'down', dice:diceLine(r,'Persuasion check (Reputation)','说服检定（声誉）'), delta:'⭐ −4',
+            html:T('Marcus stonewalls, all smiles and no answers — and now he knows you’re watching. He’ll move faster.','Marcus 笑脸相迎却滴水不漏——而且现在他知道你在盯着。他会加快动作。'),
+            lesson:T('Tipping your hand to a bad-faith majority lets them entrench before you can act. Sometimes the quiet move (gather evidence first) beats the direct one.','向心怀不轨的多数方摊牌，会让他们在你行动前先加固地位。有时安静地先取证，胜过正面出击。')};
+        } },
+      { t:T('Say nothing — quietly gather evidence','什么都不说——悄悄取证'),
+        h:T('Board minutes, the related-party invoices, the register of members. −RM4,000 forensic help.','董事会记录、关联交易发票、股东名册。−RM4,000 请鉴证会计。'),
+        go:function(){ adj('warchest',-4000); adj('leverage',18); S.flags.evidence=true;
+          return {tone:'up', delta:'🗂️ +18 · −RM4,000',
+            html:T('A forensic accountant traces the "consultancy fee" to Marcus’s cousin — an undisclosed related-party transaction. You have a paper trail.','一位鉴证会计把“咨询费”追到了 Marcus 的表亲——一笔未披露的关联交易。你握住了纸面证据。'),
+            lesson:T('Evidence is a shareholder’s real leverage. An undisclosed related-party payment can breach a director’s duty to act in the company’s interest (s.213 CA2016) and is textbook oppressive conduct. Document everything.','证据是股东真正的筹码。未披露的关联付款可能违反董事以公司利益行事的义务（s.213），也是教科书式的压迫行为。把一切记录下来。')};
+        } },
+      { t:T('Demand access to the records via the company secretary','通过公司秘书要求查阅记录'),
+        h:T('Use your statutory & directorial right to information — through the neutral record-keeper.','用你的法定与董事查阅权——经由中立的记录保管人。'),
+        go:function(){ adj('leverage',12); adj('reputation',3); S.flags.records=true;
+          var extra = S.sha ? T(' Your shareholders’ agreement also grants explicit information rights, so stalling isn’t an option for him.',' 你的股东协议还明确赋予信息权，所以他没法拖。') : '';
+          return {tone:'flat', delta:'🗂️ +12 · ⭐ +3',
+            html:T('You write to the company secretary demanding the registers, minutes and accounts. As a director and member you’re entitled to them.','你去函公司秘书，要求提供各类登记册、会议记录和账目。作为董事兼成员，你有权取得。')+extra,
+            lesson:T('You have both statutory and directorial rights to information — members can inspect registers, and a director is entitled to the accounts. The company secretary is the neutral keeper of the records; going through them is clean, on-the-record, and hard to ignore.','你同时拥有法定与董事的信息权——成员可查阅登记册，董事有权看账目。公司秘书是记录的中立保管人；走这条路干净、留痕、难以被无视。')};
+        } }
+    ]
+  };
+}
+
+/* ============================================================
+   ACT II — The Dilution Play
+   ============================================================ */
+function act2(){
+  return {
+    title:T('Act II · The Dilution Play','第二幕 · 稀释伎俩'),
+    tags:'<span class="tag n">'+T('Share allotment','股份配发')+'</span>',
+    flavor:T('The notice lands: the board proposes to <b>allot new shares</b> to a "strategic investor" — really Marcus’s ally — at a suspiciously low price. The maths is deliberate: it would push your stake below <b>25%</b>, stripping your power to block special resolutions. This is a dilution squeeze. How do you defend your slice?',
+      '通知来了：董事会拟以可疑的低价向一位“战略投资人”——其实是 Marcus 的盟友——<b>配发新股</b>。这道算式是故意的：它会把你的股权压到 <b>25%</b> 以下，剥夺你否决特别决议的能力。这是稀释挤压。你怎么守住你那一份？'),
+    options:[
+      { t:T('Exercise your pre-emptive rights — take up your full entitlement','行使优先认购权——认足你的份额'),
+        h:S.warchest>=40000 ? T('Match the raise pro-rata so your % holds. Costs cash.','按比例跟投，保住你的百分比。要花现金。') : T('You’d need serious cash on hand to take up your full share.','要认足你的份额，需要不少现金。'),
+        locked: S.preemptive ? null : T('You have no pre-emptive rights — you never signed a shareholders’ agreement or put the clause in the constitution, so you can’t force your way into the allotment.','你没有优先认购权——你从没签股东协议、也没在章程里写入该条款，因此无法强行参与配发。'),
+        go:function(){
+          var cost = 45000;
+          if(S.warchest>=cost){ adj('warchest',-cost); adj('control',6);
+            return {tone:'up', delta:T('Stake held at ','股权守在 ')+S.equity+'% · −'+fmt(cost),
+              html:T('You invoke your <b>pre-emptive right</b> and subscribe for your pro-rata portion. Your percentage — and your blocking power above 25% — survive intact.','你行使<b>优先认购权</b>，按比例认购。你的百分比——以及 25% 以上的否决权——完好无损。'),
+              lesson:T('Pre-emptive rights (first refusal on new shares) are the single best anti-dilution shield. They usually live in the shareholders’ agreement or constitution — which is exactly why you paper the deal at the start.','优先认购权（新股的优先购买权）是最好的防稀释盾牌。它通常写在股东协议或章程里——这正是你一开始就要把约定落到纸面的原因。')}; }
+          adj('equity',-6); adj('control',-6); S.flags.diluted=true;
+          return {tone:'down', delta:T('Diluted to ','被稀释至 ')+S.equity+'% · ⚠️',
+            html:T('You have the right — but not the cash to fully take it up. You subscribe partially and still slip below 25%.','你有权利——却没有足够现金认足。你只能部分认购，仍跌破 25%。'),
+            lesson:T('A right you can’t fund is only half a shield. Pre-emptive rights protect you <i>if</i> you can match the money — another reason a warchest (or a financing plan) matters in a fight.','认购不起的权利只是半个盾。优先认购权要在你出得起钱时才护得住——这也是为什么打这种仗需要战备金（或融资安排）。')};
+        } },
+      { t:T('Seek a court injunction to stop the allotment as oppressive','申请法庭禁令，以压迫为由叫停配发'),
+        h:T('Argue the shares are being issued for an improper purpose. Skill: Leverage.','主张这批股份是为不正当目的而发行。检定：筹码。'),
+        go:function(){
+          var r = skill(S.leverage, 50); S.company = Math.round(S.company*0.98);
+          if(r.pass){ adj('control',8); adj('leverage',4); S.flags.injuncted=true;
+            return {tone:'up', dice:diceLine(r,'Injunction (Leverage)','禁令（筹码）'), delta:'🎚️ +8 · '+T('allotment frozen','配发被冻结'),
+              html:T('With your evidence, the court restrains the allotment pending trial. Marcus is rattled — his fast move just stalled.','凭你的证据，法庭在审理前叫停了配发。Marcus 慌了——他的快棋被卡住。'),
+              lesson:T('Directors must exercise their powers for a <b>proper purpose</b>. Issuing shares mainly to dilute or entrench control is improper and can be set aside; courts can restrain an oppressive allotment under s.346.','董事必须为<b>正当目的</b>行使权力。主要为稀释或巩固控制而发股属不正当，可被撤销；法庭可依 s.346 叫停压迫性配发。')}; }
+          adj('equity',-5); adj('control',-4); S.flags.diluted=true;
+          return {tone:'down', dice:diceLine(r,'Injunction (Leverage)','禁令（筹码）'), delta:T('Diluted to ','被稀释至 ')+S.equity+'%',
+            html:T('Your evidence isn’t strong enough yet; the court won’t freeze a board decision on thin proof. The allotment proceeds and you’re diluted.','你的证据还不够硬；仅凭薄弱证据，法庭不会冻结董事会决定。配发照旧，你被稀释。'),
+            lesson:T('An injunction is only as good as your evidence. Courts are slow to override board decisions without a strong case — build the record <i>before</i> you run to court.','禁令的力度取决于你的证据。证据不硬时，法庭不轻易推翻董事会决定——先把证据链建好，再上法庭。')};
+        } },
+      { t:T('Do nothing — you can’t or won’t fund it','什么都不做——你出不起或不想出'),
+        h:T('Preserve cash, accept a smaller slice.','保留现金，接受更小的份额。'),
+        go:function(){ adj('equity',-7); adj('control',-8); S.flags.diluted=true;
+          return {tone:'down', delta:T('Diluted to ','被稀释至 ')+S.equity+'%',
+            html:T('The new shares issue. Your stake falls below 25% and you lose your veto over special resolutions.','新股发行。你的股权跌破 25%，失去对特别决议的否决权。'),
+            lesson:T('The thresholds are everything: <b>&gt;25%</b> blocks special resolutions; <b>&gt;50%</b> gives ordinary control; <b>≥75%</b> passes special resolutions (changing the constitution, capital, winding up). Slipping under a threshold quietly transfers power.','阈值就是一切：<b>&gt;25%</b> 可否决特别决议；<b>&gt;50%</b> 取得普通控制；<b>≥75%</b> 可通过特别决议（修改章程、股本、清盘）。悄悄跌破某个阈值，就等于把权力拱手让人。')};
+        } }
+    ]
+  };
+}
+
+/* ============================================================
+   ACT III — Choose Your Weapon
+   ============================================================ */
+function act3(){
+  return {
+    title:T('Act III · Choose Your Weapon','第三幕 · 择武而战'),
+    tags:'<span class="tag n">'+T('Strategy','策略')+'</span>',
+    flavor:T('Talking is over. Malaysian company law hands a minority real weapons — but only if you pick the right one. How do you press your case?','谈判结束。马来西亚公司法给小股东真正的武器——但要选对才管用。你打算怎么推进？'),
+    options:[
+      { t:T('Propose mediation & a negotiated buy-out','提出调解与协商买断'),
+        h:T('Settle the fight before it destroys the value you’re fighting over.','在这场仗毁掉你争夺的价值之前把它了结。'),
+        go:function(){ adj('reputation',8); S.flags.settlePath=true;
+          return {tone:'up', delta:'⭐ +8 · '+T('settlement track','和解路线'),
+            html:T('You table a clean proposal: an independent valuation and a buy-out — one side buys the other. It costs pride, not the company.','你摆出一个干净的方案：独立估值加买断——一方买下另一方。付出的是面子，不是公司。'),
+            lesson:T('Most shareholder disputes <i>should</i> settle. Litigation is slow, public and value-destroying. A clean buy-out at a fair price is very often the best real-world outcome — the law is the backstop, not the goal.','大多数股东纠纷<i>应当</i>和解。诉讼慢、公开、毁价值。以公平价格干净买断，往往是现实中最好的结局——法律是底牌，而非目标。')};
+        } },
+      { t:T('File an oppression petition under s.346','依 s.346 提起压迫救济申请'),
+        h:T('Conduct oppressive / unfairly disregarding your interests. Your evidence matters.','行为具压迫性／不公平地漠视你的利益。你的证据很关键。'),
+        go:function(){ S.company=Math.round(S.company*0.90); adj('control',6); S.flags.litigated='oppression';
+          return {tone:'flat', delta:T('Litigation · Company −10%','诉讼 · 公司 −10%'),
+            html:T('You petition the court that the company’s affairs are being conducted oppressively against you. It’s the minority’s flagship remedy — powerful, but the legal war dents the company’s value.','你向法庭申请，主张公司事务的处理对你构成压迫。这是小股东的旗舰救济——威力大，但这场法律战会削弱公司价值。'),
+            lesson:T('Section 346 is the minority shareholder’s main weapon. The court’s powers are wide: it can order the majority to <b>buy your shares at fair value</b> (often with no minority discount), unwind transactions, or regulate how the company is run.','s.346 是小股东的主要武器。法庭权力很广：可命令多数方以<b>公平价值收购你的股份</b>（往往不打小股东折扣）、撤销交易，或规范公司的运作方式。')};
+        } },
+      { t:T('Bring a derivative action under s.347','依 s.347 提起派生诉讼'),
+        h:T('Sue in the company’s name over the related-party fee that harmed it.','以公司名义，就损害公司的关联费用提告。'),
+        locked: (S.flags.evidence||S.flags.records) ? null : T('You lack the evidence to get the court’s leave — you’d need the paper trail on the related-party payment first (Act I).','你缺乏取得法庭许可的证据——得先有关联付款的纸面链条（第一幕）。'),
+        go:function(){ S.company=Math.round(S.company*0.94); adj('leverage',10); S.flags.litigated='derivative';
+          return {tone:'flat', delta:'🗂️ +10 · '+T('Company −6%','公司 −6%'),
+            html:T('With the court’s leave, you sue <i>on the company’s behalf</i> to claw back the siphoned fees. The wrong was done to the company — so the company (through you) recovers.','取得法庭许可后，你<i>代表公司</i>提告，追回被抽走的费用。受害的是公司——所以由公司（经由你）追偿。'),
+            lesson:T('Know which wrong you’re fixing. A wrong done to <b>you</b> personally → oppression (s.346). A wrong done to the <b>company</b> (siphoning, self-dealing) → a derivative action (s.347), brought on the company’s behalf with the court’s leave. Different wrongs, different tools.','弄清你要纠正的是哪种错。针对<b>你个人</b>的错 → 压迫救济（s.346）。针对<b>公司</b>的错（抽资、自我交易）→ 派生诉讼（s.347），经法庭许可代表公司提起。不同的错，不同的工具。')};
+        } },
+      { t:T('Rally Rose, the swing shareholder, to your side','争取关键小股东 Rose 站到你这边'),
+        h:T('Rose holds '+S.rose+'%. Win her and a minority becomes a bloc. Skill: Reputation.','Rose 持股 '+S.rose+'%。争取到她，小股东就成了联盟。检定：声誉。'),
+        go:function(){
+          var r = skill(S.reputation, 45);
+          if(r.pass){ S.roseAlly=true; adj('control',10);
+            return {tone:'up', dice:diceLine(r,'Coalition (Reputation)','结盟（声誉）'), delta:'🤝 '+T('Rose allied','Rose 结盟')+' · 🎚️ +10',
+              html:T('Rose has been uneasy about Marcus for months. She throws her '+S.rose+'% behind you. Your combined bloc is now a force at any meeting.','Rose 对 Marcus 已不安了好几个月。她把手中的 '+S.rose+'% 押在你这边。你们合起来的联盟，在任何会议上都举足轻重。'),
+              lesson:T('In a shareholder fight, the <b>swing shareholder decides everything</b>. Coalitions turn a minority into a working majority — which is why smart founders keep every co-owner onside, and why a shareholders’ agreement locks in how blocs vote.','在股东之争里，<b>关键小股东决定一切</b>。联盟能把小股东变成实际多数——这正是聪明创办人善待每位共同所有者的原因，也是股东协议要锁定各方如何投票的原因。')}; }
+          adj('reputation',-3);
+          return {tone:'down', dice:diceLine(r,'Coalition (Reputation)','结盟（声誉）'), delta:T('Rose stays neutral','Rose 保持中立'),
+            html:T('Rose won’t commit — Marcus got to her first with promises of a special dividend. She sits on the fence.','Rose 不肯表态——Marcus 先一步用特别股息的许诺拉拢了她。她骑墙观望。'),
+            lesson:T('Whoever courts the swing shareholder first usually wins them. Neutrality by a swing holder effectively backs the incumbent majority — silence is a vote for the status quo.','谁先拉拢关键小股东，谁通常就赢得他。关键小股东保持中立，实际上是在支持现任多数——沉默就是给现状投的一票。')};
+        } }
+    ]
+  };
+}
+
+/* ============================================================
+   ACT IV — The Removal Vote
+   ============================================================ */
+function act4(){
+  var myBloc = S.equity + (S.roseAlly?S.rose:0);
+  return {
+    title:T('Act IV · The Removal Vote','第四幕 · 罢免投票'),
+    tags:'<span class="tag n">'+T('EGM · s.206','特大 · s.206')+'</span>',
+    flavor:T('Marcus counter-attacks. He calls an <b>EGM to remove you as a director</b> by ordinary resolution (s.206), and he’s already cut your director’s fees and suspended dividends — the classic squeeze to starve you into a cheap sale. Your voting bloc is <b>'+myBloc+'%</b> against his camp. What do you do?',
+      'Marcus 反击了。他召开<b>特大以普通决议罢免你的董事职</b>（s.206），并已停发你的董事酬金、暂停派息——用饿断你现金流、逼你贱卖的经典挤压。你的投票联盟为 <b>'+myBloc+'%</b>，对上他的阵营。你怎么办？'),
+    options:[
+      { t:T('Fight the resolution with your votes','用你的票对抗这项决议'),
+        h:T('You + '+(S.roseAlly?'Rose = '+myBloc+'%':'(no ally) = '+myBloc+'%')+' vs Marcus’s camp.','你 + '+(S.roseAlly?'Rose = '+myBloc+'%':'（无盟友）= '+myBloc+'%')+' 对上 Marcus 阵营。'),
+        go:function(){
+          var myBloc = S.equity + (S.roseAlly?S.rose:0);
+          if(myBloc>50){ adj('control',10);
+            return {tone:'up', delta:T('Resolution DEFEATED · ','决议被否决 · ')+myBloc+'%',
+              html:T('Your bloc controls the room. The removal resolution fails and Marcus is exposed as the aggressor to every shareholder present.','你的联盟掌控了会场。罢免决议未获通过，而 Marcus 在场股东面前暴露为挑事的一方。'),
+              lesson:T('Board seats follow votes. A director is removed by <b>ordinary resolution</b> — a simple majority — so &gt;50% of the votes wins the room. Being a shareholder never guarantees a board seat unless a shareholders’ agreement entrenches it.','董事席位随票数走。罢免董事只需<b>普通决议</b>——简单多数——所以过半票数就赢下会场。除非股东协议明文保障，否则身为股东从不保证有董事席位。')}; }
+          adj('control',-14); S.flags.removedDirector=true;
+          return {tone:'down', delta:T('Removed from the board','被逐出董事会'),
+            html:T('The numbers aren’t there. With '+myBloc+'% you’re outvoted and removed as a director. You keep your shares — but you’ve lost your seat at the table.','票数不够。你以 '+myBloc+'% 被压倒并被罢免董事。股份还在——但你失去了桌上的席位。'),
+            lesson:T('This is the minority’s nightmare: you can hold shares yet be voted off the board and shut out of management. Losing the seat is often the trigger for an oppression claim — being excluded from management can itself be oppressive.','这是小股东的噩梦：你握着股份，却被投票逐出董事会、被排除在管理之外。失去席位往往正是提起压迫救济的导火索——被排除于管理之外，本身可能构成压迫。')};
+        } },
+      { t:T('Requisition your OWN EGM (s.311)','召集你自己的特大（s.311）'),
+        h:T('You hold ≥10%, so you can force your resolutions onto the table.','你持股 ≥10%，因此能把自己的议案强推上桌。'),
+        go:function(){ adj('leverage',10); adj('reputation',5); S.flags.requisitioned=true;
+          return {tone:'up', delta:'🗂️ +10 · ⭐ +5',
+            html:T('You flip the script: you requisition a general meeting to demand an independent audit and to terminate the related-party contract. Now <i>Marcus</i> is on the defensive.','你反客为主：召集股东大会，要求独立审计并终止关联合同。现在轮到 <i>Marcus</i> 处于守势。'),
+            lesson:T('Shareholders holding <b>≥10%</b> can requisition a general meeting (s.311) and force issues onto the agenda. It’s a real lever even for a minority — you don’t have to wait for the majority to call a meeting.','持股 <b>≥10%</b> 的股东可召集股东大会（s.311），把议题强推上议程。即便是小股东，这也是实打实的杠杆——你不必等多数方来开会。')};
+        } },
+      { t:T('Use your evidence to threaten personal liability','用你的证据威慑个人责任'),
+        h:T('Signal you’ll pursue the directors personally. Skill: Leverage.','放话你会追究董事个人责任。检定：筹码。'),
+        go:function(){
+          var r = skill(S.leverage, 55);
+          if(r.pass){ adj('control',8); adj('reputation',4); S.flags.standstill=true;
+            return {tone:'up', dice:diceLine(r,'Standstill (Leverage)','僵持威慑（筹码）'), delta:'🎚️ +8 · ⭐ +4',
+              html:T('You put Marcus and the board on notice — with evidence — that you’ll pursue them <i>personally</i> for breach of duty. They blink and freeze the squeeze.','你附上证据，正式警告 Marcus 与董事会，你会就违反义务<i>个人</i>追究他们。他们退缩了，暂停了挤压。'),
+              lesson:T('Directors who breach their duties face <b>personal</b> liability and even disqualification (s.213/s.540). Credible, evidenced pressure works even outside the courtroom — nobody wants a personal judgment.','违反义务的董事面临<b>个人</b>责任乃至被取消资格（s.213／s.540）。有证据支撑的可信施压，即使不上庭也奏效——没人想背上一纸对己个人的判决。')}; }
+          adj('reputation',-4);
+          return {tone:'down', dice:diceLine(r,'Standstill (Leverage)','僵持威慑（筹码）'), delta:'⭐ −4',
+            html:T('Marcus calls your bluff — your evidence isn’t damning enough to scare a lawyered-up board. The squeeze continues.','Marcus 识破了你的虚张——你的证据还不足以吓住有律师撑腰的董事会。挤压继续。'),
+            lesson:T('A threat is only credible with the proof behind it. Bluffing a well-advised majority backfires and costs you standing. Leverage you can’t back up isn’t leverage.','威胁只有背后有证据才可信。对有专业顾问的多数方虚张声势会反噬，还折损你的地位。撑不起来的筹码不是筹码。')};
+        } }
+    ]
+  };
+}
+
+/* ============================================================
+   ACT V — The Valuation Battle
+   ============================================================ */
+function act5(){
+  return {
+    title:T('Act V · The Valuation Battle','第五幕 · 估值之战'),
+    tags:'<span class="tag n">'+T('Buy-out','买断')+'</span>',
+    flavor:T('A buy-out is now inevitable — the only questions are <b>who buys whom</b>, and <b>at what price</b>. This is where fortunes are won or lost: fair value versus a punishing minority discount. Make your stand.',
+      '买断已不可避免——唯一的问题是<b>谁买谁</b>，以及<b>什么价</b>。财富就在这里决出胜负：公平价值 vs 苛刻的小股东折扣。表明你的立场。'),
+    options:[
+      { t:T('Insist on an independent valuer at FAIR VALUE — no minority discount','坚持独立估值、按公平价值——不打小股东折扣'),
+        h:T('Strong if you built a real oppression case. Skill: Leverage.','若你建立了扎实的压迫案由，这招很强。检定：筹码。'),
+        go:function(){
+          var boost = (S.flags.litigated==='oppression')?18:0;
+          var r = skill(S.leverage + boost, 50);
+          if(r.pass){ S.flags.fairValue=true;
+            return {tone:'up', dice:diceLine(r,'Valuation (Leverage'+(boost?'+oppression case':'')+')','估值（筹码'+(boost?'+压迫案由':'')+'）'), delta:T('Fair value locked in','锁定公平价值'),
+              html:T('Backed by your case, an independent valuer prices your shares at <b>full fair value</b> — no discount for being a minority. Your stake is worth its true share of '+fmt(S.company)+'.','有你的案由撑腰，独立估值师以<b>完整公平价值</b>为你的股份定价——不因你是小股东而打折。你的股权按 '+fmt(S.company)+' 的真实份额计价。'),
+              lesson:T('A minority stake is normally worth <i>less</i> per share (a "minority discount") because it can’t control the company. But under the oppression remedy the court can order a buy-out at <b>fair value with no minority discount</b> — that single principle can be worth a fortune.','小股权通常每股<i>更值钱不起来</i>（“小股东折扣”），因为它无法控制公司。但在压迫救济下，法庭可命令以<b>不打小股东折扣的公平价值</b>买断——单这一原则就可能价值连城。')}; }
+          S.flags.discountish=true;
+          return {tone:'down', dice:diceLine(r,'Valuation (Leverage)','估值（筹码）'), delta:T('Partial discount applied','被打部分折扣'),
+            html:T('Without a strong oppression finding, the valuer applies a partial minority discount. You still exit, but for less than your paper share.','没有扎实的压迫认定，估值师打了部分小股东折扣。你仍能退出，但拿到的少于你的账面份额。'),
+            lesson:T('Fair-value-with-no-discount is a <i>remedy</i> the court grants when it finds oppression — not an automatic right. No finding, and the ordinary minority discount usually applies. The strength of your case sets your price.','“不打折的公平价值”是法庭认定压迫后给予的<i>救济</i>，而非当然权利。没有认定，通常就要打常规的小股东折扣。你案由的强弱，决定你的价格。')};
+        } },
+      { t:T('Flip it — buy THEM out and take control','反手——买断他们、夺取控制'),
+        h:S.warchest>=120000 ? T('Your capital backs a financed buy-out. Become the majority.','你的资本撑起一笔融资买断。成为多数方。') : T('Needs deep capital to anchor the financing.','需要雄厚资本来撑起融资。'),
+        locked: S.warchest>=120000 ? null : T('You don’t have the capital to anchor a buy-out — a deal this size needs financing only a deep-pocketed shareholder can raise.','你没有撑起买断的资本——这种规模的交易需要唯有口袋深的股东才筹得到的融资。'),
+        go:function(){ var theirs=S.marcus; var cost=Math.round(theirs/100*S.company*0.9);
+            S.acqDebt=cost; S.equity=clamp(S.equity+theirs,0,100); S.marcus=0; S.flags.boughtThem=true; adj('control',20);
+          return {tone:'up', delta:T('You now own ','你现在持有 ')+S.equity+'% · '+T('financed','已融资'),
+            html:T('You raise acquisition financing and table an offer Marcus can’t refuse, buying out his '+theirs+'% for '+fmt(cost)+'. The company is yours to run — the mutineer is gone, though you now carry the deal debt.','你筹得收购融资，摆出一个 Marcus 无法拒绝的报价，以 '+fmt(cost)+' 买下他的 '+theirs+'%。公司归你掌舵——叛变者出局，尽管你现在背着这笔交易的债。'),
+            lesson:T('Sometimes the winning move is to be the <b>buyer, not the seller</b>. Whoever has capital (or can raise it) controls the endgame. It’s the money partner’s edge — and why access to capital is itself a form of power in a company.','有时制胜之招是当<b>买家，而非卖家</b>。谁有资本（或筹得到），谁就掌控终局。这是出资合伙人的优势——也是为什么在公司里，能拿到资本本身就是一种权力。')};
+        } },
+      { t:T('Take the quick exit at whatever’s offered','以对方开的价快速退出'),
+        h:T('Certainty now, at a minority discount. Walk away clean.','现在就要确定性，接受小股东折扣。干净离场。'),
+        go:function(){ S.flags.discountExit=true;
+          return {tone:'flat', delta:T('Quick exit accepted','接受快速退出'),
+            html:T('You take the offer on the table and walk. It’s well below fair value — but it’s cash, today, and the war is over.','你接下桌上的报价，走人。远低于公平价值——但这是今天到手的现金，而战争结束了。'),
+            lesson:T('A fast exit at a discount can be rational — certainty and peace have real value, and litigation is exhausting. Just make the trade with your eyes open: know the fair value you’re giving up.','折价快退也可以是理性的——确定性与安宁有其真实价值，诉讼也耗人。只是要睁眼做这笔交易：清楚你放弃的公平价值是多少。')};
+        } }
+    ]
+  };
+}
+
+/* ============================================================
+   FINALE — resolution, net worth, verdict, leaderboard
+   ============================================================ */
+function finale(){
+  document.getElementById('hud').style.display='none';
+  var f=S.flags;
+  var fair = Math.round(S.equity/100 * S.company);
+  var realized, verdict, verdictZh, endEmoji, legal=0;
+
+  if(f.boughtThem){
+    endEmoji='👑';
+    realized = Math.round(S.equity/100*S.company) - (S.acqDebt||0) + S.warchest;
+    verdict='You seized control of Kopiku.'; verdictZh='你夺下了 Kopiku 的控制权。';
+    note('You became the buyer, not the seller — capital decided the endgame.','你成了买家而非卖家——资本决定了终局。');
+  } else if(f.settlePath){
+    endEmoji='🤝';
+    realized = Math.round(fair*0.90) + S.warchest;
+    verdict='A clean, negotiated exit — value preserved.'; verdictZh='一次干净的协商退出——价值得以保全。';
+    note('You settled before the fight destroyed the pie — often the best real-world outcome.','你在争斗毁掉蛋糕前就和解了——往往是现实中最好的结局。');
+  } else if(f.litigated==='oppression' && (f.fairValue)){
+    endEmoji='⚖️';
+    legal=Math.round(fair*0.06);
+    realized = fair - legal + S.warchest;
+    verdict='Oppression proven — a fair-value buy-out.'; verdictZh='压迫成立——按公平价值买断。';
+    note('The court found oppression (s.346) and ordered a buy-out at fair value with no minority discount.','法庭认定压迫（s.346），命令以不打小股东折扣的公平价值买断。');
+  } else if((f.removedDirector||f.diluted) && !f.fairValue && !f.litigated && !f.requisitioned && !f.standstill){
+    endEmoji='💀';
+    realized = Math.round(fair*0.50) + S.warchest;
+    verdict='Frozen out and bought at a deep discount.'; verdictZh='被冷处理，遭深度折价收购。';
+    note('Diluted, removed and undefended, you were squeezed into a cheap sale — the fate a shareholders’ agreement exists to prevent.','被稀释、被罢免、又无防御，你被逼贱卖——这正是股东协议存在要防止的结局。');
+  } else if(f.discountExit || f.discountish){
+    endEmoji='🚪';
+    realized = Math.round(fair*0.62) + S.warchest;
+    verdict='You exited — at a minority discount.'; verdictZh='你退出了——被打了小股东折扣。';
+    note('Without a strong enough case, the ordinary minority discount applied to your exit price.','案由不够强，你的退出价被打了常规的小股东折扣。');
+  } else {
+    endEmoji='📄';
+    realized = Math.round(fair*0.80) + S.warchest;
+    verdict='A pressured but respectable settlement.'; verdictZh='一次被逼出来、但还算体面的和解。';
+    note('You fought to a middle outcome — better than a fire-sale, short of a full vindication.','你争到了一个中间结果——好过贱卖，但不及完全平反。');
+  }
+  // Reputation / control tilt the final number a little (how well you played the room)
+  var bonus = Math.round((S.reputation-50)*400 + (S.control-45)*300);
+  realized = Math.max(0, realized + bonus);
+
+  var nw = realized;
+  var entry = { name:S.name, ak:S.ak, arch:ARCHES[S.ak].name, em:ARCHES[S.ak].em,
+    listed:!!f.boughtThem, tag:endEmoji, score:nw, ts:Date.now() };
+  var board = loadBoard(); board.push(entry); board.sort(function(a,b){return b.score-a.score;}); saveBoard(board);
+  var rank = board.findIndex(function(e){return e.ts===entry.ts && e.name===entry.name;})+1;
+  var medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
+
+  function render(){
+    app.innerHTML = '<div class="card">'
+      + '<div class="finalscore">'
+      +   (medal?'<div class="medal">'+medal+'</div>':'<div class="medal">'+endEmoji+'</div>')
+      +   '<div style="color:var(--mute);font-size:13px;letter-spacing:1px;text-transform:uppercase">'+T(S.name+'’s realized value',S.name+' 兑现的价值')+'</div>'
+      +   '<div class="big'+(nw<0?' neg':'')+'">'+fmt(nw)+'</div>'
+      +   '<div class="verdict">'+T(verdict,verdictZh)+' &nbsp;·&nbsp; '+T('Rank #'+rank+' of '+board.length,'第 '+rank+' 名，共 '+board.length+' 人')+'</div>'
+      + '</div>'
+      + breakdownHTML(nw, fair, legal)
+      + debriefHTML()
+      + '<h4 style="margin:22px 0 0;color:var(--navy);font-family:Cambria,Georgia,serif">🏆 '+T('Leaderboard','排行榜')+'</h4>'
+      + boardTable(board, entry.ts)
+      + '<p class="lead" style="font-size:13px;margin-top:10px">📱 '+T('Saved on this device. Ask Muchen to switch on the shared board for a live seminar ranking.','保存在本设备。想在研讨会现场做实时排名，请让沐宸开启共享排行榜。')+'</p>'
+      + '<div class="nav"><span></span><button class="btn gold" onclick="home()">'+T('Play again →','再玩一次 →')+'</button></div>'
+      + '</div>';
+    window.scrollTo(0,0);
+  }
+  VIEW = render; render();
+}
+
+function breakdownHTML(nw, fair, legal){
+  return '<div class="breakdown">'
+    + '<div class="row"><span>📊 '+T('Your stake at fair value ('+S.equity+'%)','你的股权（公平价值，'+S.equity+'%）')+'</span><span>'+fmt(fair)+'</span></div>'
+    + (legal?'<div class="row"><span>⚖️ '+T('Legal costs','诉讼费用')+'</span><span>'+fmt(-legal)+'</span></div>':'')
+    + (S.acqDebt?'<div class="row"><span>🏦 '+T('Acquisition debt','收购债务')+'</span><span>'+fmt(-S.acqDebt)+'</span></div>':'')
+    + '<div class="row"><span>💰 '+T('Warchest remaining','剩余战备金')+'</span><span>'+fmt(S.warchest)+'</span></div>'
+    + '<div class="row tot"><span>'+T('Realized value','兑现价值')+'</span><span>'+fmt(nw)+'</span></div>'
+    + '</div>';
+}
+
+function debriefHTML(){
+  var pts = S.pts.slice();
+  if(!pts.length) pts.push(T('You navigated the dispute without a defining strategic moment.','你走过了这场纷争，却没有决定性的战略时刻。'));
+  var fit;
+  if(!S.sha){
+    fit = T('⚠️ <b>No shareholders’ agreement.</b> Almost every painful moment in this story — the freeze-out, the dilution, the removal vote — is what a shareholders’ agreement is designed to prevent or govern. Signing one at incorporation is the single cheapest insurance a co-owner can buy.',
+      '⚠️ <b>没有股东协议。</b>这个故事里几乎每一个痛点——冷处理、稀释、罢免投票——都是股东协议本可预防或规范的。在公司成立时签一份，是共同所有者能买到的最便宜的保险。');
+  } else {
+    fit = T('✅ <b>You had a shareholders’ agreement.</b> Pre-emptive rights, information rights and dispute mechanics gave you real weapons the majority couldn’t ignore. Papering the deal early is what turned a squeeze into a fair fight.',
+      '✅ <b>你有股东协议。</b>优先认购权、信息权和争议机制给了你多数方无法无视的真武器。早早把约定落到纸面，才把一场挤压变成了公平的较量。');
+  }
+  return '<div class="debrief"><h4>'+T('What decided your dispute','是什么决定了你的纷争')+'</h4><ul>'
+    + pts.map(function(p){return '<li>'+p+'</li>';}).join('')
+    + '</ul><div class="ideal">'+fit+'</div></div>';
+}
+
+/* ---------- Leaderboard (local) ---------- */
+function loadBoard(){ try{return JSON.parse(localStorage.getItem('shareholder_leaderboard')||'[]');}catch(e){return [];} }
+function saveBoard(b){ try{localStorage.setItem('shareholder_leaderboard', JSON.stringify(b.slice(0,50)));}catch(e){} }
+function boardTable(board, myTs){
+  var rows = board.slice(0,12).map(function(e,i){
+    var medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    var arch = LANG==='zh' && ARCHES[e.ak] ? ARCHES[e.ak].nameZh : (e.arch||'');
+    return '<tr class="'+(e.ts===myTs?'me':'')+'"><td>'+medal+'</td><td>'+e.name+'</td><td>'+(e.em||'')+' '+arch+' '+(e.tag||'')+'</td><td class="sc">'+fmt(e.score)+'</td></tr>';
+  }).join('');
+  return '<div class="lbwrap"><table class="lb"><tr><th>#</th><th>'+T('Player','玩家')+'</th><th>'+T('Archetype','原型')+'</th><th style="text-align:right">'+T('Realized','兑现')+'</th></tr>'+rows+'</table></div>';
+}
+function showBoard(fromHome){
+  VIEW=function(){ showBoard(fromHome); };
+  document.getElementById('hud').style.display='none';
+  var board = loadBoard();
+  app.innerHTML = '<div class="card"><h2 class="scene-title">🏆 '+T('Leaderboard','排行榜')+'</h2>'
+    + (board.length? boardTable(board,-1) : '<p class="lead">'+T('No games played yet. Be the first to survive the boardroom.','还没有人玩过。成为第一个从董事会活下来的人吧。')+'</p>')
+    + '<div class="nav"><span></span><button class="btn gold" onclick="home()">'+(fromHome?T('← Back','← 返回'):T('Play','开始'))+'</button></div></div>';
+  window.scrollTo(0,0);
+}
+
+/* ============================================================
+   Home + character creation
+   ============================================================ */
+function home(){
+  VIEW=home; S=null; document.getElementById('hud').style.display='none';
+  app.innerHTML = '<div class="card">'
+    + '<img class="cover" src="/shareholder-cover.jpg" alt="Boardroom Betrayal" onerror="this.replaceWith((function(){var d=document.createElement(\'div\');d.className=\'hero\';d.innerHTML=\'<div class=em>⚔️🏛️</div><div class=t>Boardroom Betrayal</div><div class=s>'+T('A Shareholder Dispute RPG','股东纷争角色扮演')+'</div>\';return d;})())">'
+    + '<p class="lead">'+T('<b>You co-founded Kopiku Sdn Bhd.</b> It grew into a beloved coffee chain worth millions — and then your co-founder-CEO decided he wanted it all. The board meetings stopped. The dividends stopped. The freeze-out began.','<b>你共同创办了 Kopiku Sdn Bhd。</b>它长成了一家人人喜爱、价值数百万的咖啡连锁——然后你的联合创办人兼 CEO 想把它全部据为己有。董事会停了，股息停了，冷处理开始了。')+'</p>'
+    + '<p class="lead" style="margin-top:10px">'+T('Pick your <b>archetype</b>, decide whether you papered the deal, then fight through five acts of a real Malaysian shareholder war. Dilution, oppression, removal votes, buy-outs — every choice is a lever the Companies Act actually gives a minority. Walk away with the most value, and learn <b>why founders sign a shareholders’ agreement <i>before</i> the trouble starts.</b>','选择你的<b>原型</b>，决定你有没有把约定落到纸面，再打过五幕真实的马来西亚股东之战。稀释、压迫、罢免投票、买断——每个选择都是公司法真正赋予小股东的杠杆。带走最多的价值，并弄懂<b>为什么创办人要在麻烦开始<i>之前</i>就签好股东协议。</b>')+'</p>'
+    + '<div class="nav"><button class="btn ghost" onclick="showBoard(true)">🏆 '+T('Leaderboard','排行榜')+'</button><button class="btn gold" onclick="enterName()">'+T('Enter the boardroom →','走进董事会 →')+'</button></div>'
+    + '</div>';
+  window.scrollTo(0,0);
+}
+function enterName(){
+  VIEW=enterName;
+  app.innerHTML = '<div class="card"><h2 class="scene-title">'+T('Before we begin…','开始之前……')+'</h2>'
+    + '<p class="lead">'+T('What’s your name, founder? (This is how you’ll appear on the leaderboard.)','创办人，你叫什么名字？（这将是你在排行榜上的名字。）')+'</p>'
+    + '<input class="name" id="nm" maxlength="22" placeholder="'+T('e.g. Aisha, Team Kopi, Seat 2','例如：Aisha、咖啡队、2 号座')+'" />'
+    + '<div class="nav"><button class="btn ghost" onclick="home()">'+T('← Back','← 返回')+'</button><button class="btn primary" onclick="chooseArch()">'+T('Next →','下一步 →')+'</button></div></div>';
+  var el=document.getElementById('nm'); if(pendingName) el.value=pendingName; el.focus();
+  el.addEventListener('keydown',function(e){ if(e.key==='Enter') chooseArch(); });
+}
+var pendingName='', pendingArch='', pendingSHA='';
+function chooseArch(){
+  var v=(document.getElementById('nm')?document.getElementById('nm').value:'').trim();
+  if(document.getElementById('nm')){ if(!v){document.getElementById('nm').focus();return;} pendingName=v; }
+  VIEW=chooseArch;
+  var cards = Object.keys(ARCHES).map(function(k){
+    var Ak=ARCHES[k];
+    var stats=statz(Ak).map(function(s){return '<span class="st '+(s[1]||'')+'">'+s[0]+'</span>';}).join('');
+    return '<div class="pick" onclick="setArch(\''+k+'\')">'
+      + '<div class="em">'+Ak.em+'</div>'
+      + '<h3>'+nmz(Ak)+'</h3><div class="my">'+myz(Ak)+'</div>'
+      + '<div class="sub">'+subz(Ak)+'</div>'
+      + '<div class="stats">'+stats+'</div></div>';
+  }).join('');
+  app.innerHTML = '<div class="card"><div class="setupstep">'+T('Character · step 1 of 2','角色 · 第 1 / 2 步')+'</div>'
+    + '<h2 class="scene-title">'+T('Choose your archetype','选择你的原型')+'</h2>'
+    + '<p class="lead">'+T('Who are you around the cap table? Your archetype sets your <b>equity, control, warchest, leverage and reputation</b> — and shapes which weapons in the dispute actually work for you.','在股权结构里你是谁？你的原型决定你的<b>股权、控制力、战备金、筹码和声誉</b>——也决定纷争中哪些武器对你真正管用。')+'</p>'
+    + '<div class="grid">'+cards+'</div>'
+    + '<div class="nav"><button class="btn ghost" onclick="enterName()">'+T('← Back','← 返回')+'</button><span></span></div></div>';
+  window.scrollTo(0,0);
+}
+function setArch(k){ pendingArch=k; chooseSHA(); }
+function chooseSHA(){
+  VIEW=chooseSHA;
+  var A=ARCHES[pendingArch];
+  app.innerHTML = '<div class="card"><div class="setupstep">'+T('Character · step 2 of 2','角色 · 第 2 / 2 步')+'</div>'
+    + '<h2 class="scene-title">'+T('Incorporation day: do you paper the deal?','公司成立日：你要把约定落到纸面吗？')+'</h2>'
+    + '<p class="lead">'+T('Years ago, when three excited friends registered Kopiku, a lawyer suggested a <b>shareholders’ agreement</b> with pre-emptive rights, reserved matters and an exit mechanism. It cost a little money and a little trust to insist on it. What did you do?','多年前，当三个满怀兴奋的朋友注册 Kopiku 时，一位律师建议签一份带优先认购权、保留事项和退出机制的<b>股东协议</b>。坚持它要花一点钱、也要花一点信任。你当时怎么做？')+'</p>'
+    + '<div class="opts">'
+    + '<div class="opt" onclick="setSHA(\'sha\')"><div class="t">'+T('✍️ Insist on a shareholders’ agreement','✍️ 坚持签一份股东协议')+'</div><div class="h">'+T('Pre-emptive rights + information rights + a fair exit clause. +Leverage. The dull choice that saves you later.','优先认购权 + 信息权 + 公平退出条款。+筹码。日后救你的那个无聊选择。')+'</div></div>'
+    + '<div class="opt" onclick="setSHA(\'trust\')"><div class="t">'+T('🤝 Trust your co-founders — a handshake','🤝 信任你的联创——握个手')+'</div><div class="h">'+T('Keep the goodwill and the legal fee. +Warchest, +Reputation now… exposed later.','留住善意和那笔律师费。现在 +战备金、+声誉……以后暴露无遮。')+'</div></div>'
+    + '</div>'
+    + '<div class="nav"><button class="btn ghost" onclick="chooseArch()">'+T('← Back','← 返回')+'</button><span></span></div></div>';
+  window.scrollTo(0,0);
+}
+function setSHA(v){
+  pendingSHA=v;
+  // apply the setup tuning to the chosen archetype snapshot via newGame
+  newGame(pendingName, pendingArch);
+  if(v==='sha'){ S.leverage=clamp(S.leverage+12,0,100); }
+  else { S.warchest+=15000; S.reputation=clamp(S.reputation+5,0,100); }
+  syncHud();
+  // re-render act 1 with the tuned stats
+  renderScene(STEPS[0]());
+}
+
+paintLang();
+home();
+</script>
+<audio id="bgm" src="/henesys-floral-life.mp3" loop preload="auto"></audio>
+<button id="bgmBtn" class="bgm-btn off" aria-label="Toggle background music" title="Music">🔈</button>
+<script>
+(function(){
+  var a=document.getElementById('bgm'), b=document.getElementById('bgmBtn'), on=false, started=false;
+  a.volume=0.28;
+  function paint(){ b.textContent=on?'🔊':'🔈'; b.classList.toggle('off',!on); }
+  function set(s){ on=s; if(on){ a.play().catch(function(){on=false;paint();}); } else { a.pause(); }
+    try{localStorage.setItem('muchen_bgm',on?'1':'0');}catch(e){} paint(); }
+  b.addEventListener('click',function(e){ e.stopPropagation(); started=true; set(!on); });
+  function kick(){ if(started) return; started=true;
+    var pref='1'; try{var v=localStorage.getItem('muchen_bgm'); if(v!==null)pref=v;}catch(e){}
+    if(pref!=='0') set(true);
+    document.removeEventListener('pointerdown',kick);
+  }
+  document.addEventListener('pointerdown',kick); paint();
+})();
+</script>
+</body>
+</html>

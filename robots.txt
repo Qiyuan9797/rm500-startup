@@ -1,0 +1,3 @@
+# Private games — shared by link only. Please don't index.
+User-agent: *
+Disallow: /

@@ -1,6 +1,10 @@
 # RM500 Startup — Deploy to Vercel
 
-**🔴 Live:** https://rm500-startup.vercel.app/ · **📷 Share page:** https://rm500-startup.vercel.app/share.html
+**🔴 Live (custom domain, once DNS is set):** https://seminar.muchencosec.com/ · **📷 Share page:** https://seminar.muchencosec.com/share.html
+_(fallback URL: https://rm500-startup.vercel.app/ — both point at the same deployment)_
+
+Games are **unlisted** (`noindex` + `robots.txt`) — reachable only by link, not indexed by search engines.
+QR codes (`rm500-qr.png`, `nasi-lemak-qr.png`) and share pages encode the `seminar.muchencosec.com` URLs. **Kopi Talk stays internal** (run it on a laptop via `local-server.js`) — no public QR.
 
 A single-page browser game (no build step, no server). This folder is ready to publish as-is.
 

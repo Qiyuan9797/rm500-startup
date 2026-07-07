@@ -102,7 +102,8 @@ const server = http.createServer((req, res) => {
           .filter(m => m.content);
         if (!msgs.length) msgs = [{ role: 'user', content: KICKOFF }];
         const debrief = b.mode === 'debrief';
-        const system = debrief ? coachSystem(persona) : personaSystem(persona);
+        const lang = b.lang === 'zh' ? 'zh' : 'en';
+        const system = debrief ? coachSystem(persona, lang) : personaSystem(persona, lang);
         const prompt = debrief ? debriefPrompt(msgs) : chatPrompt(msgs);
         const reply = await askClaude(system, prompt);
         send(res, 200, 'application/json', JSON.stringify({ reply: reply || '…' }));

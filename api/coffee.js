@@ -27,6 +27,7 @@ module.exports = async function handler(req, res) {
     }
 
     const debrief = b.mode === 'debrief';
+    const lang = b.lang === 'zh' ? 'zh' : 'en';
     if (debrief) msgs.push({ role: 'user', content: '(The coffee is finished. Give me my debrief now.)' });
 
     const r = await fetch('https://api.anthropic.com/v1/messages', {
@@ -34,8 +35,8 @@ module.exports = async function handler(req, res) {
       headers: { 'content-type': 'application/json', 'x-api-key': KEY, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: API_MODEL,
-        max_tokens: debrief ? 700 : 400,
-        system: debrief ? coachSystem(p) : personaSystem(p),
+        max_tokens: debrief ? 800 : 400,
+        system: debrief ? coachSystem(p, lang) : personaSystem(p, lang),
         messages: msgs,
       }),
     });

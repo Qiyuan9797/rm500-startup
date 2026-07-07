@@ -97,54 +97,72 @@
     box-shadow:0 5px 16px rgba(6,40,24,.3);transition:.15s}
   .bgm-btn:active{transform:scale(.92)} .bgm-btn.off{opacity:.55}
   @media(max-width:560px){.bgm-btn{right:10px;bottom:10px;width:40px;height:40px;font-size:17px}}
+  .lang-btn{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.38);border-radius:999px;
+    padding:6px 15px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;align-self:center;white-space:nowrap}
+  .lang-btn:active{transform:scale(.96)}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <div class="kick">MUCHEN CORPORATE SERVICES · SEMINAR RECAP</div>
+      <div class="kick" id="kick">MUCHEN CORPORATE SERVICES · SEMINAR RECAP</div>
       <h1>Kopi <span>Talk</span></h1>
     </div>
+    <button id="langBtn" class="lang-btn" onclick="toggleLang()" aria-label="Language / 语言">中文</button>
   </header>
   <div id="app"></div>
   <div class="foot">
-    An AI role-play to practise <b>Signal → Service → Question</b> from “Spotting Prospects Through Corporate Knowledge”.<br>
-    Also play <a href="/">RM500 Startup</a> · <a href="/nasi-lemak">Nasi Lemak Empire</a> · A training simulation, not advice.
+    <span id="footTxt">An AI role-play to practise <b>Signal → Service → Question</b> from “Spotting Prospects Through Corporate Knowledge”.</span><br>
+    <a href="/">RM500 Startup</a> · <a href="/nasi-lemak">Nasi Lemak Empire</a> · <span id="footNote">A training simulation, not advice.</span>
   </div>
 </div>
 
 <script>
 var app = document.getElementById('app');
 var PERSONAS = {
-  may:    {em:'☕', name:'Aunty May', sub:'Runs a busy café. A friend set up her company years ago; she just wants to grow.'},
-  danish: {em:'💻', name:'Danish',    sub:'Startup founder closing a funding round, drowning in lawyer emails.'},
-  tan:    {em:'🏭', name:'Uncle Tan',  sub:'25 years running a family business. Thinking about slowing down.'},
-  mei:    {em:'🧋', name:'Mei',        sub:'Fast-growing app business. Too busy growing to think about admin.'}
+  may:    {em:'☕', name:'Aunty May', nameZh:'美姨', sub:'Runs a busy café. A friend set up her company years ago; she just wants to grow.', subZh:'经营一家忙碌的咖啡馆。几年前朋友帮她注册了公司；她只想把生意做大。'},
+  danish: {em:'💻', name:'Danish',    nameZh:'达尼', sub:'Startup founder closing a funding round, drowning in lawyer emails.', subZh:'正在完成融资的创业者，被律师的邮件淹没。'},
+  tan:    {em:'🏭', name:'Uncle Tan',  nameZh:'陈伯', sub:'25 years running a family business. Thinking about slowing down.', subZh:'家族企业经营了25年，开始想慢下来。'},
+  mei:    {em:'🧋', name:'Mei',        nameZh:'小美', sub:'Fast-growing app business. Too busy growing to think about admin.', subZh:'快速成长的应用生意，忙到没空管行政。'}
 };
 var KICKOFF = '(You sit down at the kopitiam with your coffee. Greet me and start chatting.)';
-var S = null; // {key, history:[{role,content}], busy}
+var S = null; // {key, history:[{role,content}], busy, debrief}
+
+var LANG = (function(){ try{ return localStorage.getItem('muchen_lang')==='zh'?'zh':'en'; }catch(e){ return 'en'; } })();
+function T(en,zh){ return LANG==='zh'?zh:en; }
+function nm(p){ return LANG==='zh'?p.nameZh:p.name; }
+function sb(p){ return LANG==='zh'?p.subZh:p.sub; }
+function paintLang(){
+  var b=document.getElementById('langBtn'); if(b) b.textContent = LANG==='zh'?'EN':'中文';
+  document.documentElement.lang = LANG==='zh'?'zh':'en';
+  var k=document.getElementById('kick'); if(k) k.textContent = T('MUCHEN CORPORATE SERVICES · SEMINAR RECAP','沐宸企业服务 · 研讨会复习');
+  var ft=document.getElementById('footTxt'); if(ft) ft.innerHTML = T('An AI role-play to practise <b>Signal → Service → Question</b> from “Spotting Prospects Through Corporate Knowledge”.','用 AI 角色扮演练习「<b>信号 → 服务 → 提问</b>」，取材自《通过企业知识发现潜在客户》。');
+  var fn=document.getElementById('footNote'); if(fn) fn.textContent = T('A training simulation, not advice.','培训模拟，非专业建议。');
+}
+function toggleLang(){ LANG = LANG==='zh'?'en':'zh'; try{localStorage.setItem('muchen_lang',LANG);}catch(e){} paintLang();
+  if(!S) home(); else if(S.debrief!=null) renderDebrief(S.debrief); else renderChat(); }
 
 function home(){
   S = null;
   var cards = Object.keys(PERSONAS).map(function(k){
     var p = PERSONAS[k];
     return '<div class="pick" onclick="start(\''+k+'\')"><div class="em">'+p.em+'</div>'
-      + '<div><h3>'+p.name+'</h3><div class="sub">'+p.sub+'</div></div></div>';
+      + '<div><h3>'+nm(p)+'</h3><div class="sub">'+sb(p)+'</div></div></div>';
   }).join('');
   app.innerHTML = '<div class="card">'
-    + '<h2 class="scene-title">Grab a coffee. Find a prospect.</h2>'
-    + '<p class="lead">You bump into a business owner at the kopitiam and get chatting. Somewhere in the small talk, they’ll drop a <b>signal</b> — a stray line that hints at a problem Muchen can solve. Your job: <b>listen, spot the signal, and ask one good question</b>. You don’t need to close anything.</p>'
-    + '<p class="lead" style="margin-top:8px">Chat naturally, then tap <b>“Wrap up & get feedback”</b> and an AI coach will score how many signals you caught.</p>'
+    + '<h2 class="scene-title">'+T('Grab a coffee. Find a prospect.','喝杯咖啡，发现潜在客户。')+'</h2>'
+    + '<p class="lead">'+T('You bump into a business owner at the kopitiam and get chatting. Somewhere in the small talk, they’ll drop a <b>signal</b> — a stray line that hints at a problem Muchen can solve. Your job: <b>listen, spot the signal, and ask one good question</b>. You don’t need to close anything.','你在茶室遇到一位生意人，随意聊了起来。闲聊之间，他们会不经意透露一个<b>信号</b> —— 一句暗示着沐宸能帮上忙的问题的话。你的任务：<b>倾听、抓住信号、问一个好问题</b>。不需要成交任何东西。')+'</p>'
+    + '<p class="lead" style="margin-top:8px">'+T('Chat naturally, then tap <b>“Wrap up & get feedback”</b> and an AI coach will score how many signals you caught.','自然地聊天，然后点<b>“结束并获取反馈”</b>，AI 教练会评估你抓到了几个信号。')+'</p>'
     + '<div class="grid">'+cards+'</div>'
-    + '<div class="nav"><span></span><button class="btn primary" onclick="start(rand())">🎲 Surprise me →</button></div>'
+    + '<div class="nav"><span></span><button class="btn primary" onclick="start(rand())">'+T('🎲 Surprise me →','🎲 随机来一个 →')+'</button></div>'
     + '</div>';
   window.scrollTo(0,0);
 }
 function rand(){ var k = Object.keys(PERSONAS); return k[Math.floor(Math.random()*k.length)]; }
 
 function start(key){
-  S = { key:key, history:[], busy:true };
+  S = { key:key, history:[], busy:true, debrief:null };
   renderChat();
   send(null, true); // fetch opening line
 }
@@ -156,15 +174,15 @@ function renderChat(){
   }).join('');
   if(S.busy) log += '<div class="typing"><i></i><i></i><i></i></div>';
   app.innerHTML = '<div class="card">'
-    + '<div class="who"><div class="em">'+p.em+'</div><div><div class="n">'+p.name+'</div><div class="s">'+p.sub+'</div></div></div>'
+    + '<div class="who"><div class="em">'+p.em+'</div><div><div class="n">'+nm(p)+'</div><div class="s">'+sb(p)+'</div></div></div>'
     + '<div class="log" id="log">'+log+'</div>'
     + '<div class="composer">'
-    +   '<textarea class="inp" id="inp" rows="1" placeholder="Say something…" '+(S.busy?'disabled':'')+'></textarea>'
+    +   '<textarea class="inp" id="inp" rows="1" placeholder="'+T('Say something…','说点什么…')+'" '+(S.busy?'disabled':'')+'></textarea>'
     +   '<button class="send" id="sendb" onclick="onSend()" '+(S.busy?'disabled':'')+'>➤</button>'
     + '</div>'
-    + '<div class="hint">💬 Chat like it’s real. When you’re ready, wrap up for your score.</div>'
-    + '<div class="nav"><button class="btn ghost" onclick="home()">← Leave</button>'
-    +   '<button class="btn gold" id="wrapb" onclick="wrapUp()" '+(S.busy||S.history.length<2?'disabled':'')+'>☕ Wrap up & get feedback</button></div>'
+    + '<div class="hint">'+T('💬 Chat like it’s real. When you’re ready, wrap up for your score.','💬 就当是真的在聊天。准备好了就结束，看你的得分。')+'</div>'
+    + '<div class="nav"><button class="btn ghost" onclick="home()">'+T('← Leave','← 离开')+'</button>'
+    +   '<button class="btn gold" id="wrapb" onclick="wrapUp()" '+(S.busy||S.history.length<2?'disabled':'')+'>'+T('☕ Wrap up & get feedback','☕ 结束并获取反馈')+'</button></div>'
     + '</div>';
   var inp = document.getElementById('inp');
   if(inp){
@@ -188,26 +206,26 @@ function send(text, opening){
   if(text){ S.history.push({role:'user', content:text}); }
   S.busy = true; renderChat();
   var msgs = opening ? [{role:'user', content:KICKOFF}] : S.history.slice();
-  api({ persona:S.key, messages:msgs, mode:'chat' }).then(function(reply){
+  api({ persona:S.key, messages:msgs, mode:'chat', lang:LANG }).then(function(reply){
     S.history.push({role:'assistant', content:reply}); S.busy=false; renderChat();
   }).catch(function(e){ handleErr(e); });
 }
 
 function wrapUp(){
   S.busy = true; renderChat();
-  api({ persona:S.key, messages:S.history.slice(), mode:'debrief' }).then(function(reply){
-    S.busy = false; renderDebrief(reply);
+  api({ persona:S.key, messages:S.history.slice(), mode:'debrief', lang:LANG }).then(function(reply){
+    S.busy = false; S.debrief = reply; renderDebrief(reply);
   }).catch(function(e){ handleErr(e); });
 }
 
 function renderDebrief(text){
   var p = PERSONAS[S.key];
   app.innerHTML = '<div class="card">'
-    + '<div class="who"><div class="em">'+p.em+'</div><div><div class="n">Coffee with '+p.name+' — your debrief</div><div class="s">How well did you spot the signals?</div></div></div>'
+    + '<div class="who"><div class="em">'+p.em+'</div><div><div class="n">'+T('Coffee with '+p.name+' — your debrief','与'+nm(p)+'的咖啡时光 —— 你的反馈')+'</div><div class="s">'+T('How well did you spot the signals?','你抓信号抓得怎么样？')+'</div></div></div>'
     + '<div class="debrief">'+fmt(text)+'</div>'
-    + '<div class="method"><b>The method:</b> Catch the <b>signal</b> → name the <b>service</b> → ask <b>one question</b>. You don’t close the sale — you spot the opening and route the lead.</div>'
-    + '<div class="nav"><button class="btn ghost" onclick="start(\''+S.key+'\')">↺ Retry '+p.name+'</button>'
-    +   '<button class="btn gold" onclick="home()">Another prospect →</button></div>'
+    + '<div class="method">'+T('<b>The method:</b> Catch the <b>signal</b> → name the <b>service</b> → ask <b>one question</b>. You don’t close the sale — you spot the opening and route the lead.','<b>方法：</b>抓住<b>信号</b> → 说出对应<b>服务</b> → 问<b>一个问题</b>。你不需要成交 —— 发现机会，把线索转介出去就好。')+'</div>'
+    + '<div class="nav"><button class="btn ghost" onclick="start(\''+S.key+'\')">'+T('↺ Retry '+p.name,'↺ 再试一次 '+nm(p))+'</button>'
+    +   '<button class="btn gold" onclick="home()">'+T('Another prospect →','换一位客户 →')+'</button></div>'
     + '</div>';
   window.scrollTo(0,0);
 }
@@ -234,7 +252,7 @@ function api(body){
 function handleErr(e){
   S.busy = false;
   if(e && e.code === 'ai_not_configured'){ renderSetup(); return; }
-  S.history.push({role:'err', content:'⚠️ Hiccup reaching the AI'+(e && e.detail?': '+e.detail:'')+'. Try again.'});
+  S.history.push({role:'err', content:T('⚠️ Hiccup reaching the AI','⚠️ 连接 AI 时出了点问题')+(e && e.detail?': '+e.detail:'')+T('. Try again.','。请再试一次。')});
   renderChat();
 }
 
@@ -252,6 +270,7 @@ function renderSetup(){
   window.scrollTo(0,0);
 }
 
+paintLang();
 home();
 </script>
 <audio id="bgm" src="/henesys-floral-life.mp3" loop preload="auto"></audio>

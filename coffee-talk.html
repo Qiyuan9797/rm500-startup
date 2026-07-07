@@ -9,15 +9,15 @@
 <title>Kopi Talk — Spot the Prospect (Muchen)</title>
 <style>
   :root{
-    --navy:#1E2761; --navy2:#2B3A73; --blue:#3C5AA6; --ice:#CADCFC; --ice2:#E8EFFB;
-    --gold:#C9A227; --gold2:#E4C04B; --ink:#1B2440; --mute:#6B7488; --white:#fff;
-    --good:#1f8a54; --bad:#c0392b; --paper:#FBFCFF;
-    --shadow:0 12px 34px rgba(15,20,45,.22);
+    --navy:#0B6E40; --navy2:#0E7A46; --blue:#12925A; --ice:#BCE8CE; --ice2:#E4F6EC;
+    --gold:#15C06A; --gold2:#46D98F; --ink:#123524; --mute:#5C7A69; --white:#fff;
+    --good:#1f8a54; --bad:#c0392b; --paper:#F7FCF9;
+    --shadow:0 12px 34px rgba(6,40,24,.20);
   }
   *{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
   body{margin:0;font-family:"Segoe UI",Calibri,Arial,sans-serif;color:var(--ink);
-    background:radial-gradient(1200px 600px at 50% -10%,#33407a 0%,#1E2761 40%,#141B3D 100%);
+    background:radial-gradient(1200px 600px at 50% -10%,#1FA35E 0%,#0E7A46 40%,#064E2B 100%);
     background-attachment:fixed;-webkit-tap-highlight-color:transparent;
     min-height:100vh;min-height:100dvh;
     padding:22px 14px 40px;
@@ -46,7 +46,7 @@
   button.btn{border:0;border-radius:11px;padding:12px 20px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;-webkit-user-select:none;user-select:none;touch-action:manipulation}
   button.btn:active{transform:scale(.97)}
   .btn.primary{background:var(--navy);color:#fff}.btn.primary:hover{background:var(--blue)}
-  .btn.gold{background:var(--gold);color:var(--navy)}.btn.gold:hover{background:var(--gold2)}
+  .btn.gold{background:var(--gold);color:#fff}.btn.gold:hover{background:var(--gold2)}
   .btn.ghost{background:#fff;color:var(--navy);border:1.5px solid var(--ice)}.btn.ghost:hover{border-color:var(--blue)}
   .btn:disabled{opacity:.5;cursor:not-allowed}
 
@@ -68,13 +68,13 @@
   .composer{display:flex;gap:8px;align-items:flex-end;border-top:1px solid #E7ECF6;padding-top:12px}
   textarea.inp{flex:1;resize:none;min-height:46px;max-height:120px;padding:12px 14px;border:2px solid var(--ice);border-radius:12px;font-size:16px;font-family:inherit;line-height:1.4}
   textarea.inp:focus{outline:none;border-color:var(--gold)}
-  .send{background:var(--gold);color:var(--navy);border:0;border-radius:12px;min-width:52px;height:46px;font-size:18px;font-weight:800;cursor:pointer}
+  .send{background:var(--gold);color:#fff;border:0;border-radius:12px;min-width:52px;height:46px;font-size:18px;font-weight:800;cursor:pointer}
   .send:active{transform:scale(.95)} .send:disabled{opacity:.5}
 
   .hint{font-size:12px;color:var(--mute);margin-top:8px;text-align:center}
-  .debrief{background:#FCF7E6;border:1px solid #EBDCA6;border-radius:14px;padding:16px 18px;margin-top:8px;font-size:14.5px;line-height:1.65;color:var(--ink)}
+  .debrief{background:#EAF7F0;border:1px solid #BFE6CF;border-radius:14px;padding:16px 18px;margin-top:8px;font-size:14.5px;line-height:1.65;color:var(--ink)}
   .debrief b{color:var(--navy)}
-  .method{background:#F3F6FE;border:1px solid #D9E3FA;border-radius:12px;padding:12px 14px;margin-top:14px;font-size:13px;color:var(--navy)}
+  .method{background:#E4F6EC;border:1px solid #BFE6CF;border-radius:12px;padding:12px 14px;margin-top:14px;font-size:13px;color:var(--navy)}
   .method b{color:var(--blue)}
   .setup{background:#FDECEA;border:1px solid #f2c4bc;border-radius:12px;padding:14px 16px;font-size:13.5px;line-height:1.6;color:#7a2018}
   .setup code{background:#fff;border:1px solid #e6c9c2;border-radius:5px;padding:1px 5px;font-size:12.5px}
@@ -91,6 +91,11 @@
     button.btn{flex:1;min-height:46px}
     .nav>span:empty{display:none}
   }
+  .bgm-btn{position:fixed;right:14px;bottom:14px;z-index:60;width:44px;height:44px;border-radius:50%;border:0;
+    background:rgba(255,255,255,.92);color:var(--navy);font-size:19px;cursor:pointer;line-height:1;
+    box-shadow:0 5px 16px rgba(6,40,24,.3);transition:.15s}
+  .bgm-btn:active{transform:scale(.92)} .bgm-btn.off{opacity:.55}
+  @media(max-width:560px){.bgm-btn{right:10px;bottom:10px;width:40px;height:40px;font-size:17px}}
 </style>
 </head>
 <body>
@@ -247,6 +252,24 @@ function renderSetup(){
 }
 
 home();
+</script>
+<audio id="bgm" src="/henesys-floral-life.mp3" loop preload="auto"></audio>
+<button id="bgmBtn" class="bgm-btn off" aria-label="Toggle background music" title="Music">🔈</button>
+<script>
+(function(){
+  var a=document.getElementById('bgm'), b=document.getElementById('bgmBtn'), on=false, started=false;
+  a.volume=0.28;
+  function paint(){ b.textContent=on?'🔊':'🔈'; b.classList.toggle('off',!on); }
+  function set(s){ on=s; if(on){ a.play().catch(function(){on=false;paint();}); } else { a.pause(); }
+    try{localStorage.setItem('muchen_bgm',on?'1':'0');}catch(e){} paint(); }
+  b.addEventListener('click',function(e){ e.stopPropagation(); started=true; set(!on); });
+  function kick(){ if(started) return; started=true;
+    var pref='1'; try{var v=localStorage.getItem('muchen_bgm'); if(v!==null)pref=v;}catch(e){}
+    if(pref!=='0') set(true);
+    document.removeEventListener('pointerdown',kick);
+  }
+  document.addEventListener('pointerdown',kick); paint();
+})();
 </script>
 </body>
 </html>

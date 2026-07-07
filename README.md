@@ -4,7 +4,9 @@
 _(fallback URL: https://rm500-startup.vercel.app/ — both point at the same deployment)_
 
 Games are **unlisted** (`noindex` + `robots.txt`) — reachable only by link, not indexed by search engines.
-QR codes (`rm500-qr.png`, `nasi-lemak-qr.png`) and share pages encode the `seminar.muchencosec.com` URLs. **Kopi Talk stays internal** (run it on a laptop via `local-server.js`) — no public QR.
+QR codes (`rm500-qr.png`, `nasi-lemak-qr.png`, `shareholder-qr.png`) and share pages encode the `seminar.muchencosec.com` URLs. Every game is a **static, self-contained page** (no build step, no server, no API key) and works on any phone. All four are bilingual — an **EN / 中文** toggle in the header, plus `?lang=zh` / `?lang=en` for a language-specific link.
+
+**The games:** `/` RM500 Startup · `/nasi-lemak` Nasi Lemak Empire · `/shareholder` Boardroom Betrayal · `/coffee-talk` Kopi Talk.
 
 A single-page browser game (no build step, no server). This folder is ready to publish as-is.
 
@@ -71,37 +73,15 @@ Every finished game posts its score to a **shared** leaderboard that everyone se
 - In Vercel → **Settings → Environment Variables**, add `ADMIN_KEY` = some secret of your choice, and redeploy.
 - Then open the site as `…/?admin=YOUR_SECRET` — a **"Clear shared board"** button appears on the leaderboard. Without `ADMIN_KEY` set, no one can wipe the board (safe by default).
 
-## Kopi Talk — AI-powered seminar recap (`/coffee-talk`)
+## Kopi Talk — seminar recap (`/coffee-talk`)
 
-An AI role-play that lets seminar participants practise the **Signal → Service → Question** method from *"Spotting Prospects Through Corporate Knowledge."* Claude plays a Malaysian business owner (café / startup / family business / app founder) who drops prospect *signals* in casual chat; the player listens, probes, then gets an AI-coached scorecard on how many signals they caught.
+A **choose-your-reply** game that lets participants practise the **Signal → Service → Question** method from *"Spotting Prospects Through Corporate Knowledge."* You sit for coffee with a Malaysian business owner (café / startup / family business / app founder) who drops prospect *signals* in casual chat. Each turn you pick one of three replies — ask a sharp diagnostic question (spot it), nod along (notice it), or launch into a hard sell (the cardinal sin the seminar warns against). At the end you get a built-in scorecard: signals caught vs missed, the Muchen service each maps to, a technique verdict, a /100 score, and a local leaderboard.
 
-There are **two ways** to power the AI — pick one.
+- **No AI, no API key, no server.** It's a static page like the other three — just deploy and it works on every phone.
+- **Random prospect + shuffled signals** mean every coffee is different. Pick a specific owner, or hit 🎲 Random table.
+- Bilingual EN / 中文 (`?lang=zh`). Personas and signals are drawn from the seminar deck (Aunty May, Danish, Uncle Tan, Mei).
 
-### Option A — One laptop, your Claude subscription (no API key)
-
-Run it locally on the machine you'll project, using the `claude` CLI (your Pro/Max subscription). Nothing is billed per token beyond your plan.
-
-```bash
-# prereqs: Node + the `claude` CLI, already logged in (run `claude` once)
-node local-server.js
-# then open http://localhost:8787/coffee-talk  (project this at the seminar)
-```
-
-- The local server (`local-server.js`) serves all the games and answers `/api/coffee` by shelling out to `claude` — so it uses your subscription directly.
-- **Model:** `KOPI_MODEL=haiku node local-server.js` (default). Try `sonnet` or `opus` for richer role-play.
-- Only that one laptop works — phones scanning a QR to the hosted URL can't use your subscription. Great for a projected screen; use Option B if you want everyone on their own phone.
-
-### Option B — Hosted for everyone's phone (Anthropic API key)
-
-Wire an API key into Vercel so the deployed `/coffee-talk` works for every phone.
-
-1. Get a key at **console.anthropic.com** → API Keys (prepaid credits + a spend cap = pay-what-you-use).
-2. In **Vercel → Settings → Environment Variables**, add `ANTHROPIC_API_KEY` = your key (all environments).
-3. **Redeploy.** Until then the game shows a friendly "switch on the AI" screen.
-
-- **Model:** `API_MODEL` at the top of `api/_coffee-core.js`. Default `claude-opus-4-8`; switch to `claude-haiku-4-5` for a faster/cheaper live seminar (a full coffee-talk + debrief is a fraction of a cent on Haiku).
-
-Personas, prompts and the coach's answer key live in `api/_coffee-core.js`, shared by both paths.
+> Earlier this game was AI-powered (Claude via an API key or the local `claude` CLI). It's now fully self-contained, so the old `api/coffee.js`, `api/_coffee-core.js` and `local-server.js` have been removed.
 
 ## Notes
 - **Custom domain:** in the Vercel dashboard → your project → *Settings → Domains*, you can attach your own domain (e.g. `game.muchen.com.my`).

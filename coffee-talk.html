@@ -33,6 +33,8 @@
   @keyframes pop{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
   .lead{color:var(--mute);font-size:15px;line-height:1.6}
   .scene-title{font-family:Cambria,Georgia,serif;color:var(--navy);font-size:23px;font-weight:800;margin:0 0 6px}
+  input.name{width:100%;padding:13px 15px;border:2px solid var(--ice);border-radius:12px;font-size:16px;font-family:inherit;margin-top:8px}
+  input.name:focus{outline:none;border-color:var(--gold)}
 
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
   @media(max-width:620px){.grid{grid-template-columns:1fr}}
@@ -49,48 +51,54 @@
   .btn.primary{background:var(--navy);color:#fff}.btn.primary:hover{background:var(--blue)}
   .btn.gold{background:var(--gold);color:#fff}.btn.gold:hover{background:var(--gold2)}
   .btn.ghost{background:#fff;color:var(--navy);border:1.5px solid var(--ice)}.btn.ghost:hover{border-color:var(--blue)}
-  .btn:disabled{opacity:.5;cursor:not-allowed}
 
-  /* chat */
   .who{display:flex;align-items:center;gap:11px;border-bottom:1px solid #E7ECF6;padding-bottom:12px;margin-bottom:4px}
   .who .em{font-size:30px}
   .who .n{font-weight:800;color:var(--navy);font-size:17px}
   .who .s{font-size:12px;color:var(--mute);line-height:1.35}
-  .log{display:flex;flex-direction:column;gap:10px;padding:14px 2px;min-height:200px;max-height:56vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
-  .msg{max-width:82%;padding:10px 14px;border-radius:16px;font-size:14.5px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;animation:pop .25s ease}
+  .prog{font-size:11px;font-weight:800;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase}
+  .log{display:flex;flex-direction:column;gap:10px;padding:14px 2px 4px;min-height:120px}
+  .msg{max-width:84%;padding:10px 14px;border-radius:16px;font-size:14.5px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;animation:pop .25s ease}
   .msg.them{align-self:flex-start;background:#EEF2FB;color:var(--ink);border-bottom-left-radius:5px}
   .msg.me{align-self:flex-end;background:var(--navy);color:#fff;border-bottom-right-radius:5px}
-  .msg.err{align-self:center;background:#FDECEA;color:#a5301f;font-size:13px;max-width:100%}
-  .typing{align-self:flex-start;background:#EEF2FB;border-radius:16px;border-bottom-left-radius:5px;padding:12px 16px;display:inline-flex;gap:4px}
-  .typing i{width:7px;height:7px;border-radius:50%;background:#9aa6bf;display:inline-block;animation:bl 1s infinite}
-  .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
-  @keyframes bl{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+  .msg.coach{align-self:center;max-width:94%;background:#FBF6E4;border:1px solid #ecdca0;color:#6b5a1a;font-size:12.5px;border-radius:12px}
+  .msg.coach.good{background:#E9F6EE;border-color:#b8e2c8;color:#1c6b41}
+  .msg.coach.bad{background:#FDECEA;border-color:#f2c4bc;color:#a5301f}
 
-  .composer{display:flex;gap:8px;align-items:flex-end;border-top:1px solid #E7ECF6;padding-top:12px}
-  textarea.inp{flex:1;resize:none;min-height:46px;max-height:120px;padding:12px 14px;border:2px solid var(--ice);border-radius:12px;font-size:16px;font-family:inherit;line-height:1.4}
-  textarea.inp:focus{outline:none;border-color:var(--gold)}
-  .send{background:var(--gold);color:#fff;border:0;border-radius:12px;min-width:52px;height:46px;font-size:18px;font-weight:800;cursor:pointer}
-  .send:active{transform:scale(.95)} .send:disabled{opacity:.5}
+  .choices{display:grid;gap:10px;margin-top:16px}
+  .choice{border:2px solid #E1E7F5;border-radius:14px;padding:12px 15px;cursor:pointer;background:#fff;transition:.14s;font-size:14.5px;line-height:1.45;-webkit-user-select:none;user-select:none}
+  .choice:hover{border-color:var(--blue);background:#F5F9FF;transform:translateX(3px)}
+  .choice:active{border-color:var(--blue);transform:scale(.99)}
+  .choice .lbl{font-size:11px;font-weight:800;color:var(--mute);letter-spacing:.5px}
 
-  .hint{font-size:12px;color:var(--mute);margin-top:8px;text-align:center}
-  .debrief{background:#EAF7F0;border:1px solid #BFE6CF;border-radius:14px;padding:16px 18px;margin-top:8px;font-size:14.5px;line-height:1.65;color:var(--ink)}
-  .debrief b{color:var(--navy)}
+  .debrief{background:#EAF7F0;border:1px solid #BFE6CF;border-radius:14px;padding:16px 18px;margin-top:14px;font-size:14px;line-height:1.6;color:var(--ink)}
+  .debrief h4{margin:0 0 8px;color:var(--navy)}
+  .debrief ul{margin:6px 0 0;padding-left:18px}.debrief li{margin:5px 0}
+  .debrief .miss b,.debrief .catch b{color:var(--navy)}
   .method{background:#E4F6EC;border:1px solid #BFE6CF;border-radius:12px;padding:12px 14px;margin-top:14px;font-size:13px;color:var(--navy)}
   .method b{color:var(--blue)}
-  .setup{background:#FDECEA;border:1px solid #f2c4bc;border-radius:12px;padding:14px 16px;font-size:13.5px;line-height:1.6;color:#7a2018}
-  .setup code{background:#fff;border:1px solid #e6c9c2;border-radius:5px;padding:1px 5px;font-size:12.5px}
+  .finalscore{text-align:center;padding:4px 0 2px}
+  .finalscore .big{font-family:Cambria,Georgia,serif;font-size:42px;font-weight:800;color:var(--navy);line-height:1}
+  .finalscore .verdict{font-size:15px;color:var(--mute);margin-top:6px}
+  .medal{font-size:32px}
+  table.lb{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.lb th,table.lb td{padding:9px 10px;text-align:left;border-bottom:1px solid #E7ECF6}
+  table.lb th{color:var(--mute);font-size:11px;letter-spacing:1px;text-transform:uppercase}
+  table.lb tr.me{background:#FBF1CE}
+  table.lb td.sc{font-weight:800;text-align:right}
+  .lbwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px}
 
   .foot{color:var(--ice);text-align:center;font-size:11.5px;margin-top:22px;line-height:1.6}
-  .foot a{color:var(--gold2);text-decoration:none}
+  .foot a{color:var(--gold2);text-decoration:none} .foot b{color:var(--gold2)}
 
-  @media(hover:none){.pick:hover{border-color:var(--ice);transform:none;box-shadow:none}}
+  @media(hover:none){.pick:hover{border-color:var(--ice);transform:none;box-shadow:none}.choice:hover{border-color:#E1E7F5;background:#fff;transform:none}}
   @media(max-width:560px){
     body{padding:12px 12px 24px}
     .card{padding:18px 15px;border-radius:16px}
     .brand h1{font-size:20px}
-    .log{max-height:50vh}
     button.btn{flex:1;min-height:46px}
     .nav>span:empty{display:none}
+    .finalscore .big{font-size:36px}
   }
   .bgm-btn{position:fixed;right:14px;bottom:14px;z-index:60;width:44px;height:44px;border-radius:50%;border:0;
     background:rgba(255,255,255,.92);color:var(--navy);font-size:19px;cursor:pointer;line-height:1;
@@ -113,161 +121,454 @@
   </header>
   <div id="app"></div>
   <div class="foot">
-    <span id="footTxt">An AI role-play to practise <b>Signal → Service → Question</b> from “Spotting Prospects Through Corporate Knowledge”.</span><br>
-    <a href="/">RM500 Startup</a> · <a href="/nasi-lemak">Nasi Lemak Empire</a> · <span id="footNote">A training simulation, not advice.</span>
+    <span id="footTxt">A choose-your-reply game to practise <b>Signal → Service → Question</b> from “Spotting Prospects Through Corporate Knowledge”.</span><br>
+    <a href="/">RM500 Startup</a> · <a href="/nasi-lemak">Nasi Lemak Empire</a> · <a href="/shareholder">Boardroom Betrayal</a> · <span id="footNote">A training game, not advice.</span>
   </div>
 </div>
 
 <script>
+/* ============================================================
+   KOPI TALK — a choose-your-reply prospecting game (no AI).
+   You sit for coffee with a business owner. Each carries hidden
+   "signals" that map to a Muchen service. Pick your replies to
+   spot the signal, ask ONE good diagnostic question, and route
+   the lead — WITHOUT hard-selling. Random prospect + shuffled
+   signals mean every conversation is different.
+   ============================================================ */
 var app = document.getElementById('app');
-var PERSONAS = {
-  may:    {em:'☕', name:'Aunty May', nameZh:'美姨', sub:'Runs a busy café. A friend set up her company years ago; she just wants to grow.', subZh:'经营一家忙碌的咖啡馆。几年前朋友帮她注册了公司；她只想把生意做大。'},
-  danish: {em:'💻', name:'Danish',    nameZh:'达尼', sub:'Startup founder closing a funding round, drowning in lawyer emails.', subZh:'正在完成融资的创业者，被律师的邮件淹没。'},
-  tan:    {em:'🏭', name:'Uncle Tan',  nameZh:'陈伯', sub:'25 years running a family business. Thinking about slowing down.', subZh:'家族企业经营了25年，开始想慢下来。'},
-  mei:    {em:'🧋', name:'Mei',        nameZh:'小美', sub:'Fast-growing app business. Too busy growing to think about admin.', subZh:'快速成长的应用生意，忙到没空管行政。'}
-};
-var KICKOFF = '(You sit down at the kopitiam with your coffee. Greet me and start chatting.)';
-var S = null; // {key, history:[{role,content}], busy, debrief}
+function rint(n){ return Math.floor(Math.random()*n); }
+function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){var j=rint(i+1),t=a[i];a[i]=a[j];a[j]=t;} return a; }
 
-var LANG = (function(){ try{ return localStorage.getItem('muchen_lang')==='zh'?'zh':'en'; }catch(e){ return 'en'; } })();
+/* ---- bilingual helpers ---- */
+var LANG = (function(){
+  try{ var q=new URLSearchParams(location.search).get('lang'); if(q==='zh'||q==='en'){ try{localStorage.setItem('muchen_lang',q);}catch(e){} return q; } }catch(e){}
+  try{ return localStorage.getItem('muchen_lang')==='zh'?'zh':'en'; }catch(e){ return 'en'; }
+})();
 function T(en,zh){ return LANG==='zh'?zh:en; }
+function L(o){ return o?(LANG==='zh'?o.zh:o.en):''; }        // localize {en,zh}
 function nm(p){ return LANG==='zh'?p.nameZh:p.name; }
 function sb(p){ return LANG==='zh'?p.subZh:p.sub; }
+var VIEW=null;
 function paintLang(){
   var b=document.getElementById('langBtn'); if(b) b.textContent = LANG==='zh'?'EN':'中文';
   document.documentElement.lang = LANG==='zh'?'zh':'en';
-  var k=document.getElementById('kick'); if(k) k.textContent = T('MUCHEN CORPORATE SERVICES · SEMINAR RECAP','沐宸企业服务 · 研讨会复习');
-  var ft=document.getElementById('footTxt'); if(ft) ft.innerHTML = T('An AI role-play to practise <b>Signal → Service → Question</b> from “Spotting Prospects Through Corporate Knowledge”.','用 AI 角色扮演练习「<b>信号 → 服务 → 提问</b>」，取材自《通过企业知识发现潜在客户》。');
-  var fn=document.getElementById('footNote'); if(fn) fn.textContent = T('A training simulation, not advice.','培训模拟，非专业建议。');
+  document.getElementById('kick').textContent = T('MUCHEN CORPORATE SERVICES · SEMINAR RECAP','沐宸企业服务 · 研讨会复习');
+  document.getElementById('footTxt').innerHTML = T('A choose-your-reply game to practise <b>Signal → Service → Question</b> from “Spotting Prospects Through Corporate Knowledge”.','用「选择你的回应」的游戏练习「<b>信号 → 服务 → 提问</b>」，取材自《通过企业知识发现潜在客户》。');
+  document.getElementById('footNote').textContent = T('A training game, not advice.','这是培训游戏，并非建议。');
 }
-function toggleLang(){ LANG = LANG==='zh'?'en':'zh'; try{localStorage.setItem('muchen_lang',LANG);}catch(e){} paintLang();
-  if(!S) home(); else if(S.debrief!=null) renderDebrief(S.debrief); else renderChat(); }
+function toggleLang(){ LANG=LANG==='zh'?'en':'zh'; try{localStorage.setItem('muchen_lang',LANG);}catch(e){} paintLang(); if(VIEW) VIEW(); }
 
+/* ============================================================
+   PROSPECTS — each with an opener, three hidden signals
+   (line → good/ok/poor replies), and a closer. Faithful to the
+   seminar's Signal → Service → Question method.
+   opt.q:  'good' = spotted + asked the right question
+           'ok'   = noticed but didn't dig
+           'poor' = hard-sell / dismiss (the cardinal sin)
+   ============================================================ */
+var PROSPECTS = {
+  may: {
+    em:'☕', name:'Aunty May', nameZh:'美姨',
+    sub:'Runs a busy café. A friend set up her company years ago; she just wants to grow.',
+    subZh:'经营一家忙碌的咖啡馆。几年前朋友帮她注册了公司；她只想把生意做大。',
+    openers:[
+      {en:'Eh, you came! Sit sit — Aunty just made fresh kopi. So how, business at your firm okay ah? My little café also getting busier, thank God.',
+       zh:'哎哟你来啦！坐坐——阿姨刚泡好新鲜咖啡。怎样，你公司生意还好吗？我这小咖啡馆也越来越忙，谢天谢地。'},
+      {en:'Aiyo finally free to lim kopi with Aunty! Sit. Try my kaya toast. You all do company paperwork stuff is it? I always blur about that one.',
+       zh:'哎呀终于有空来陪阿姨喝咖啡了！坐。尝尝我的咖椰吐司。你们是做公司文书那些的对吧？那些我一向都搞不懂。'}
+    ],
+    openerOpts:[
+      {t:{en:'“Aunty! Good to see you. Tell me how the café’s been going.”',zh:'「阿姨！很高兴见到你。跟我说说咖啡馆最近怎样。」'}, q:'good',
+        r:{en:'Aunty’s face lights up — she happily tells you all about the new customers. She’s relaxed and open now.',zh:'阿姨眉开眼笑——高兴地跟你讲起了新客人。她现在放松又坦然。'}},
+      {t:{en:'“This kopi is really good, ah. Perfect weather for it.”',zh:'「这咖啡真好喝。天气配它刚刚好。」'}, q:'ok',
+        r:{en:'“Right? My secret is the butter,” she chuckles. A warm, easy start.',zh:'「对吧？我的秘诀是牛油，」她笑道。轻松温暖的开场。'}},
+      {t:{en:'“Actually Aunty, let me tell you what services my firm can sell you.”',zh:'「其实阿姨，让我跟你介绍我们公司能卖你什么服务。」'}, q:'poor',
+        r:{en:'Her smile tightens. “Aiyah, you also want to sell Aunty something ah? Let me drink my kopi first lah.”',zh:'她的笑容僵了僵。「哎呀，你也想推销东西给阿姨啊？让我先喝口咖啡啦。」'}}
+    ],
+    signals:[
+      { svc:{en:'Company secretarial + Compliance & filing',zh:'公司秘书 + 合规与呈报'},
+        line:{en:'You know, a friend helped me register my company — Sdn Bhd — back in 2019. Since then I never really touch all that paperwork. Don’t even know who my “company secretary” is anymore, or if I still have one!',
+              zh:'你知道吗，2019年一个朋友帮我注册了公司——Sdn Bhd。之后那些文书我就没再碰过。我连自己的「公司秘书」是谁都不知道了，甚至不知道还有没有！'},
+        opts:[
+          {t:{en:'“Oh? When did you last file your annual return with SSM — do you know if it’s up to date?”',zh:'「哦？你上一次向 SSM 呈交年度申报是什么时候——知道有没有跟上进度吗？」'}, q:'good',
+            r:{en:'“Aiyoh… annual return? I… don’t think so? Nobody told me leh.” You’ve found the thread.',zh:'「哎哟……年度申报？我……应该没有吧？也没人跟我讲。」你找到了线头。'}},
+          {t:{en:'“Ya, all that paperwork is a headache for everyone.”',zh:'「是啊，那些文书人人都头疼。」'}, q:'ok',
+            r:{en:'“Ya lor, so troublesome,” she sighs, and moves on.',zh:'「就是啊，好麻烦，」她叹口气，就带过了。'}},
+          {t:{en:'“You need us to be your company secretary — sign here today.”',zh:'「你需要我们当你的公司秘书——今天就签这里。」'}, q:'poor',
+            r:{en:'“Wah, so fast sell Aunty ah? Slow down lah.” She pulls back a little.',zh:'「哇，这么快就推销阿姨啊？慢慢来啦。」她稍微退了一步。'}}
+        ]},
+      { svc:{en:'Compliance rescue — SSM deadlines / strike-off risk',zh:'合规拯救——SSM 期限／被除名风险'},
+        line:{en:'Oh ya — some months back I got a letter from SSM. Looked official… I just put it in the drawer. Haven’t looked properly. Probably nothing, right?',
+              zh:'哦对——几个月前我收到一封 SSM 的信。看起来蛮官方的……我随手放进抽屉了，没好好看。应该没什么事吧？'},
+        opts:[
+          {t:{en:'“An SSM letter is worth a proper look — do you remember if it mentioned a deadline or a compound?”',zh:'「SSM 的信值得好好看看——你记得里面有没有提到期限或罚单吗？」'}, q:'good',
+            r:{en:'“Deadline? Alamak. I better go dig it out tonight.” Now she’s paying attention.',zh:'「期限？哎呀。我今晚最好把它翻出来。」她这下认真了。'}},
+          {t:{en:'“Ya, those official letters always so scary.”',zh:'「是啊，那些官方信总是吓人。」'}, q:'ok',
+            r:{en:'“Right! So many words,” she laughs, and the moment passes.',zh:'「对！字那么多，」她笑了笑，话题就过去了。'}},
+          {t:{en:'“Ignore SSM and they’ll strike you off — you MUST engage us now!”',zh:'「不理 SSM 他们会把你除名——你现在必须聘请我们！」'}, q:'poor',
+            r:{en:'“Wah, don’t scare Aunty like that lah…” She looks uneasy — not with the problem, with you.',zh:'「哇，别这样吓阿姨啦……」她有点不安——不是因为问题，是因为你。'}}
+        ]},
+      { svc:{en:'Transaction advisory — issuing shares & agreement',zh:'交易顾问——发行股份与协议'},
+        line:{en:'But good news! Café’s doing so well, my good friend wants to put in money to open a second outlet with me. Exciting, right? I just take her cash and we partner lor, simple.',
+              zh:'不过有好消息！咖啡馆生意这么好，我一个好朋友想出钱跟我一起开第二间。很兴奋对吧？我就收她的钱，我们合伙咯，简单。'},
+        opts:[
+          {t:{en:'“That’s great — will she become a shareholder, and have you thought about how her shares and an agreement are set up?”',zh:'「太好了——她会成为股东吗？你有想过她的股份和一份协议要怎么安排吗？」'}, q:'good',
+            r:{en:'“Shares? Agreement? …I never thought so far. Maybe I should, ah?” Spotted before the money moves.',zh:'「股份？协议？……我没想那么远。我是不是该想一下？」在钱动之前你就发现了。'}},
+          {t:{en:'“Nice — congrats on the second outlet!”',zh:'「不错——恭喜你要开第二间！」'}, q:'ok',
+            r:{en:'“Thank you, thank you!” A happy moment, but you didn’t dig.',zh:'「谢谢，谢谢！」气氛很好，但你没有深入。'}},
+          {t:{en:'“Before you take a single cent, sign our engagement letter first.”',zh:'「你收一分钱之前，先签我们的委托书。」'}, q:'poor',
+            r:{en:'“Aiya, you ah — always business.” The warmth cools a notch.',zh:'「哎呀，你这个人——总是生意。」气氛冷了一截。'}}
+        ]},
+    ],
+    closer:{en:'“Wah, talking to you, Aunty feels clearer already. Come — one more kopi?”',zh:'「哇，跟你聊完，阿姨清楚多了。来——再来一杯咖啡？」'}
+  },
+
+  danish: {
+    em:'💻', name:'Danish', nameZh:'达尼',
+    sub:'Startup founder closing a funding round, drowning in lawyer emails.',
+    subZh:'正在完成融资的创业者，被律师的邮件淹没。',
+    openers:[
+      {en:'Bro, thanks for meeting. Sorry I look wrecked — closing our seed round and the lawyers are killing me with emails. Anyway, how are you? Still at the corporate services firm?',
+       zh:'兄弟，谢谢你来。抱歉我看起来很憔悴——在收尾种子轮，律师的邮件快把我搞死了。你呢？还在那家企业服务公司吗？'},
+      {en:'Eh finally a break from the fundraising madness. Grab a seat. Warning: I might rant about lawyers for a bit.',
+       zh:'哎，终于从融资的疯狂里抽身。坐吧。先警告你：我可能会吐槽律师一阵子。'}
+    ],
+    openerOpts:[
+      {t:{en:'“Congrats on the round! How’s it actually going — you good?”',zh:'「恭喜融资！进展到底怎样——你还好吗？」'}, q:'good',
+        r:{en:'“Honestly? Overwhelmed. But thanks for asking.” He relaxes and starts opening up.',zh:'「说真的？焦头烂额。不过谢谢你问。」他放松下来，开始敞开话匣子。'}},
+      {t:{en:'“Nice spot this. Their flat white is solid.”',zh:'「这地方不错。他们的馥芮白很稳。」'}, q:'ok',
+        r:{en:'“Right? I basically live on caffeine now,” he grins.',zh:'「对吧？我现在基本靠咖啡因活着，」他咧嘴笑。'}},
+      {t:{en:'“Great — let me walk you through our full service menu.”',zh:'「好——让我跟你介绍我们完整的服务清单。」'}, q:'poor',
+        r:{en:'“Uh… I kind of just wanted to vent, haha.” He leans back a bit.',zh:'「呃……我其实只是想吐吐苦水，哈哈。」他往后靠了靠。'}}
+    ],
+    signals:[
+      { svc:{en:'BO & AML — beneficial ownership register',zh:'受益权与反洗钱——受益所有权登记册'},
+        line:{en:'Half these emails I don’t even understand. The investor’s lawyer keeps asking about some “beneficial ownership register”. Bro, what even is that? Do I have one?',
+              zh:'这些邮件我一半都看不懂。投资人的律师一直在问什么「受益所有权登记册」。兄弟，那到底是什么？我有吗？'},
+        opts:[
+          {t:{en:'“Do you know who your ultimate individual owners are on paper? That’s basically what the BO register captures — has anyone set it up for the company?”',zh:'「你知道公司在纸面上的最终个人所有者是谁吗？受益所有权登记册大致就是记录这个——有人帮公司设立过吗？」'}, q:'good',
+            r:{en:'“…No idea if it’s set up. That’s exactly the thing they keep chasing me on.” Bingo.',zh:'「……不知道有没有设立。那正是他们一直追着我要的东西。」正中要害。'}},
+          {t:{en:'“Ya, lawyers love their jargon.”',zh:'「是啊，律师就爱用术语。」'}, q:'ok',
+            r:{en:'“For real,” he says, and scrolls to the next email.',zh:'「真的，」他说着，滑到下一封邮件。'}},
+          {t:{en:'“We handle BO registers — let me send you a quote right now.”',zh:'「我们处理受益所有权登记册——我现在就发报价给你。」'}, q:'poor',
+            r:{en:'“Uh, maybe later? I was just venting.” The energy dips.',zh:'「呃，晚点吧？我只是吐吐苦水。」气氛冷了下来。'}}
+        ]},
+      { svc:{en:'Transaction advisory — shareholders’ agreement',zh:'交易顾问——股东协议'},
+        line:{en:'The investors also want a “shareholders’ agreement” signed before they’ll wire the money. I don’t really know what goes in it or who prepares it.',
+              zh:'投资人还要在打钱之前签一份「股东协议」。我其实不太懂里面写什么，也不知道谁来准备。'},
+        opts:[
+          {t:{en:'“Makes sense they’d want that — do you have anything yet covering how decisions and exits work between the founders?”',zh:'「他们会要这个也合理——你们创办人之间有没有任何东西写明决策和退出怎么处理？」'}, q:'good',
+            r:{en:'“Nope, nothing. We just… vibe. Probably a problem, huh.” He gets it now.',zh:'「没有，什么都没有。我们就……凭感觉。这大概是个问题，对吧。」他意识到了。'}},
+          {t:{en:'“Ya, every raise needs one of those.”',zh:'「是啊，每一轮融资都要一份那个。」'}, q:'ok',
+            r:{en:'“I guess,” he shrugs, and the moment slides by.',zh:'「大概吧，」他耸耸肩，话题溜走了。'}},
+          {t:{en:'“We draft SHAs — engage us today and we’ll rush it for you.”',zh:'「我们起草股东协议——今天委托我们，帮你赶工。」'}, q:'poor',
+            r:{en:'“Slow down, bro, haha.” He half-laughs it off.',zh:'「慢点，兄弟，哈哈。」他半笑着带过。'}}
+        ]},
+      { svc:{en:'ESOS advisory — employee share options',zh:'ESOS 顾问——员工持股期权'},
+        line:{en:'Oh, and I promised two of my earliest engineers some equity to keep them. But I genuinely have no clue how you actually give shares to staff properly.',
+              zh:'对了，我答应了两个最早的工程师一些股权来留住他们。但我真的完全不懂怎么正式地把股份给员工。'},
+        opts:[
+          {t:{en:'“Are you thinking actual shares, or an option scheme that vests over time? That choice changes the tax and paperwork a lot.”',zh:'「你是想给实际股份，还是一个逐步归属的期权计划？这个选择会大大影响税务和文书。」'}, q:'good',
+            r:{en:'“See, I didn’t even know those were different. That’s genuinely useful.” Nicely surfaced.',zh:'「你看，我连它们不一样都不知道。这真的很有用。」漂亮地引了出来。'}},
+          {t:{en:'“Ya, keeping good engineers is hard these days.”',zh:'「是啊，现在留住好工程师很难。」'}, q:'ok',
+            r:{en:'“Tell me about it,” he says, and drops it.',zh:'「可不是嘛，」他说完就没再提。'}},
+          {t:{en:'“You need an ESOS — sign our mandate and we’ll set it up.”',zh:'「你需要一个 ESOS——签我们的委托，我们帮你设立。」'}, q:'poor',
+            r:{en:'“Bro, chill, haha.” He waves it off.',zh:'「兄弟，淡定，哈哈。」他摆摆手带过。'}}
+        ]},
+    ],
+    closer:{en:'“Okay, this actually helped more than the lawyers did. I owe you a proper kopi.”',zh:'「好吧，这其实比律师帮我更多。我欠你一杯像样的咖啡。」'}
+  },
+
+  tan: {
+    em:'🏭', name:'Uncle Tan', nameZh:'陈伯',
+    sub:'25 years running a family business. Thinking about slowing down.',
+    subZh:'家族企业经营了25年，开始想慢下来。',
+    openers:[
+      {en:'Ah boy, come come, sit. Long time. Uncle order you kopi-o kosong. Twenty-five years I run this factory already — can you believe? Getting old lah.',
+       zh:'阿仔，来来，坐。好久不见。伯伯帮你叫杯乌咖啡不加糖。这工厂我做了二十五年了——你信吗？老咯。'},
+      {en:'Wah you free to see Uncle ah, good good. Sit. These days I think a lot about the future — 25 years is a long time, you know.',
+       zh:'哇你有空来看伯伯啊，好好。坐。这阵子我常常想未来的事——二十五年很长的，你知道吗。'}
+    ],
+    openerOpts:[
+      {t:{en:'“Uncle! 25 years, that’s incredible. How are you feeling about it all these days?”',zh:'「伯伯！二十五年，太厉害了。你最近对这一切感觉怎样？」'}, q:'good',
+        r:{en:'“Aiya, you ask until so nice.” He softens and starts to reflect.',zh:'「哎呀，你问得这么窝心。」他神情一软，开始感慨起来。'}},
+      {t:{en:'“This kopi-o really old-school. Nice.”',zh:'「这乌咖啡很古早味。好喝。」'}, q:'ok',
+        r:{en:'“Best one, this stall,” he nods approvingly.',zh:'「这摊最好，」他赞许地点点头。'}},
+      {t:{en:'“Uncle, let me quickly run through what my firm charges for.”',zh:'「伯伯，让我快快跟你讲我们公司都收费做些什么。」'}, q:'poor',
+        r:{en:'“Wah, sit down first also want to talk business ah?” He frowns slightly.',zh:'「哇，刚坐下就要讲生意啊？」他微微皱眉。'}}
+    ],
+    signals:[
+      { svc:{en:'Exit planning — sell / succession / wind-down',zh:'退出规划——出售／传承／结束'},
+        line:{en:'Aiya, after so many years Uncle also tired. Sometimes I think sell the business, sometimes give to my children, sometimes just close shop. Haven’t decided anything one.',
+              zh:'哎呀，做了这么多年，伯伯也累了。有时想卖掉生意，有时想给孩子，有时干脆关门算了。一样都还没决定。'},
+        opts:[
+          {t:{en:'“Each of those — selling, passing to your kids, or closing — is quite a different thing to plan. Have you talked it through with anyone?”',zh:'「这几条——卖掉、传给孩子、或结束——其实要规划的东西很不一样。你有没有跟谁好好谈过？」'}, q:'good',
+            r:{en:'“No… I just keep it in my head only. Maybe I should plan properly.” The real need surfaces.',zh:'「没有……我都只放在心里。也许我该好好规划一下。」真正的需求浮现了。'}},
+          {t:{en:'“Ya, 25 years — you deserve a good rest, Uncle.”',zh:'「是啊，二十五年——伯伯你值得好好休息。」'}, q:'ok',
+            r:{en:'“Ha, you say until so nice,” he chuckles, and lets it go.',zh:'「哈，你讲得这么好听，」他笑笑，就放下了。'}},
+          {t:{en:'“We do exit planning — let Muchen handle your sale, sign here.”',zh:'「我们做退出规划——让沐宸帮你处理出售，签这里。」'}, q:'poor',
+            r:{en:'“Wah, so fast want to close down Uncle ah?” He looks put off.',zh:'「哇，这么快就要伯伯关门啊？」他有点不悦。'}}
+        ]},
+      { svc:{en:'Advisory & structuring — director loans / drawings',zh:'顾问与架构——董事贷款／提款'},
+        line:{en:'Money matters, I keep simple. Company need money, I put in my own. I need money, I take out from company. Same pocket what — my company mah.',
+              zh:'钱的事，我都从简。公司要钱，我自己放进去。我要钱，就从公司拿出来。同一个口袋嘛——我的公司啊。'},
+        opts:[
+          {t:{en:'“That money going in and out actually needs to be tracked as a director’s loan — is your account recording it that way?”',zh:'「这些进进出出的钱其实要作为董事贷款来记账——你的账目有这样记录吗？」'}, q:'good',
+            r:{en:'“Track? I just… take lor. Nobody record. Is that a problem?” Now he’s curious.',zh:'「记录？我就……拿咯。没人记。这样有问题吗？」他好奇起来。'}},
+          {t:{en:'“Ya, when it’s your own company it feels simpler.”',zh:'「是啊，是自己的公司，感觉是简单些。」'}, q:'ok',
+            r:{en:'“Correct!” he says, pleased, and moves on.',zh:'「对咯！」他满意地说，就带过了。'}},
+          {t:{en:'“That’s basically illegal — you need us to fix your accounts immediately!”',zh:'「这基本上是违法的——你需要我们马上帮你处理账目！」'}, q:'poor',
+            r:{en:'“Oi, don’t so dramatic lah.” He waves you off.',zh:'「喂，别这么夸张啦。」他摆摆手。'}}
+        ]},
+      { svc:{en:'Governance advisory — registers & documentation',zh:'治理顾问——登记册与文档'},
+        line:{en:'All these forms and registers, Uncle never bother. We run on trust and handshake. My statutory whatever-book — probably last updated donkey years ago.',
+              zh:'那些表格、登记册，伯伯从来不理。我们靠信任、握手做事。我那本法定什么簿——上次更新不知道是猴年马月了。'},
+        opts:[
+          {t:{en:'“Trust is great — but out-of-date statutory registers can bite you at a sale or audit. When were yours last updated?”',zh:'「信任是好事——但过时的法定登记册在出售或审计时会反咬你一口。你的上次更新是什么时候？」'}, q:'good',
+            r:{en:'“Wah… honestly cannot remember. Maybe I let someone check.” Opening created.',zh:'「哇……老实说不记得了。也许我让人查一查。」机会来了。'}},
+          {t:{en:'“Ya, the old-school way has its charm.”',zh:'「是啊，老派做法有它的味道。」'}, q:'ok',
+            r:{en:'“Best one, my way,” he says proudly.',zh:'「我这套最好，」他自豪地说。'}},
+          {t:{en:'“Your company is non-compliant — engage us or face penalties!”',zh:'「你公司不合规——聘请我们，不然面对罚款！」'}, q:'poor',
+            r:{en:'“Relax, relax — drink kopi first.” He’s unmoved, and a bit annoyed.',zh:'「放松，放松——先喝咖啡。」他无动于衷，还有点烦。'}}
+        ]},
+    ],
+    closer:{en:'“Good you came. Uncle got a lot in the head — nice to talk it out with someone who listens.”',zh:'「你来真好。伯伯心里装了很多——能跟愿意听的人聊聊，舒服。」'}
+  },
+
+  mei: {
+    em:'🧋', name:'Mei', nameZh:'小美',
+    sub:'Fast-growing app business. Too busy growing to think about admin.',
+    subZh:'快速成长的应用生意，忙到没空管行政。',
+    openers:[
+      {en:'Hi! Sorry I’m a few minutes late — our delivery app just blew up with orders, good problem! Grab a seat. So how are things on your side?',
+       zh:'嗨！抱歉迟到几分钟——我们的外送应用订单突然爆了，幸福的烦恼！坐吧。你那边最近怎样？'},
+      {en:'Okay quick coffee before my next call — we’re scaling like crazy right now. How have you been?',
+       zh:'好，赶在下一个会议前快快喝杯咖啡——我们现在扩张得飞快。你最近好吗？'}
+    ],
+    openerOpts:[
+      {t:{en:'“Orders blowing up — that’s exciting! Tell me how the growth’s been.”',zh:'「订单爆了——太棒了！跟我说说成长得怎样。」'}, q:'good',
+        r:{en:'“It’s wild, honestly.” She lights up and starts sharing.',zh:'「说真的，疯了一样。」她眼睛一亮，开始分享。'}},
+      {t:{en:'“Love this cafe’s bubble tea, ironically.”',zh:'「有点讽刺，我很爱这家的珍奶。」'}, q:'ok',
+        r:{en:'“Ha! Scouting the competition,” she jokes.',zh:'「哈！来侦查对手，」她开玩笑说。'}},
+      {t:{en:'“Perfect — here’s everything Muchen can sell you.”',zh:'「太好了——这是沐宸能卖你的所有东西。」'}, q:'poor',
+        r:{en:'“Whoa, straight to the pitch?” She raises an eyebrow.',zh:'「哇，直接开始推销？」她挑了挑眉。'}}
+    ],
+    signals:[
+      { svc:{en:'Compliance & filing — annual returns',zh:'合规与呈报——年度申报'},
+        line:{en:'We’ve been growing SO fast that, honestly? I’m not even sure our company filings are all up to date. It just hasn’t been the priority, you know?',
+              zh:'我们成长得太快了，老实说？我都不确定公司的申报是不是都跟上了。这一直不是重点，你懂的。'},
+        opts:[
+          {t:{en:'“Totally get it — do you know if your annual return and financial statements went in on time this year?”',zh:'「完全理解——你知道今年的年度申报和财务报表有没有准时呈交吗？」'}, q:'good',
+            r:{en:'“…I actually don’t know. That’s a little scary now that you ask.” Signal surfaced.',zh:'「……我其实不知道。你这么一问，还有点吓人。」信号浮现。'}},
+          {t:{en:'“Ya, when you’re growing that fast, admin always slips.”',zh:'「是啊，成长这么快，行政总会漏掉。」'}, q:'ok',
+            r:{en:'“Exactly,” she nods, and moves on to growth talk.',zh:'「就是说，」她点头，又聊回成长。'}},
+          {t:{en:'“You’re probably in breach — sign up with us today.”',zh:'「你大概已经违规了——今天就跟我们签约。」'}, q:'poor',
+            r:{en:'“Whoa. Hard sell much?” She cools noticeably.',zh:'「哇。这么硬销？」她明显冷了下来。'}}
+        ]},
+      { svc:{en:'PDPA compliance — data protection',zh:'PDPA 合规——数据保护'},
+        line:{en:'Our app collects a lot of customer data — names, addresses, phone numbers, order history. Super useful for marketing. Never really thought about rules around it, though.',
+              zh:'我们的应用收集很多客户数据——姓名、地址、电话、订单记录。做营销超好用。不过我从没认真想过相关的规矩。'},
+        opts:[
+          {t:{en:'“That’s a lot of personal data — have you looked at consent and how it’s stored under the PDPA yet?”',zh:'「那是很多个人数据——你有没有看过 PDPA 下的同意授权和数据存储要求？」'}, q:'good',
+            r:{en:'“PDPA… no. We just collect and use it. Should I be worried?” Right question, right time.',zh:'「PDPA……没有。我们就收集来用。我该担心吗？」对的问题，对的时机。'}},
+          {t:{en:'“Data really is gold these days.”',zh:'「数据现在真的是金矿。」'}, q:'ok',
+            r:{en:'“Right?!” she grins, and the thread drops.',zh:'「对吧？！」她一笑，线头就断了。'}},
+          {t:{en:'“You could be fined a million ringgit — engage us now!”',zh:'「你可能被罚一百万令吉——现在就聘请我们！」'}, q:'poor',
+            r:{en:'“Okay, that’s terrifying and also very salesy.” She pulls back.',zh:'「好吧，这既吓人又很推销。」她往后退了退。'}}
+        ]},
+      { svc:{en:'Advisory & structuring — dividends / director loans / tax',zh:'顾问与架构——股息／董事贷款／税务'},
+        line:{en:'Me and my co-founder just take money out of the company whenever we need it. Never set up anything formal — salary, dividends, whatever. It just works.',
+              zh:'我和联合创办人需要钱就从公司拿。从来没设定过任何正式的东西——薪水、股息、随便啦。反正行得通。'},
+        opts:[
+          {t:{en:'“How you take that out — salary vs dividends vs a loan — actually changes your tax. Has anyone structured that for you two?”',zh:'「你们怎么拿出来——薪水、股息还是贷款——其实会影响你们的税。有人帮你们两个规划过吗？」'}, q:'good',
+            r:{en:'“No one. We just transfer to ourselves. Huh — that could be costing us?” Nicely done.',zh:'「没有。我们就转给自己。咦——这样可能在让我们吃亏？」问得漂亮。'}},
+          {t:{en:'“As long as the business is doing well, right?”',zh:'「只要生意好就行，对吧？」'}, q:'ok',
+            r:{en:'“That’s what I figured!” she says, reassured — you let it pass.',zh:'「我也是这么想的！」她放下心来——你让它过去了。'}},
+          {t:{en:'“That’s tax evasion waiting to happen — retain us immediately!”',zh:'「这是等着发生的逃税——马上聘请我们！」'}, q:'poor',
+            r:{en:'“Wow. Okay. Cooling off now.” The rapport drops.',zh:'「哇。好吧。我现在冷静一下。」融洽的气氛降了下来。'}}
+        ]},
+    ],
+    closer:{en:'“This was honestly super useful — and you didn’t even try to sell me, which is exactly why I’ll actually call you.”',zh:'「这真的超有用——而且你根本没想着推销我，这正是我之后真的会打给你的原因。」'}
+  }
+};
+
+/* ---------- Game state & flow ---------- */
+var S=null, pendingName='';
+function newGame(name, key){
+  var p = PROSPECTS[key];
+  S = { name:name, key:key,
+        beats:[], idx:0, log:[],
+        results:[], rapport:false, hardSell:false, coldOpen:false };
+  var opener = { kind:'opener', line:L(p.openers[rint(p.openers.length)]), options:p.openerOpts };
+  var sigBeats = shuffle(p.signals).map(function(s){ return {kind:'signal', sig:s}; });
+  S.beats = [opener].concat(sigBeats);
+  pushLine(S.beats[0]);
+  render();
+}
+function pushLine(beat){ S.log.push({who:'them', text: beat.kind==='opener'?beat.line:L(beat.sig.line)}); }
+function cur(){ return S.beats[S.idx]; }
+function beatOpts(c){ return c.kind==='opener' ? c.options : c.sig.opts; }
+
+function render(){
+  VIEW = render;
+  var p = PROSPECTS[S.key];
+  var logHTML = S.log.map(function(m){
+    if(m.who==='coach') return '<div class="msg coach '+(m.cls||'')+'">'+m.text+'</div>';
+    return '<div class="msg '+m.who+'">'+m.text+'</div>';
+  }).join('');
+  var c = cur();
+  var choices = beatOpts(c).map(function(o,i){
+    return '<div class="choice" onclick="choose('+i+')">'+ ( (LANG==='zh'? o.t.zh : o.t.en) ) +'</div>';
+  }).join('');
+  app.innerHTML = '<div class="card">'
+    + '<div class="who"><div class="em">'+p.em+'</div>'
+    +   '<div><div class="n">'+nm(p)+'</div><div class="s">'+sb(p)+'</div></div>'
+    +   '<div style="margin-left:auto" class="prog">'+T('Turn ','第 ')+(S.idx+1)+' / '+S.beats.length+'</div></div>'
+    + '<div class="log">'+logHTML+'</div>'
+    + '<div class="choices">'+choices+'</div>'
+    + '</div>';
+  var log=app.querySelector('.log'); if(log) log.scrollTop=log.scrollHeight;
+  window.scrollTo(0,0);
+}
+
+function choose(i){
+  var c = cur(), o = beatOpts(c)[i];
+  S.log.push({who:'me', text: L(o.t)});
+  S.log.push({who:'them', text: L(o.r)});
+  // scoring + coaching
+  if(c.kind==='opener'){
+    if(o.q==='good') S.rapport=true;
+    else if(o.q==='poor'){ S.hardSell=true; S.coldOpen=true;
+      S.log.push({who:'coach', cls:'bad', text:T('⚠️ Opening with a pitch puts a prospect on guard. Warm up first — ask about them.','⚠️ 一开口就推销会让对方戒备。先暖场——先问问他们。')}); }
+  } else {
+    var sig=c.sig;
+    if(o.q==='good'){ S.results.push({svc:sig.svc, caught:true, sig:sig});
+      S.log.push({who:'coach', cls:'good', text:'✅ '+T('Signal spotted → ','捕捉到信号 → ')+L(sig.svc)}); }
+    else if(o.q==='ok'){ S.results.push({svc:sig.svc, caught:false, noticed:true, sig:sig}); }
+    else { S.results.push({svc:sig.svc, caught:false, noticed:false, sig:sig}); S.hardSell=true;
+      S.log.push({who:'coach', cls:'bad', text:'⚠️ '+T('You jumped to a hard sell — the seminar’s golden rule is: spot, ask, route — don’t pitch.','你太快硬销了——研讨会的黄金法则是：发现、提问、引导——别推销。')}); }
+  }
+  S.idx++;
+  if(S.idx < S.beats.length){ pushLine(cur()); render(); }
+  else finish();
+}
+
+/* ---------- Debrief + score ---------- */
+function scoreOf(){
+  var caught = S.results.filter(function(r){return r.caught;}).length;
+  var noticed = S.results.filter(function(r){return !r.caught && r.noticed;}).length;
+  var pts = caught*30 + noticed*5 + (S.rapport?5:0) + (S.hardSell?0:5);
+  return { caught:caught, noticed:noticed, pts:Math.max(0,Math.min(100,pts)) };
+}
+function finish(){
+  var p=PROSPECTS[S.key], sc=scoreOf();
+  S.log.push({who:'them', text:L(p.closer)});
+  var entry={ name:S.name, key:S.key, prospect:p.name, em:p.em, score:sc.pts, ts:Date.now() };
+  var board=loadBoard(); board.push(entry); board.sort(function(a,b){return b.score-a.score;}); saveBoard(board);
+  var rank=board.findIndex(function(e){return e.ts===entry.ts && e.name===entry.name;})+1;
+  var medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
+
+  function render2(){
+    var caughtList = S.results.filter(function(r){return r.caught;});
+    var missList  = S.results.filter(function(r){return !r.caught;});
+    var verdict = sc.pts>=90 ? T('Master prospector — spotted every signal without a single hard sell.','顶级挖掘高手——每个信号都捕捉到了，一次硬销都没有。')
+      : sc.pts>=70 ? T('Sharp. You read the room well and asked good questions.','敏锐。你很会看场合，也问了好问题。')
+      : sc.pts>=45 ? T('Warming up — you caught some signals, but a few slipped by.','渐入佳境——你捕捉到了一些信号，但也漏了几个。')
+      : T('Needs practice. Listen for the throwaway comment, then ask ONE good question.','需要多练。留意那些随口的话，然后问一个好问题。');
+
+    var caughtHTML = caughtList.length
+      ? '<ul>'+caughtList.map(function(r){return '<li>✅ <b>'+L(r.svc)+'</b></li>';}).join('')+'</ul>'
+      : '<p class="lead" style="font-size:13px">'+T('None this time — the signals were there, waiting for the right question.','这次一个都没有——信号就在那里，等着对的问题。')+'</p>';
+    var missHTML = missList.length
+      ? '<ul>'+missList.map(function(r){
+          var good=null; r.sig.opts.forEach(function(o){ if(o.q==='good') good=o; });
+          return '<li>🕳️ <b>'+L(r.svc)+'</b><br><span style="color:var(--mute);font-size:12.5px">'+T('Could have asked: ','本可以问：')+'“'+L(good.t)+'”</span></li>';
+        }).join('')+'</ul>'
+      : '<p class="lead" style="font-size:13px">'+T('Nothing missed — beautiful work!','一个都没漏——漂亮！')+'</p>';
+
+    var logHTML = S.log.map(function(m){
+      if(m.who==='coach') return '<div class="msg coach '+(m.cls||'')+'">'+m.text+'</div>';
+      return '<div class="msg '+m.who+'">'+m.text+'</div>';
+    }).join('');
+
+    app.innerHTML = '<div class="card">'
+      + '<div class="finalscore">'+(medal?'<div class="medal">'+medal+'</div>':'<div class="medal">☕</div>')
+      +   '<div style="color:var(--mute);font-size:13px;letter-spacing:1px;text-transform:uppercase">'+T(nm(p)+' · your prospecting score',nm(p)+' · 你的挖掘评分')+'</div>'
+      +   '<div class="big">'+sc.pts+' / 100</div>'
+      +   '<div class="verdict">'+verdict+' &nbsp;·&nbsp; '+T('Rank #'+rank+' of '+board.length,'第 '+rank+' 名，共 '+board.length+' 人')+'</div></div>'
+      + '<div class="debrief"><h4>☕ '+T('Signals you caught','你捕捉到的信号')+' ('+sc.caught+'/3)</h4><div class="catch">'+caughtHTML+'</div>'
+      +   '<h4 style="margin-top:12px">🕳️ '+T('Signals you missed','你错过的信号')+'</h4><div class="miss">'+missHTML+'</div>'
+      +   '<div class="ideal" style="margin-top:12px;padding-top:10px;border-top:1px dashed #bfe0cc">'
+      +     (S.hardSell ? ('⚠️ '+T('You slipped into a hard sell. The seminar’s point: prospects buy protection from consequences they can’t see — spot the signal, ask one diagnostic question, and route the lead. Don’t pitch.','你陷入了硬销。研讨会的重点：客户买的是「看不见的后果」的保障——发现信号、问一个诊断性问题、把线索引导好。别推销。'))
+      :                    ('🎯 '+T('You never hard-sold — exactly right. Spot the signal, ask one good question, route the lead.','你全程没硬销——完全正确。发现信号、问一个好问题、把线索引导好。')) )+'</div></div>'
+      + '<div class="method"><b>'+T('The method','这套方法')+':</b> '+T('Signal → Service → Question. Every throwaway comment (“a friend set up my company…”, “I just take money out when I need it…”) is a signal that maps to a Muchen service. Your job is to hear it and ask ONE sharp question — not to sell.','信号 → 服务 → 提问。每一句随口的话（「朋友帮我注册了公司……」「我需要钱就拿……」）都是对应某项沐宸服务的信号。你的任务是听出来、问一个犀利的问题——而不是推销。')+'</div>'
+      + '<details style="margin-top:12px"><summary style="cursor:pointer;color:var(--navy);font-weight:700;font-size:13.5px">'+T('Replay the conversation','回看对话')+'</summary><div class="log" style="margin-top:8px">'+logHTML+'</div></details>'
+      + '<h4 style="margin:20px 0 0;color:var(--navy);font-family:Cambria,Georgia,serif">🏆 '+T('Leaderboard','排行榜')+'</h4>'
+      + boardTable(board, entry.ts)
+      + '<div class="nav"><button class="btn ghost" onclick="home()">'+T('Another prospect →','换一位对象 →')+'</button><button class="btn gold" onclick="startWith(\''+S.key+'\',true)">'+T('Retry this one →','重试这位 →')+'</button></div>'
+      + '</div>';
+    window.scrollTo(0,0);
+  }
+  VIEW = render2; render2();
+}
+
+/* ---------- Leaderboard (local) ---------- */
+function loadBoard(){ try{return JSON.parse(localStorage.getItem('kopitalk_leaderboard')||'[]');}catch(e){return [];} }
+function saveBoard(b){ try{localStorage.setItem('kopitalk_leaderboard', JSON.stringify(b.slice(0,50)));}catch(e){} }
+function boardTable(board, myTs){
+  var rows=board.slice(0,10).map(function(e,i){
+    var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    var pr = LANG==='zh' && PROSPECTS[e.key] ? PROSPECTS[e.key].nameZh : (e.prospect||'');
+    return '<tr class="'+(e.ts===myTs?'me':'')+'"><td>'+medal+'</td><td>'+e.name+'</td><td>'+(e.em||'')+' '+pr+'</td><td class="sc">'+e.score+'</td></tr>';
+  }).join('');
+  return '<div class="lbwrap"><table class="lb"><tr><th>#</th><th>'+T('Player','玩家')+'</th><th>'+T('Prospect','对象')+'</th><th style="text-align:right">'+T('Score','分数')+'</th></tr>'+rows+'</table></div>';
+}
+function showBoard(){
+  VIEW=showBoard;
+  var board=loadBoard();
+  app.innerHTML='<div class="card"><h2 class="scene-title">🏆 '+T('Leaderboard','排行榜')+'</h2>'
+    + (board.length? boardTable(board,-1) : '<p class="lead">'+T('No games played yet. Be the first to spot a prospect.','还没有人玩过。成为第一个发现潜在客户的人。')+'</p>')
+    + '<div class="nav"><span></span><button class="btn gold" onclick="home()">'+T('← Back','← 返回')+'</button></div></div>';
+  window.scrollTo(0,0);
+}
+
+/* ---------- Home + setup ---------- */
 function home(){
-  S = null;
-  var cards = Object.keys(PERSONAS).map(function(k){
-    var p = PERSONAS[k];
-    return '<div class="pick" onclick="start(\''+k+'\')"><div class="em">'+p.em+'</div>'
+  VIEW=home; S=null;
+  app.innerHTML='<div class="card">'
+    + '<h2 class="scene-title">☕ '+T('Sit down for a kopi','坐下来喝杯咖啡')+'</h2>'
+    + '<p class="lead">'+T('At the seminar you learned to <b>spot prospects by listening</b> — a throwaway comment is a <b>signal</b> that maps to a Muchen service. Here, you chat with a business owner over coffee. Read the signals, ask <b>one</b> good diagnostic question, and route the lead — <b>without hard-selling</b>.','在研讨会上你学会了<b>靠倾听发现潜在客户</b>——一句随口的话就是对应某项沐宸服务的<b>信号</b>。在这里，你和一位生意人喝咖啡聊天。读出信号、问<b>一个</b>好的诊断性问题、把线索引导好——<b>但别硬销</b>。')+'</p>'
+    + '<p class="lead" style="margin-top:10px">'+T('Every prospect and the order of their signals are randomised, so no two coffees are the same.','每位对象和信号出现的顺序都是随机的，所以没有两杯咖啡是一样的。')+'</p>'
+    + '<div class="nav"><button class="btn ghost" onclick="showBoard()">🏆 '+T('Leaderboard','排行榜')+'</button><button class="btn gold" onclick="enterName()">'+T('Order a coffee →','点杯咖啡 →')+'</button></div>'
+    + '</div>';
+  window.scrollTo(0,0);
+}
+function enterName(){
+  VIEW=enterName;
+  app.innerHTML='<div class="card"><h2 class="scene-title">'+T('Before we sit down…','坐下之前……')+'</h2>'
+    + '<p class="lead">'+T('What’s your name? (This is how you’ll appear on the leaderboard.)','你叫什么名字？（这将是你在排行榜上的名字。）')+'</p>'
+    + '<input class="name" id="nm" maxlength="22" placeholder="'+T('e.g. Aisha, Team Blue, Desk 3','例如：Aisha、蓝队、3 号桌')+'" />'
+    + '<div class="nav"><button class="btn ghost" onclick="home()">'+T('← Back','← 返回')+'</button><button class="btn primary" onclick="choosePro()">'+T('Next →','下一步 →')+'</button></div></div>';
+  var el=document.getElementById('nm'); if(pendingName) el.value=pendingName; el.focus();
+  el.addEventListener('keydown',function(e){ if(e.key==='Enter') choosePro(); });
+}
+function choosePro(){
+  var v=(document.getElementById('nm')?document.getElementById('nm').value:'').trim();
+  if(document.getElementById('nm')){ if(!v){document.getElementById('nm').focus();return;} pendingName=v; }
+  VIEW=choosePro;
+  var cards=Object.keys(PROSPECTS).map(function(k){var p=PROSPECTS[k];
+    return '<div class="pick" onclick="startWith(\''+k+'\')"><div class="em">'+p.em+'</div>'
       + '<div><h3>'+nm(p)+'</h3><div class="sub">'+sb(p)+'</div></div></div>';
   }).join('');
-  app.innerHTML = '<div class="card">'
-    + '<h2 class="scene-title">'+T('Grab a coffee. Find a prospect.','喝杯咖啡，发现潜在客户。')+'</h2>'
-    + '<p class="lead">'+T('You bump into a business owner at the kopitiam and get chatting. Somewhere in the small talk, they’ll drop a <b>signal</b> — a stray line that hints at a problem Muchen can solve. Your job: <b>listen, spot the signal, and ask one good question</b>. You don’t need to close anything.','你在茶室遇到一位生意人，随意聊了起来。闲聊之间，他们会不经意透露一个<b>信号</b> —— 一句暗示着沐宸能帮上忙的问题的话。你的任务：<b>倾听、抓住信号、问一个好问题</b>。不需要成交任何东西。')+'</p>'
-    + '<p class="lead" style="margin-top:8px">'+T('Chat naturally, then tap <b>“Wrap up & get feedback”</b> and an AI coach will score how many signals you caught.','自然地聊天，然后点<b>“结束并获取反馈”</b>，AI 教练会评估你抓到了几个信号。')+'</p>'
+  app.innerHTML='<div class="card"><h2 class="scene-title">'+T('Who do you sit with?','你要和谁坐？')+'</h2>'
+    + '<p class="lead">'+T('Pick a prospect — or take pot luck. Each carries three hidden signals.','选一位对象——或碰碰运气。每位都藏着三个信号。')+'</p>'
     + '<div class="grid">'+cards+'</div>'
-    + '<div class="nav"><span></span><button class="btn primary" onclick="start(rand())">'+T('🎲 Surprise me →','🎲 随机来一个 →')+'</button></div>'
-    + '</div>';
+    + '<div class="nav"><button class="btn ghost" onclick="enterName()">'+T('← Back','← 返回')+'</button><button class="btn gold" onclick="startWith(\'random\')">🎲 '+T('Random table','随机一桌')+'</button></div></div>';
   window.scrollTo(0,0);
 }
-function rand(){ var k = Object.keys(PERSONAS); return k[Math.floor(Math.random()*k.length)]; }
-
-function start(key){
-  S = { key:key, history:[], busy:true, debrief:null };
-  renderChat();
-  send(null, true); // fetch opening line
-}
-
-function renderChat(){
-  var p = PERSONAS[S.key];
-  var log = S.history.map(function(m){
-    return '<div class="msg '+(m.role==='assistant'?'them':(m.role==='err'?'err':'me'))+'">'+esc(m.content)+'</div>';
-  }).join('');
-  if(S.busy) log += '<div class="typing"><i></i><i></i><i></i></div>';
-  app.innerHTML = '<div class="card">'
-    + '<div class="who"><div class="em">'+p.em+'</div><div><div class="n">'+nm(p)+'</div><div class="s">'+sb(p)+'</div></div></div>'
-    + '<div class="log" id="log">'+log+'</div>'
-    + '<div class="composer">'
-    +   '<textarea class="inp" id="inp" rows="1" placeholder="'+T('Say something…','说点什么…')+'" '+(S.busy?'disabled':'')+'></textarea>'
-    +   '<button class="send" id="sendb" onclick="onSend()" '+(S.busy?'disabled':'')+'>➤</button>'
-    + '</div>'
-    + '<div class="hint">'+T('💬 Chat like it’s real. When you’re ready, wrap up for your score.','💬 就当是真的在聊天。准备好了就结束，看你的得分。')+'</div>'
-    + '<div class="nav"><button class="btn ghost" onclick="home()">'+T('← Leave','← 离开')+'</button>'
-    +   '<button class="btn gold" id="wrapb" onclick="wrapUp()" '+(S.busy||S.history.length<2?'disabled':'')+'>'+T('☕ Wrap up & get feedback','☕ 结束并获取反馈')+'</button></div>'
-    + '</div>';
-  var inp = document.getElementById('inp');
-  if(inp){
-    autosize(inp); inp.focus();
-    inp.addEventListener('input', function(){ autosize(inp); });
-    inp.addEventListener('keydown', function(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); onSend(); } });
-  }
-  scrollLog();
-}
-function autosize(t){ t.style.height='auto'; t.style.height=Math.min(120,t.max||t.scrollHeight)+'px'; t.style.height=Math.min(120,t.scrollHeight)+'px'; }
-function scrollLog(){ var l=document.getElementById('log'); if(l) l.scrollTop=l.scrollHeight; }
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-function onSend(){
-  var inp = document.getElementById('inp'); if(!inp) return;
-  var v = inp.value.trim(); if(!v) return;
-  inp.value=''; send(v);
-}
-
-function send(text, opening){
-  if(text){ S.history.push({role:'user', content:text}); }
-  S.busy = true; renderChat();
-  var msgs = opening ? [{role:'user', content:KICKOFF}] : S.history.slice();
-  api({ persona:S.key, messages:msgs, mode:'chat', lang:LANG }).then(function(reply){
-    S.history.push({role:'assistant', content:reply}); S.busy=false; renderChat();
-  }).catch(function(e){ handleErr(e); });
-}
-
-function wrapUp(){
-  S.busy = true; renderChat();
-  api({ persona:S.key, messages:S.history.slice(), mode:'debrief', lang:LANG }).then(function(reply){
-    S.busy = false; S.debrief = reply; renderDebrief(reply);
-  }).catch(function(e){ handleErr(e); });
-}
-
-function renderDebrief(text){
-  var p = PERSONAS[S.key];
-  app.innerHTML = '<div class="card">'
-    + '<div class="who"><div class="em">'+p.em+'</div><div><div class="n">'+T('Coffee with '+p.name+' — your debrief','与'+nm(p)+'的咖啡时光 —— 你的反馈')+'</div><div class="s">'+T('How well did you spot the signals?','你抓信号抓得怎么样？')+'</div></div></div>'
-    + '<div class="debrief">'+fmt(text)+'</div>'
-    + '<div class="method">'+T('<b>The method:</b> Catch the <b>signal</b> → name the <b>service</b> → ask <b>one question</b>. You don’t close the sale — you spot the opening and route the lead.','<b>方法：</b>抓住<b>信号</b> → 说出对应<b>服务</b> → 问<b>一个问题</b>。你不需要成交 —— 发现机会，把线索转介出去就好。')+'</div>'
-    + '<div class="nav"><button class="btn ghost" onclick="start(\''+S.key+'\')">'+T('↺ Retry '+p.name,'↺ 再试一次 '+nm(p))+'</button>'
-    +   '<button class="btn gold" onclick="home()">'+T('Another prospect →','换一位客户 →')+'</button></div>'
-    + '</div>';
-  window.scrollTo(0,0);
-}
-function fmt(t){
-  return esc(t)
-    .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')
-    .replace(/^\s*[-•]\s?(.*)$/gm,'&nbsp;&nbsp;• $1')
-    .replace(/\n/g,'<br>');
-}
-
-function api(body){
-  return fetch('/api/coffee',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)})
-    .then(function(r){ return r.json().then(function(j){ return {ok:r.ok, j:j}; }); })
-    .then(function(res){
-      if(!res.ok || (res.j && res.j.error)){
-        var err = new Error((res.j && (res.j.error)) || 'error');
-        err.code = res.j && res.j.error; err.detail = res.j && res.j.detail;
-        throw err;
-      }
-      return res.j.reply;
-    });
-}
-
-function handleErr(e){
-  S.busy = false;
-  if(e && e.code === 'ai_not_configured'){ renderSetup(); return; }
-  S.history.push({role:'err', content:T('⚠️ Hiccup reaching the AI','⚠️ 连接 AI 时出了点问题')+(e && e.detail?': '+e.detail:'')+T('. Try again.','。请再试一次。')});
-  renderChat();
-}
-
-function renderSetup(){
-  app.innerHTML = '<div class="card"><h2 class="scene-title">☕ Almost ready — switch on the AI</h2>'
-    + '<p class="lead">This game talks to Claude to role-play the prospect. It just needs an Anthropic API key wired into Vercel (one-time):</p>'
-    + '<div class="setup" style="margin-top:12px">'
-    +   '1. Get a key at <b>console.anthropic.com</b> → API Keys.<br>'
-    +   '2. In <b>Vercel → your project → Settings → Environment Variables</b>, add <code>ANTHROPIC_API_KEY</code> = your key (all environments).<br>'
-    +   '3. <b>Redeploy</b> (Deployments → ⋯ → Redeploy).'
-    + '</div>'
-    + '<p class="lead" style="margin-top:12px;font-size:13px"><b>No API key?</b> Run it on one laptop with your Claude subscription instead: <code>node local-server.js</code> in the project folder, then open <code>localhost:8787/coffee-talk</code> (needs the <code>claude</code> CLI logged in). Great for a projected screen.</p>'
-    + '<p class="lead" style="margin-top:8px;font-size:13px">Tip: for many phones on the hosted version, set <code>MODEL</code> in <code>api/coffee.js</code> to <code>claude-haiku-4-5</code> — faster and cheaper.</p>'
-    + '<div class="nav"><span></span><button class="btn gold" onclick="home()">← Back</button></div></div>';
-  window.scrollTo(0,0);
+function startWith(key, retry){
+  if(key==='random'){ var ks=Object.keys(PROSPECTS); key=ks[rint(ks.length)]; }
+  newGame(pendingName || (retry? (S&&S.name):'') || T('You','你'), key);
 }
 
 paintLang();

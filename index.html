@@ -174,24 +174,29 @@
     box-shadow:0 5px 16px rgba(6,40,24,.3);transition:.15s}
   .bgm-btn:active{transform:scale(.92)} .bgm-btn.off{opacity:.55}
   @media(max-width:560px){.bgm-btn{right:10px;bottom:10px;width:40px;height:40px;font-size:17px}}
+  .lang-btn{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.38);border-radius:999px;
+    padding:6px 15px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;align-self:center;white-space:nowrap}
+  .lang-btn:active{transform:scale(.96)}
+  @media(max-width:560px){.lang-btn{padding:5px 12px;font-size:12px}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <div class="kick">MUCHEN CORPORATE SERVICES · BUSINESS SURVIVAL GAME</div>
+      <div class="kick" id="kick">MUCHEN CORPORATE SERVICES · BUSINESS SURVIVAL GAME</div>
       <h1>RM<span>500</span> Startup</h1>
     </div>
     <div class="hud" id="hud" style="display:none">
-      <div class="round" id="roundBox">Round<b id="roundN">1</b></div>
-      <div class="money"><div class="n" id="moneyN">RM500</div><div class="l">On hand</div></div>
+      <div class="round" id="roundBox"><span id="roundLbl">Round</span><b id="roundN">1</b></div>
+      <div class="money"><div class="n" id="moneyN">RM500</div><div class="l" id="onHandLbl">On hand</div></div>
     </div>
+    <button id="langBtn" class="lang-btn" onclick="toggleLang()" aria-label="Language / 语言">中文</button>
   </header>
 
   <div id="app"></div>
 
-  <div class="foot">
+  <div class="foot" id="foot">
     A training simulation — not financial or legal advice. Structure effects are simplified from the entity
     comparison in <b>“Business Essentials — What Directors Need to Know.”</b><br>
     Scores post to a shared live leaderboard. Verify real-world specifics against current SSM / Companies Act 2016 rules.<br>
@@ -203,37 +208,61 @@
 /* ===================== ENGINE START (pure logic, no DOM) ===================== */
 var RNG = Math.random;
 
+/* ---- bilingual helpers (EN / 简体中文) ---- */
+var LANG = (function(){
+  try{ var q=new URLSearchParams(location.search).get('lang'); if(q==='zh'||q==='en'){ try{localStorage.setItem('muchen_lang',q);}catch(e){} return q; } }catch(e){}
+  try{ return localStorage.getItem('muchen_lang')==='zh'?'zh':'en'; }catch(e){ return 'en'; }
+})();
+function T(en,zh){ return LANG==='zh'?zh:en; }
+function SN(st){ return LANG==='zh'?st.nameZh:st.name; }   // localized structure name
+function IN(I){ return LANG==='zh'?I.nameZh:I.name; }      // localized idea name
+
 var STRUCTURES = {
-  sole:        { key:"sole", em:"🧍", name:"Sole Proprietorship", setup:30,  limited:false, equity:false, cred:1, compliance:20,
+  sole:        { key:"sole", em:"🧍", name:"Sole Proprietorship", nameZh:"独资经营", setup:30,  limited:false, equity:false, cred:1, compliance:20,
                  needsPartners:false, agreementFee:0, partnerOpts:[0],
                  sub:"You + business are one. Cheapest, simplest — and the only structure your RM500 can start solo. But nothing separates your money from the firm's.",
-                 stats:["Setup RM30","Solo — RM500 covers it","Unlimited liability","No shares"] },
-  partnership: { key:"partnership", em:"🤝", name:"Conventional Partnership", setup:60, limited:false, equity:false, cred:1, compliance:40,
+                 subZh:"你和生意是一体的。最便宜、最简单——也是你 RM500 能独自开办的唯一结构。但你的钱和生意的钱毫无分隔。",
+                 stats:["Setup RM30","Solo — RM500 covers it","Unlimited liability","No shares"],
+                 statsZh:["注册约 RM30","独资——RM500 够用","无限责任","不能发股份"] },
+  partnership: { key:"partnership", em:"🤝", name:"Conventional Partnership", nameZh:"传统合伙", setup:60, limited:false, equity:false, cred:1, compliance:40,
                  needsPartners:true, agreementFee:300, partnerOpts:[1,2],
                  sub:"Two or more owners pool money. Cheap and simple — but every partner is personally liable for the others' mistakes.",
-                 stats:["Setup RM60","Needs co-founders","Joint & several liability","No shares"] },
-  llp:         { key:"llp", em:"🛡️", name:"LLP", setup:150, limited:true, equity:false, cred:2, compliance:400,
+                 subZh:"两个或以上的合伙人凑钱。便宜又简单——但每位合伙人都要为其他人的过失承担个人责任。",
+                 stats:["Setup RM60","Needs co-founders","Joint & several liability","No shares"],
+                 statsZh:["注册约 RM60","需要合伙人","连带责任","不能发股份"] },
+  llp:         { key:"llp", em:"🛡️", name:"LLP", nameZh:"有限责任合伙 (LLP)", setup:150, limited:true, equity:false, cred:2, compliance:400,
                  needsPartners:true, agreementFee:350, partnerOpts:[1,2],
                  sub:"Limited liability with lighter compliance than a company. By law it needs 2+ partners — so you'll pool capital with co-founders.",
-                 stats:["Setup RM150","Needs 2+ partners","Limited liability","No shares"] },
-  sdnbhd:      { key:"sdnbhd", em:"🏢", name:"Sdn Bhd", setup:1010, limited:true, equity:true, cred:3, compliance:800,
+                 subZh:"有限责任，合规负担比公司轻。法律规定至少要 2 名合伙人——所以你得和联合创办人一起凑资本。",
+                 stats:["Setup RM150","Needs 2+ partners","Limited liability","No shares"],
+                 statsZh:["注册约 RM150","需要 2+ 合伙人","有限责任","不能发股份"] },
+  sdnbhd:      { key:"sdnbhd", em:"🏢", name:"Sdn Bhd", nameZh:"私人有限公司 (Sdn Bhd)", setup:1010, limited:true, equity:true, cred:3, compliance:800,
                  needsPartners:true, agreementFee:400, partnerOpts:[2,3],
                  sub:"A real company: limited liability, can issue shares, credible to banks & big clients. Setup alone is RM1,010 — far beyond your RM500, so you MUST bring co-investors.",
-                 stats:["Setup RM1,010","Can't afford solo","Can raise equity","Compliance heavy"] },
+                 subZh:"真正的公司：有限责任、可发行股份、对银行和大客户有公信力。光注册就要 RM1,010——远超你的 RM500，所以你必须找联合投资人。",
+                 stats:["Setup RM1,010","Can't afford solo","Can raise equity","Compliance heavy"],
+                 statsZh:["注册 RM1,010","独资负担不起","可以募股","合规负担重"] },
 };
 
 var IDEAS = {
-  nasi:    { key:"nasi", em:"🍛", name:"Nasi Lemak Stall", risk:"high", growth:"low",
-             blurb:"Everyone loves your sambal. Steady cash — but food means real safety and liability risk." },
-  thrift:  { key:"thrift", em:"🛍️", name:"Online Thrift Store", risk:"low", growth:"high",
-             blurb:"Low risk, endlessly scalable. To go big you'll need platform deals and capital." },
-  repair:  { key:"repair", em:"🔧", name:"Phone Repair Kiosk", risk:"high", growth:"low",
-             blurb:"Good margins fixing screens — but one fried motherboard and an angry customer can sink you." },
-  design:  { key:"design", em:"🎨", name:"Freelance Design Studio", risk:"low", growth:"high",
-             blurb:"Low overhead, high ceiling. The best clients are corporates who only hire registered vendors." },
-  tuition: { key:"tuition", em:"📚", name:"Tuition Service", risk:"low", growth:"low",
-             blurb:"Reliable, low-risk, community-based. Small and steady — not built to scale." },
+  nasi:    { key:"nasi", em:"🍛", name:"Nasi Lemak Stall", nameZh:"椰浆饭档", risk:"high", growth:"low",
+             blurb:"Everyone loves your sambal. Steady cash — but food means real safety and liability risk.",
+             blurbZh:"人人都爱你的参峇。现金流稳定——但做吃的意味着真实的安全和责任风险。" },
+  thrift:  { key:"thrift", em:"🛍️", name:"Online Thrift Store", nameZh:"网上二手店", risk:"low", growth:"high",
+             blurb:"Low risk, endlessly scalable. To go big you'll need platform deals and capital.",
+             blurbZh:"风险低、可无限扩张。要做大，你需要平台合作和资本。" },
+  repair:  { key:"repair", em:"🔧", name:"Phone Repair Kiosk", nameZh:"手机维修摊", risk:"high", growth:"low",
+             blurb:"Good margins fixing screens — but one fried motherboard and an angry customer can sink you.",
+             blurbZh:"修屏幕利润不错——但一块烧坏的主板加一个愤怒的顾客就能拖垮你。" },
+  design:  { key:"design", em:"🎨", name:"Freelance Design Studio", nameZh:"自由设计工作室", risk:"low", growth:"high",
+             blurb:"Low overhead, high ceiling. The best clients are corporates who only hire registered vendors.",
+             blurbZh:"开销低、上限高。最好的客户是只用注册供应商的企业。" },
+  tuition: { key:"tuition", em:"📚", name:"Tuition Service", nameZh:"补习服务", risk:"low", growth:"low",
+             blurb:"Reliable, low-risk, community-based. Small and steady — not built to scale.",
+             blurbZh:"可靠、低风险、扎根社区。小而稳——但天生不适合扩张。" },
 };
+function riskZh(r){ return LANG==='zh' ? (r==='high'?'高':'低') : r; }
+function growthZh(g){ return LANG==='zh' ? (g==='high'?'高':'低') : g; }
 
 function newState(name, structKey, ideaKey, numPartners, hasAgreement){
   var st = STRUCTURES[structKey];
@@ -278,66 +307,66 @@ var STAGES = [
   /* R1 — LAUNCH */
   { id:"launch",
     render:function(s){ var I=IDEAS[s.ideaKey];
-      return { title:"Opening Month",
-        flavor:"Your "+I.name.toLowerCase()+" is finally open. The first month sets your reputation. How hard do you push?",
+      return { title:T("Opening Month","开业首月"),
+        flavor:T("Your "+I.name.toLowerCase()+" is finally open. The first month sets your reputation. How hard do you push?","你的"+IN(I)+"终于开张了。第一个月决定你的口碑。你要多拼？"),
         options:[
-          {t:"Play it steady",h:"Serve who comes. Low risk, modest takings."},
-          {t:"Spend RM150 on marketing",h:"Go loud. Big upside if it lands — wasted cash if it flops."}
+          {t:T("Play it steady","稳扎稳打"),h:T("Serve who comes. Low risk, modest takings.","来多少做多少。风险低，收入平平。")},
+          {t:T("Spend RM150 on marketing","花 RM150 做宣传"),h:T("Go loud. Big upside if it lands — wasted cash if it flops.","大声张扬。成功回报大——失败就白花钱。")}
         ]};},
     resolve:function(s,idx){
       if(idx===1){
-        if(s.money<150){ return {tone:"flat", html:"You reach for RM150 to advertise — but you don't have it after incorporation costs. You scrape by on word of mouth instead. <b>+RM120</b>.", set:function(){s.money+=120;s.bizValue+=60;}, lesson:"A heavier structure left you thin on working capital. Cash runway matters as much as protection."}; }
+        if(s.money<150){ return {tone:"flat", html:T("You reach for RM150 to advertise — but you don't have it after incorporation costs. You scrape by on word of mouth instead. <b>+RM120</b>.","你想拿 RM150 打广告——但注册开销后根本掏不出。只能靠口碑撑着。<b>+RM120</b>。"), set:function(){s.money+=120;s.bizValue+=60;}, lesson:T("A heavier structure left you thin on working capital. Cash runway matters as much as protection.","太重的结构让你的营运资金捉襟见肘。现金续航和保护一样重要。")}; }
         s.money-=150;
-        if(RNG()>0.4){ return {tone:"up", html:"The posts blow up — queues out the door. Marketing paid off. Net <b>+RM350</b> after the RM150 spend.", set:function(){s.money+=500;s.bizValue+=180;}, lesson:"Bold bets can pay — but only because you could afford to lose the RM150."}; }
-        return {tone:"down", html:"The campaign fizzles. You spent RM150 and made only RM120 back. Net <b>−RM30</b>.", set:function(){s.money+=120;s.bizValue+=40;}, lesson:"Marketing is a gamble; without a cash buffer a flop hurts."};
+        if(RNG()>0.4){ return {tone:"up", html:T("The posts blow up — queues out the door. Marketing paid off. Net <b>+RM350</b> after the RM150 spend.","帖子爆红——门口排长龙。宣传见效。扣掉 RM150 后净赚 <b>+RM350</b>。"), set:function(){s.money+=500;s.bizValue+=180;}, lesson:T("Bold bets can pay — but only because you could afford to lose the RM150.","大胆下注能赢——但前提是你输得起那 RM150。")}; }
+        return {tone:"down", html:T("The campaign fizzles. You spent RM150 and made only RM120 back. Net <b>−RM30</b>.","宣传石沉大海。花了 RM150 只赚回 RM120。净亏 <b>−RM30</b>。"), set:function(){s.money+=120;s.bizValue+=40;}, lesson:T("Marketing is a gamble; without a cash buffer a flop hurts.","宣传是一场赌博；没有现金缓冲，失手就很痛。")};
       }
-      return {tone:"up", html:"A calm, solid start. Regulars begin to form. <b>+RM200</b>.", set:function(){s.money+=200;s.bizValue+=120;}, lesson:"Steady footing keeps your options open."};
+      return {tone:"up", html:T("A calm, solid start. Regulars begin to form. <b>+RM200</b>.","平稳扎实的开局。开始有熟客了。<b>+RM200</b>。"), set:function(){s.money+=200;s.bizValue+=120;}, lesson:T("Steady footing keeps your options open.","站稳脚步，才有更多选择。")};
     }},
 
   /* R2 — THE BIG CLIENT (credibility + growth gated) */
   { id:"bigclient",
     render:function(s){
-      return { title:"The Big Client",
-        flavor:"A larger buyer — a corporate office / online marketplace — wants a regular vendor. They ask who they'd be contracting with.",
+      return { title:T("The Big Client","大客户"),
+        flavor:T("A larger buyer — a corporate office / online marketplace — wants a regular vendor. They ask who they'd be contracting with.","一个更大的买家——企业办公室／网络平台——想找长期供应商。他们问：合同要跟谁签？"),
         options:[
-          {t:"Pitch hard to win the contract",h:"Chase the bigger money."},
-          {t:"Skip it — focus on everyday customers",h:"Stay in your lane."}
+          {t:T("Pitch hard to win the contract","全力争取这份合同"),h:T("Chase the bigger money.","追更大的钱。")},
+          {t:T("Skip it — focus on everyday customers","放弃——专注日常客户"),h:T("Stay in your lane.","守好本分。")}
         ]};},
     resolve:function(s,idx){
       var st=STRUCTURES[s.structKey], I=IDEAS[s.ideaKey];
       if(idx===0){
-        if(st.cred>=2 && I.growth==="high"){ return {tone:"up", html:"You present as a registered "+st.name+". They sign a supply contract on the spot. <b>+RM1,400</b> in value.", set:function(){s.money+=700;s.bizValue+=700;s.flags.bigClient=true;}, lesson:"Being a proper registered entity <b>unlocked</b> a client a sole trader couldn't reach."}; }
-        if(I.growth==="high"){ s.money-=100; return {tone:"down", html:"They ask for your company registration and liability cover. As a "+st.name.toLowerCase()+" you can't give them the assurance they need — they sign a competitor. You're out RM100 in pitch costs.", set:function(){s.flags.missedBigClient=true;}, lesson:"For a growth business, the <b>wrong (too-simple) structure cost you the deal.</b>"}; }
-        return {tone:"flat", html:"Turns out they wanted bulk volume you can't supply. You pick up a small one-off instead. <b>+RM150</b>.", set:function(){s.money+=150;s.bizValue+=60;}, lesson:"Not every business needs big contracts — a small, local operation shouldn't over-build its structure to chase them."};
+        if(st.cred>=2 && I.growth==="high"){ return {tone:"up", html:T("You present as a registered "+st.name+". They sign a supply contract on the spot. <b>+RM1,400</b> in value.","你以注册的"+SN(st)+"身份出现。他们当场签下供货合同。价值 <b>+RM1,400</b>。"), set:function(){s.money+=700;s.bizValue+=700;s.flags.bigClient=true;}, lesson:T("Being a proper registered entity <b>unlocked</b> a client a sole trader couldn't reach.","正规注册的身份<b>打开</b>了独资户接触不到的客户。")}; }
+        if(I.growth==="high"){ s.money-=100; return {tone:"down", html:T("They ask for your company registration and liability cover. As a "+st.name.toLowerCase()+" you can't give them the assurance they need — they sign a competitor. You're out RM100 in pitch costs.","他们要看公司注册和责任保险。身为"+SN(st)+"，你给不了对方要的保障——他们签了竞争对手。你还赔上 RM100 的提案成本。"), set:function(){s.flags.missedBigClient=true;}, lesson:T("For a growth business, the <b>wrong (too-simple) structure cost you the deal.</b>","对成长型生意，<b>错的（太简单的）结构让你丢了这笔生意。</b>")}; }
+        return {tone:"flat", html:T("Turns out they wanted bulk volume you can't supply. You pick up a small one-off instead. <b>+RM150</b>.","结果他们要的量你供不了。你只接了个小单。<b>+RM150</b>。"), set:function(){s.money+=150;s.bizValue+=60;}, lesson:T("Not every business needs big contracts — a small, local operation shouldn't over-build its structure to chase them.","不是每门生意都需要大合同——小本地生意不该为了追它们而过度搭结构。")};
       }
       var g = I.growth==="high" ? 80 : 220;
-      return {tone: I.growth==="high"?"flat":"up", html:"You double down on everyday customers. <b>+RM"+g+"</b>.", set:function(){s.money+=g;s.bizValue+= (I.growth==='high'?40:150);}, lesson: I.growth==="high" ? "Focus is fine — but a scalable business leaves money on the table without reach." : "For a steady local business, loyal regulars beat chasing whales."};
+      return {tone: I.growth==="high"?"flat":"up", html:T("You double down on everyday customers. <b>+RM"+g+"</b>.","你加倍经营日常客户。<b>+RM"+g+"</b>。"), set:function(){s.money+=g;s.bizValue+= (I.growth==='high'?40:150);}, lesson: I.growth==="high" ? T("Focus is fine — but a scalable business leaves money on the table without reach.","专注没错——但可扩张的生意不去触达，就是把钱留在桌上。") : T("For a steady local business, loyal regulars beat chasing whales.","对稳定的本地生意，忠实熟客胜过追大鱼。")};
     }},
 
   /* FIRST HIRE */
   { id:"firsthire",
-    render:function(s){ return { title:"Your First Hire",
-      flavor:"Demand is outgrowing what you can do alone. You could take on your first employee to grow — but hiring brings duties: a proper contract, EPF and SOCSO, and the Employment Act.",
-      options:[{t:"Hire a helper (−RM300 this season)",h:"More capacity — and real employer responsibilities."},{t:"Stay lean, do it yourself",h:"No wage bill, but you're the bottleneck."}]};},
+    render:function(s){ return { title:T("Your First Hire","第一位员工"),
+      flavor:T("Demand is outgrowing what you can do alone. You could take on your first employee to grow — but hiring brings duties: a proper contract, EPF and SOCSO, and the Employment Act.","需求已超出你一个人能应付的。你可以请第一位员工来扩张——但请人有责任：正规合同、公积金（EPF）、社险（SOCSO），还有雇佣法令。"),
+      options:[{t:T("Hire a helper (−RM300 this season)","请个帮手（本季 −RM300）"),h:T("More capacity — and real employer responsibilities.","更多产能——也是真实的雇主责任。")},{t:T("Stay lean, do it yourself","精简自己来"),h:T("No wage bill, but you're the bottleneck.","没有工资开销，但你成了瓶颈。")}]};},
     resolve:function(s,idx){
       if(idx===0){ s.money-=300; s.flags.hired=true;
-        if(RNG()>0.35){ return {tone:"up", html:"Your helper frees you up to grow the business. <b>+RM650</b> in value.", set:function(){s.bizValue+=650;}, lesson:"Employing people scales you up — but you now owe EPF, SOCSO and Employment Act duties. Get the contract right."}; }
-        return {tone:"flat", html:"The extra hand helps modestly. <b>+RM250</b> value.", set:function(){s.bizValue+=250;}, lesson:"Hiring adds capacity and statutory duties (EPF, SOCSO, contracts) — budget for both."}; }
-      return {tone:"flat", html:"You keep doing it all yourself. No wage bill, but your time is capped.", set:function(){s.bizValue+=90;}, lesson:"Staying lean avoids employer obligations — fine early, limiting later."};
+        if(RNG()>0.35){ return {tone:"up", html:T("Your helper frees you up to grow the business. <b>+RM650</b> in value.","帮手让你腾出手来把生意做大。价值 <b>+RM650</b>。"), set:function(){s.bizValue+=650;}, lesson:T("Employing people scales you up — but you now owe EPF, SOCSO and Employment Act duties. Get the contract right.","请人能放大你——但你现在有 EPF、SOCSO 和雇佣法令的责任。合同要写对。")}; }
+        return {tone:"flat", html:T("The extra hand helps modestly. <b>+RM250</b> value.","多一双手帮了点小忙。价值 <b>+RM250</b>。"), set:function(){s.bizValue+=250;}, lesson:T("Hiring adds capacity and statutory duties (EPF, SOCSO, contracts) — budget for both.","请人带来产能，也带来法定责任（EPF、SOCSO、合同）——两者都要预算。")}; }
+      return {tone:"flat", html:T("You keep doing it all yourself. No wage bill, but your time is capped.","你继续全部自己扛。没有工资，但你的时间到顶了。"), set:function(){s.bizValue+=90;}, lesson:T("Staying lean avoids employer obligations — fine early, limiting later.","精简能避开雇主义务——初期没问题，后期会受限。")};
     }},
 
   /* R3 — DISASTER (liability gated; severity by idea risk) */
   { id:"disaster",
     render:function(s){ var I=IDEAS[s.ideaKey];
       var txt = ({
-        nasi:"A customer claims they fell violently ill after eating at your stall and demands compensation.",
-        repair:"You accidentally kill the motherboard on a customer's RM-expensive phone. They're furious and threaten to sue.",
-        thrift:"A buyer alleges an item was fake and files a chargeback + public complaint demanding a big refund.",
-        design:"A client claims your artwork infringed someone's copyright and wants damages.",
-        tuition:"A parent demands a full refund and threatens a claim over 'unsatisfactory' results."
+        nasi:T("A customer claims they fell violently ill after eating at your stall and demands compensation.","一位顾客声称在你的档口吃了东西后严重不适，要求赔偿。"),
+        repair:T("You accidentally kill the motherboard on a customer's RM-expensive phone. They're furious and threaten to sue.","你不小心弄坏了顾客一台昂贵手机的主板。对方大怒，扬言起诉。"),
+        thrift:T("A buyer alleges an item was fake and files a chargeback + public complaint demanding a big refund.","一位买家指控商品是假货，发起退款争议并公开投诉，要求巨额退款。"),
+        design:T("A client claims your artwork infringed someone's copyright and wants damages.","一位客户声称你的作品侵犯了他人版权，索要赔偿。"),
+        tuition:T("A parent demands a full refund and threatens a claim over 'unsatisfactory' results.","一位家长以“成绩不理想”为由要求全额退款，并扬言索赔。")
       })[s.ideaKey];
-      return { title:"Disaster Strikes", flavor:txt+"\n\nThe claim lands on your desk. This is where your structure earns its keep — or doesn't.",
-        options:[{t:"Face the claim →",h:"See what it costs you."}]};},
+      return { title:T("Disaster Strikes","灾难降临"), flavor:txt+T("\n\nThe claim lands on your desk. This is where your structure earns its keep — or doesn't.","\n\n索赔落到你桌上。这正是你的结构发挥价值——或失效——的时刻。"),
+        options:[{t:T("Face the claim →","面对索赔 →"),h:T("See what it costs you.","看看要付出多少代价。")}]};},
     resolve:function(s,idx){
       var I=IDEAS[s.ideaKey], st=STRUCTURES[s.structKey];
       var base = I.risk==="high" ? 3200 : 650;
@@ -345,197 +374,197 @@ var STAGES = [
       var r = liabilityLoss(s, claim);
       if(r.shielded){
         s.flags.lawsuitShielded=true;
-        var extra = r.forgiven>0 ? " Your business absorbs "+fmt(r.lost)+"; the remaining "+fmt(r.forgiven)+" <b>cannot</b> touch your family's savings." : "";
-        return {tone:"down", html:"The claim is "+fmt(claim)+". Because you have <b>limited liability</b>, creditors can only reach the business."+extra, lesson:"<b>Limited liability protected your family.</b> The most it can lose is what's in the business."};
+        var extra = r.forgiven>0 ? T(" Your business absorbs "+fmt(r.lost)+"; the remaining "+fmt(r.forgiven)+" <b>cannot</b> touch your family's savings."," 生意吸收了 "+fmt(r.lost)+"；剩下的 "+fmt(r.forgiven)+" <b>碰不到</b>你家人的积蓄。") : "";
+        return {tone:"down", html:T("The claim is "+fmt(claim)+". Because you have <b>limited liability</b>, creditors can only reach the business.","索赔金额是 "+fmt(claim)+"。因为你有<b>有限责任</b>，债主只能追到生意本身。")+extra, lesson:T("<b>Limited liability protected your family.</b> The most it can lose is what's in the business.","<b>有限责任保护了你的家人。</b>最多只会亏掉生意里的钱。")};
       } else {
         s.flags.lawsuitPersonal = (r.personal>0);
         s.flags.familyDebt = Math.max(s.flags.familyDebt||0, r.personal>0? -Math.min(0,s.money):0);
         var msg = r.personal>0
-          ? "The claim is "+fmt(claim)+". Your business can't cover it, so it reaches <b>past the firm into your family's RM500 and beyond</b> — you're now "+fmt(s.money)+"."
-          : "The claim is "+fmt(claim)+". It wipes most of your cash.";
-        return {tone:"down", html:msg, lesson: r.personal>0 ? "<b>Unlimited liability</b> just put your family in debt. A shield (LLP/Sdn Bhd) would have capped the loss." : "You survived — but with unlimited liability, a bigger claim could have reached your personal assets."};
+          ? T("The claim is "+fmt(claim)+". Your business can't cover it, so it reaches <b>past the firm into your family's RM500 and beyond</b> — you're now "+fmt(s.money)+".","索赔金额是 "+fmt(claim)+"。生意赔不起，于是<b>越过公司，追进你家人的 RM500 甚至更多</b>——你现在是 "+fmt(s.money)+"。")
+          : T("The claim is "+fmt(claim)+". It wipes most of your cash.","索赔金额是 "+fmt(claim)+"。几乎把你的现金清空。");
+        return {tone:"down", html:msg, lesson: r.personal>0 ? T("<b>Unlimited liability</b> just put your family in debt. A shield (LLP/Sdn Bhd) would have capped the loss.","<b>无限责任</b>让你的家人背上债。一层保护罩（LLP／Sdn Bhd）本可封顶这个损失。") : T("You survived — but with unlimited liability, a bigger claim could have reached your personal assets.","你撑过来了——但在无限责任下，更大的索赔可能会追到你的个人财产。")};
       }
     }},
 
   /* LOAN SHARK — cashflow crunch */
   { id:"loanshark",
     render:function(s){ var st=STRUCTURES[s.structKey];
-      var opts=[{t:"Take the Along's RM2,000 cash — no questions asked",h:"Instant money… at a terrifying price."}];
-      if(st.cred>=2) opts.push({t:"Arrange a bank overdraft (RM1,500 now, repay RM1,800)",h:"Legit finance — your registered entity qualifies."});
-      opts.push({t:"Tough it out — no new debt",h:"Slow and safe."});
-      return { title:"Cashflow Crunch",
-        flavor:"Money's tight. A smiling ‘Along’ (loan shark) offers RM2,000 in cash today — no forms, no credit check."
-          +(st.cred>=2 ? " Your bank also offers a small overdraft, because you’re a registered "+st.name+"." : " No bank will touch an unregistered "+st.name+" for fast cash."),
+      var opts=[{t:T("Take the Along's RM2,000 cash — no questions asked","收下大耳窿的 RM2,000 现金——不问来路"),h:T("Instant money… at a terrifying price.","立刻有钱……代价却很可怕。")}];
+      if(st.cred>=2) opts.push({t:T("Arrange a bank overdraft (RM1,500 now, repay RM1,800)","安排银行透支（现拿 RM1,500，还 RM1,800）"),h:T("Legit finance — your registered entity qualifies.","正规融资——你的注册实体符合资格。")});
+      opts.push({t:T("Tough it out — no new debt","咬牙撑住——不添新债"),h:T("Slow and safe.","慢，但安全。")});
+      return { title:T("Cashflow Crunch","现金流紧绷"),
+        flavor:T("Money's tight. A smiling ‘Along’ (loan shark) offers RM2,000 in cash today — no forms, no credit check.","手头很紧。一个笑眯眯的“大耳窿”（放高利贷）今天就给你 RM2,000 现金——不填表，不查信用。")
+          +(st.cred>=2 ? T(" Your bank also offers a small overdraft, because you’re a registered "+st.name+"."," 银行也愿意给你一笔小额透支，因为你是注册的"+SN(st)+"。") : T(" No bank will touch an unregistered "+st.name+" for fast cash."," 没有银行会为一个没注册的"+SN(st)+"提供快钱。")),
         options:opts };},
     resolve:function(s,idx){
       var st=STRUCTURES[s.structKey], hasBank=st.cred>=2;
       if(idx===0){ s.money+=2000; s.flags.shark=true;
-        return {tone:"down", html:"You pocket <b>RM2,000</b> in cash — but you now owe the Along <b>RM3,500</b>, and these people don’t care about company law.", lesson:"Loan sharks (and any personal guarantee) <b>ignore your corporate veil</b> — they come after <b>you</b>. This is the trap of having no access to real finance."}; }
+        return {tone:"down", html:T("You pocket <b>RM2,000</b> in cash — but you now owe the Along <b>RM3,500</b>, and these people don’t care about company law.","你到手 <b>RM2,000</b> 现金——但你现在欠大耳窿 <b>RM3,500</b>，而这种人根本不理会公司法。"), lesson:T("Loan sharks (and any personal guarantee) <b>ignore your corporate veil</b> — they come after <b>you</b>. This is the trap of having no access to real finance.","高利贷（以及任何个人担保）<b>无视你的公司面纱</b>——他们直接追<b>你本人</b>。这就是没有正规融资渠道的陷阱。")}; }
       if(hasBank && idx===1){ s.money+=1500; s.debts+=1800; s.flags.bankLine=true;
-        return {tone:"flat", html:"The bank extends a <b>RM1,500 overdraft</b> to your registered entity — documented, repayable at RM1,800.", lesson:"A credible structure unlocks <b>legitimate</b> finance — the safe alternative to a loan shark."}; }
-      return {tone:"up", html:"You grit your teeth and avoid new debt. Lean, but clean.", set:function(){s.bizValue+=60;}, lesson:"Avoiding predatory debt is almost always the right call."};
+        return {tone:"flat", html:T("The bank extends a <b>RM1,500 overdraft</b> to your registered entity — documented, repayable at RM1,800.","银行给你的注册实体一笔 <b>RM1,500 透支</b>——有文件，需还 RM1,800。"), lesson:T("A credible structure unlocks <b>legitimate</b> finance — the safe alternative to a loan shark.","有公信力的结构能打开<b>正规</b>融资——高利贷的安全替代。")}; }
+      return {tone:"up", html:T("You grit your teeth and avoid new debt. Lean, but clean.","你咬牙不添新债。精简，但清白。"), set:function(){s.bizValue+=60;}, lesson:T("Avoiding predatory debt is almost always the right call.","避开掠夺性债务，几乎永远是对的选择。")};
     }},
 
   /* R4 — MONEY & GROWTH (equity gated) */
   { id:"funding",
     render:function(s){ var st=STRUCTURES[s.structKey], I=IDEAS[s.ideaKey];
       if(st.equity && I.growth==="high"){
-        return { title:"The Angel Investor", flavor:"An angel investor loves your scalable "+I.name.toLowerCase()+". She offers RM4,000 — for shares in your company.",
-          options:[{t:"Issue shares, take the RM4,000",h:"Fuel to grow; you give up some ownership."},{t:"Bootstrap — keep 100% ownership",h:"Slower, but all yours."}]};
+        return { title:T("The Angel Investor","天使投资人"), flavor:T("An angel investor loves your scalable "+I.name.toLowerCase()+". She offers RM4,000 — for shares in your company.","一位天使投资人看好你可扩张的"+IN(I)+"。她出 RM4,000——换你公司的股份。"),
+          options:[{t:T("Issue shares, take the RM4,000","发行股份，收下 RM4,000"),h:T("Fuel to grow; you give up some ownership.","成长的燃料；但要让出部分股权。")},{t:T("Bootstrap — keep 100% ownership","自筹——保留 100% 股权"),h:T("Slower, but all yours.","慢一点，但全归你。")}]};
       }
       if(!st.equity){
-        return { title:"Need Capital to Grow", flavor:"You want to expand, but you have no shares to sell. The only route is a personal bank loan — in your own name.",
-          options:[{t:"Take a personal loan (RM1,500 now, repay RM1,900)",h:"Growth, but the debt is personally yours."},{t:"Grow only from profits",h:"No debt, slower path."}]};
+        return { title:T("Need Capital to Grow","需要资本才能成长"), flavor:T("You want to expand, but you have no shares to sell. The only route is a personal bank loan — in your own name.","你想扩张，但没有股份可卖。唯一的路是个人银行贷款——用你自己的名字。"),
+          options:[{t:T("Take a personal loan (RM1,500 now, repay RM1,900)","申请个人贷款（现拿 RM1,500，还 RM1,900）"),h:T("Growth, but the debt is personally yours.","有成长，但债是你个人的。")},{t:T("Grow only from profits","只靠利润成长"),h:T("No debt, slower path.","不欠债，但慢。")}]};
       }
-      return { title:"No Investors Bite", flavor:"You're a company — but investors want businesses that scale, and yours is a steady local operation. You'll grow from profit.",
-        options:[{t:"Reinvest your profits →",h:"Slow and steady."}]};
+      return { title:T("No Investors Bite","没有投资人上钩"), flavor:T("You're a company — but investors want businesses that scale, and yours is a steady local operation. You'll grow from profit.","你是公司——但投资人要的是能扩张的生意，而你的是稳定的本地经营。你只能靠利润成长。"),
+        options:[{t:T("Reinvest your profits →","把利润再投入 →"),h:T("Slow and steady.","慢而稳。")}]};
     },
     resolve:function(s,idx){
       var st=STRUCTURES[s.structKey], I=IDEAS[s.ideaKey];
       if(st.equity && I.growth==="high"){
-        if(idx===0){ return {tone:"up", html:"You issue shares and bank the angel's <b>RM4,000</b>. Rocket fuel.", set:function(){s.money+=4000;s.bizValue+=1500;s.flags.investor=true;}, lesson:"<b>Only a company can sell equity.</b> This is the single biggest advantage of a Sdn Bhd for a growth business."}; }
-        return {tone:"flat", html:"You keep every share. Prouder, poorer, slower. <b>+RM300</b> value.", set:function(){s.bizValue+=300;s.flags.bootstrap=true;}, lesson:"Bootstrapping is valid — but you left real growth capital on the table."};
+        if(idx===0){ return {tone:"up", html:T("You issue shares and bank the angel's <b>RM4,000</b>. Rocket fuel.","你发行股份，收下天使的 <b>RM4,000</b>。火箭燃料。"), set:function(){s.money+=4000;s.bizValue+=1500;s.flags.investor=true;}, lesson:T("<b>Only a company can sell equity.</b> This is the single biggest advantage of a Sdn Bhd for a growth business.","<b>只有公司能出售股权。</b>这是 Sdn Bhd 对成长型生意最大的优势。")}; }
+        return {tone:"flat", html:T("You keep every share. Prouder, poorer, slower. <b>+RM300</b> value.","你保留每一股。更自豪、更穷、更慢。价值 <b>+RM300</b>。"), set:function(){s.bizValue+=300;s.flags.bootstrap=true;}, lesson:T("Bootstrapping is valid — but you left real growth capital on the table.","自筹也没错——但你把真正的成长资本留在了桌上。")};
       }
       if(!st.equity){
-        if(idx===0){ return {tone:"flat", html:"The bank lends to <b>you personally</b> — your name on the line, not a company's. RM1,500 in, RM1,900 to repay.", set:function(){s.money+=1500;s.debts+=1900;s.flags.loan=true;}, lesson:"With no shares to sell, growth means <b>personal debt</b>. A company could have raised equity instead."}; }
-        return {tone:"flat", html:"You skip the debt and grow slowly from profit.", set:function(){s.bizValue+=150;}, lesson:"Safe — but limited structures cap how fast you can scale."};
+        if(idx===0){ return {tone:"flat", html:T("The bank lends to <b>you personally</b> — your name on the line, not a company's. RM1,500 in, RM1,900 to repay.","银行贷给<b>你本人</b>——签的是你的名，不是公司的。拿 RM1,500，还 RM1,900。"), set:function(){s.money+=1500;s.debts+=1900;s.flags.loan=true;}, lesson:T("With no shares to sell, growth means <b>personal debt</b>. A company could have raised equity instead.","没有股份可卖，成长就意味着<b>个人债务</b>。公司则能改用募股。")}; }
+        return {tone:"flat", html:T("You skip the debt and grow slowly from profit.","你不借债，靠利润慢慢成长。"), set:function(){s.bizValue+=150;}, lesson:T("Safe — but limited structures cap how fast you can scale.","安全——但受限的结构会封住你扩张的速度。")};
       }
-      return {tone:"flat", html:"You reinvest profits. Modest, steady growth. <b>+RM200</b> value.", set:function(){s.bizValue+=200;}, lesson:"A company is overkill if the business can't attract investors — you carry the cost without the upside."};
+      return {tone:"flat", html:T("You reinvest profits. Modest, steady growth. <b>+RM200</b> value.","你把利润再投入。温和、稳定的成长。价值 <b>+RM200</b>。"), set:function(){s.bizValue+=200;}, lesson:T("A company is overkill if the business can't attract investors — you carry the cost without the upside.","如果生意吸引不到投资人，开公司就是杀鸡用牛刀——你承担成本却没享到好处。")};
     }},
 
   /* PARTNER ARGUMENT (multi-founder) / solo grind */
   { id:"argument",
     render:function(s){
       if(s.numPartners>0){
-        return { title:"A Clash of Visions",
-          flavor:"You and your co-founder"+(s.numPartners>1?'s':'')+" disagree hard on direction — reinvest vs pay yourselves, grow fast vs stay steady.\n\n"
-            +(s.hasAgreement ? "Luckily, your agreement sets out how decisions get made." : "With nothing in writing, it’s a shouting match."),
-          options:[{t:"Push through the disagreement →",h:"See how it resolves."}]};
+        return { title:T("A Clash of Visions","理念之争"),
+          flavor:T("You and your co-founder"+(s.numPartners>1?'s':'')+" disagree hard on direction — reinvest vs pay yourselves, grow fast vs stay steady.\n\n","你和"+(LANG==='zh'?'联合创办人':'')+" 在方向上严重分歧——再投入 vs 分钱、快速扩张 vs 稳扎稳打。\n\n")
+            +(s.hasAgreement ? T("Luckily, your agreement sets out how decisions get made.","幸好，你们的协议写明了决策该怎么定。") : T("With nothing in writing, it’s a shouting match.","什么都没写下来，只剩吵架。")),
+          options:[{t:T("Push through the disagreement →","硬闯这场分歧 →"),h:T("See how it resolves.","看看怎么收场。")}]};
       }
-      return { title:"The Lonely Grind",
-        flavor:"Running everything alone is wearing you down. Push harder, or ease off to protect yourself?",
-        options:[{t:"Push through — grind it out",h:"More output, risk of burnout."},{t:"Pace yourself",h:"Steadier, slightly slower."}]};
+      return { title:T("The Lonely Grind","孤军奋战"),
+        flavor:T("Running everything alone is wearing you down. Push harder, or ease off to protect yourself?","一个人扛所有事，把你磨得精疲力尽。是再逼自己一把，还是放缓保护自己？"),
+        options:[{t:T("Push through — grind it out","再逼一把——硬撑"),h:T("More output, risk of burnout.","产出更多，但有耗尽的风险。")},{t:T("Pace yourself","量力而行"),h:T("Steadier, slightly slower.","更稳，稍慢。")}]};
     },
     resolve:function(s,idx){
       if(s.numPartners>0){
-        if(s.hasAgreement){ return {tone:"flat", html:"Your agreement’s decision rules break the deadlock fast. You align and move on. <b>+RM200</b> value.", set:function(){s.bizValue+=200;s.flags.alignedByAgreement=true;}, lesson:"A good agreement isn’t only for disasters — it stops <b>everyday</b> disagreements from stalling the business."}; }
+        if(s.hasAgreement){ return {tone:"flat", html:T("Your agreement’s decision rules break the deadlock fast. You align and move on. <b>+RM200</b> value.","协议里的决策规则很快打破僵局。你们达成一致，继续前进。价值 <b>+RM200</b>。"), set:function(){s.bizValue+=200;s.flags.alignedByAgreement=true;}, lesson:T("A good agreement isn’t only for disasters — it stops <b>everyday</b> disagreements from stalling the business.","好协议不只为灾难而设——它能阻止<b>日常</b>分歧拖垮生意。")}; }
         s.money-=250; s.flags.argueDrag=true;
-        return {tone:"down", html:"With no agreed process, the argument drags on for weeks. Momentum and <b>RM250</b> are lost to the standoff.", lesson:"Without decision rules in writing, ordinary disagreements become <b>expensive deadlocks</b>."};
+        return {tone:"down", html:T("With no agreed process, the argument drags on for weeks. Momentum and <b>RM250</b> are lost to the standoff.","没有约定的流程，争执拖了好几周。僵持中损失了势头和 <b>RM250</b>。"), lesson:T("Without decision rules in writing, ordinary disagreements become <b>expensive deadlocks</b>.","没有白纸黑字的决策规则，普通分歧会变成<b>昂贵的僵局</b>。")};
       }
-      if(idx===0){ if(RNG()>0.5){ return {tone:"up", html:"The extra hours pay off. <b>+RM300</b> value.", set:function(){s.bizValue+=300;}, lesson:"Solo hustle works — until it doesn’t. Watch for burnout."}; }
-        s.money-=150; return {tone:"down", html:"You burn out and make sloppy mistakes. <b>−RM150</b>.", lesson:"A one-person business has a single point of failure: you."}; }
-      return {tone:"flat", html:"You pace yourself and stay sharp. <b>+RM120</b> value.", set:function(){s.bizValue+=120;}, lesson:"Sustainable beats heroic."};
+      if(idx===0){ if(RNG()>0.5){ return {tone:"up", html:T("The extra hours pay off. <b>+RM300</b> value.","额外的时间见效了。价值 <b>+RM300</b>。"), set:function(){s.bizValue+=300;}, lesson:T("Solo hustle works — until it doesn’t. Watch for burnout.","单打独斗有用——直到失灵。当心耗尽。")}; }
+        s.money-=150; return {tone:"down", html:T("You burn out and make sloppy mistakes. <b>−RM150</b>.","你累垮了，出了低级错误。<b>−RM150</b>。"), lesson:T("A one-person business has a single point of failure: you.","单人生意只有一个致命弱点：你自己。")}; }
+      return {tone:"flat", html:T("You pace yourself and stay sharp. <b>+RM120</b> value.","你量力而行，保持清醒。价值 <b>+RM120</b>。"), set:function(){s.bizValue+=120;}, lesson:T("Sustainable beats heroic.","可持续胜过逞英雄。")};
     }},
 
   /* LOAN-SHARK COLLECTOR / bank repayment */
   { id:"collector",
     render:function(s){
-      if(s.flags.shark) return { title:"The Collector Calls", flavor:"The Along’s men are at your door. The RM3,500 is due — and they’re not interested in excuses, or in whose name the business is registered.", options:[{t:"Face the collectors →",h:"Pay the price."}]};
-      if(s.flags.bankLine) return { title:"Loan Repayment", flavor:"Your bank overdraft falls due. Orderly, on paper, exactly as agreed.", options:[{t:"Settle up →",h:"No drama."}]};
-      return { title:"A Bullet Dodged", flavor:"A fellow trader who borrowed from a loan shark is being hounded — assets seized, threats at all hours. You’re quietly glad you stayed clean.", options:[{t:"Count your blessings →",h:"Onward."}]};
+      if(s.flags.shark) return { title:T("The Collector Calls","收数的上门"), flavor:T("The Along’s men are at your door. The RM3,500 is due — and they’re not interested in excuses, or in whose name the business is registered.","大耳窿的人堵在你门口。RM3,500 到期了——他们不听借口，也不在乎生意注册在谁名下。"), options:[{t:T("Face the collectors →","面对收数人 →"),h:T("Pay the price.","付出代价。")}]};
+      if(s.flags.bankLine) return { title:T("Loan Repayment","偿还贷款"), flavor:T("Your bank overdraft falls due. Orderly, on paper, exactly as agreed.","银行透支到期。有条不紊、有文件、完全照约定。"), options:[{t:T("Settle up →","结清 →"),h:T("No drama.","没有戏剧性。")}]};
+      return { title:T("A Bullet Dodged","躲过一劫"), flavor:T("A fellow trader who borrowed from a loan shark is being hounded — assets seized, threats at all hours. You’re quietly glad you stayed clean.","一个也做生意的同行向高利贷借了钱，如今被追得团团转——资产被扣、日夜恐吓。你暗自庆幸自己没沾这一摊。"), options:[{t:T("Count your blessings →","惜福 →"),h:T("Onward.","继续前进。")}]};
     },
     resolve:function(s,idx){
       if(s.flags.shark){
         var owed=3500, pay=Math.min(Math.max(0,s.money),owed); s.money-=pay; var short=owed-pay; if(short>0) s.personalDebt+=short;
         s.flags.sharkPain=(short>0);
-        return {tone:"down", html:"They take everything the business has ("+fmt(pay)+")"+(short>0?" and come after <b>you personally</b> for the rest ("+fmt(short)+") — limited liability means nothing to them.":", and finally leave you alone.")+"", lesson:"Illegal lenders <b>bypass every protection</b> a good structure gives you. The only safe move was never to borrow from them."};
+        return {tone:"down", html:T("They take everything the business has ("+fmt(pay)+")","他们拿走生意里的一切（"+fmt(pay)+"）")+(short>0?T(" and come after <b>you personally</b> for the rest ("+fmt(short)+") — limited liability means nothing to them."," ，剩下的（"+fmt(short)+"）就来追<b>你本人</b>——有限责任对他们毫无意义。"):T(", and finally leave you alone.","，然后终于放过你。"))+"", lesson:T("Illegal lenders <b>bypass every protection</b> a good structure gives you. The only safe move was never to borrow from them.","非法放贷者<b>绕过</b>好结构给你的一切保护。唯一安全的做法，就是根本别向他们借。")};
       }
-      if(s.flags.bankLine) return {tone:"flat", html:"You repay the overdraft as scheduled. Your credit record even improves.", lesson:"Legitimate, documented finance is predictable — that’s the whole point."};
-      return {tone:"up", html:"No debt, no drama. Your caution paid off. <b>+RM80</b> value.", set:function(){s.bizValue+=80;}, lesson:"Sometimes the best financial decision is the loan you <b>didn’t</b> take."};
+      if(s.flags.bankLine) return {tone:"flat", html:T("You repay the overdraft as scheduled. Your credit record even improves.","你如期还清透支。信用记录甚至变好了。"), lesson:T("Legitimate, documented finance is predictable — that’s the whole point.","正规、有文件的融资是可预期的——这正是重点。")};
+      return {tone:"up", html:T("No debt, no drama. Your caution paid off. <b>+RM80</b> value.","没债、没麻烦。你的谨慎有了回报。价值 <b>+RM80</b>。"), set:function(){s.bizValue+=80;}, lesson:T("Sometimes the best financial decision is the loan you <b>didn’t</b> take.","有时最好的财务决定，是你<b>没借</b>的那笔钱。")};
     }},
 
   /* R5 — COMPLIANCE SEASON (structure gated) */
   { id:"compliance",
     render:function(s){ var st=STRUCTURES[s.structKey];
       if(st.limited){
-        return { title:"Compliance Season (SSM)", flavor:"As a "+st.name+", the law requires annual filings — annual return, financial statements"+(st.key==="sdnbhd"?", a company secretary, possibly an audit":"")+". The bill is <b>"+fmt(st.compliance)+"</b>.",
-          options:[{t:"File everything properly (pay "+fmt(st.compliance)+")",h:"Clean record, no risk."},{t:"Skip the filings to save cash",h:"Keep the money now… gamble on later."}]};
+        return { title:T("Compliance Season (SSM)","合规季节（SSM）"), flavor:T("As a "+st.name+", the law requires annual filings — annual return, financial statements"+(st.key==="sdnbhd"?", a company secretary, possibly an audit":"")+". The bill is <b>"+fmt(st.compliance)+"</b>.","身为"+SN(st)+"，法律要求年度申报——年报、财务报表"+(st.key==="sdnbhd"?"、公司秘书、可能还要审计":"")+"。账单是 <b>"+fmt(st.compliance)+"</b>。"),
+          options:[{t:T("File everything properly (pay "+fmt(st.compliance)+")","把一切正规申报（付 "+fmt(st.compliance)+"）"),h:T("Clean record, no risk.","记录清白，没有风险。")},{t:T("Skip the filings to save cash","省钱，跳过申报"),h:T("Keep the money now… gamble on later.","现在留住钱……赌以后没事。")}]};
       }
-      return { title:"Compliance Season (SSM)", flavor:"As a "+st.name+", there's no annual return to lodge — just a small business renewal of about RM20. One quiet perk of staying simple.",
-        options:[{t:"Renew and move on →",h:"Cheap and easy."}]};
+      return { title:T("Compliance Season (SSM)","合规季节（SSM）"), flavor:T("As a "+st.name+", there's no annual return to lodge — just a small business renewal of about RM20. One quiet perk of staying simple.","身为"+SN(st)+"，没有年报要报——只需约 RM20 的商业执照更新。保持简单的一个小福利。"),
+        options:[{t:T("Renew and move on →","更新，继续 →"),h:T("Cheap and easy.","便宜又轻松。")}]};
     },
     resolve:function(s,idx){
       var st=STRUCTURES[s.structKey];
       if(st.limited){
-        if(idx===0){ s.money-=st.compliance; return {tone:"flat", html:"Filed and clean. That cost <b>"+fmt(st.compliance)+"</b> — the price of protection and credibility.", set:function(){s.flags.compliant=true;}, lesson:"Limited liability isn't free: every year it costs real compliance money."}; }
-        return {tone:"down", html:"You pocket the "+fmt(st.compliance)+"… but your annual return is now overdue. The clock is ticking at SSM.", set:function(){s.flags.skipped=true;}, lesson:"Skipping SSM filings is a <b>time bomb</b> — see what happens next."};
+        if(idx===0){ s.money-=st.compliance; return {tone:"flat", html:T("Filed and clean. That cost <b>"+fmt(st.compliance)+"</b> — the price of protection and credibility.","申报妥当、清白。花了 <b>"+fmt(st.compliance)+"</b>——这是保护与公信力的代价。"), set:function(){s.flags.compliant=true;}, lesson:T("Limited liability isn't free: every year it costs real compliance money.","有限责任不是免费的：每年都要付出真实的合规成本。")}; }
+        return {tone:"down", html:T("You pocket the "+fmt(st.compliance)+"… but your annual return is now overdue. The clock is ticking at SSM.","你把 "+fmt(st.compliance)+" 留在口袋……但你的年报现在逾期了。SSM 那边的钟已经在响。"), set:function(){s.flags.skipped=true;}, lesson:T("Skipping SSM filings is a <b>time bomb</b> — see what happens next.","跳过 SSM 申报是一颗<b>定时炸弹</b>——看看接下来会怎样。")};
       }
-      s.money-=20; return {tone:"up", html:"Renewed for <b>RM20</b>. No annual return, no audit, no secretary. Simple and cheap.", lesson:"For a tiny, low-risk business, a light structure saves a fortune in compliance."};
+      s.money-=20; return {tone:"up", html:T("Renewed for <b>RM20</b>. No annual return, no audit, no secretary. Simple and cheap.","以 <b>RM20</b> 更新。没有年报、没有审计、没有秘书。简单又便宜。"), lesson:T("For a tiny, low-risk business, a light structure saves a fortune in compliance.","对小型、低风险的生意，轻结构能省下一大笔合规费。")};
     }},
 
   /* R6 — OPERATIONS / PARTNER TWIST */
   { id:"ops",
     render:function(s){
       if(s.numPartners>0){
-        return { title:"The Co-Founder Fallout",
-          flavor:"Tension boils over with your co-founder"+(s.numPartners>1?'s':'')+". Money's gone missing and everyone remembers the profit split differently.\n\n"
-            +(s.hasAgreement ? "Time to open that agreement you all signed." : "There's nothing in writing to fall back on."),
-          options:[{t:"Face the fallout →",h:"See how it plays out."}]};
+        return { title:T("The Co-Founder Fallout","合伙人翻脸"),
+          flavor:T("Tension boils over with your co-founder"+(s.numPartners>1?'s':'')+". Money's gone missing and everyone remembers the profit split differently.\n\n","和"+(LANG==='zh'?'联合创办人':'')+" 的矛盾爆发了。有钱不见了，而每个人记得的分红方式都不一样。\n\n")
+            +(s.hasAgreement ? T("Time to open that agreement you all signed.","是时候翻出你们都签过的那份协议了。") : T("There's nothing in writing to fall back on.","没有任何白纸黑字可以依靠。")),
+          options:[{t:T("Face the fallout →","面对这场翻脸 →"),h:T("See how it plays out.","看看结局如何。")}]};
       }
-      return { title:"Grow the Operation", flavor:"Business is ticking along. A chance to upgrade your equipment/inventory for RM400 could lift your capacity — or you can hold your cash.",
-        options:[{t:"Invest RM400 in the upgrade",h:"Costs cash now, may pay off."},{t:"Keep the cash buffer",h:"Stay liquid, no upside."}]};
+      return { title:T("Grow the Operation","扩大经营"), flavor:T("Business is ticking along. A chance to upgrade your equipment/inventory for RM400 could lift your capacity — or you can hold your cash.","生意平稳运转。花 RM400 升级设备／库存，能提升产能——或者你也可以守住现金。"),
+        options:[{t:T("Invest RM400 in the upgrade","投 RM400 做升级"),h:T("Costs cash now, may pay off.","现在花钱，也许有回报。")},{t:T("Keep the cash buffer","保留现金缓冲"),h:T("Stay liquid, no upside.","保持流动，但没有增值。")}]};
     },
     resolve:function(s,idx){
       var st=STRUCTURES[s.structKey];
       if(s.numPartners>0){
         if(s.hasAgreement){
           s.money-=100; s.flags.disputeResolved=true;
-          return {tone:"flat", html:"The dispute flares — but your <b>written agreement</b> spells out the profit split, decision rights and exit terms. It's settled cleanly for RM100 in advice.", lesson:"A signed agreement turns a business-ending fight into a footnote. <b>This is why you always paper the deal.</b>"};
+          return {tone:"flat", html:T("The dispute flares — but your <b>written agreement</b> spells out the profit split, decision rights and exit terms. It's settled cleanly for RM100 in advice.","争议爆发——但你们的<b>书面协议</b>写明了分红、决策权和退出条款。花 RM100 咨询就干净利落地解决了。"), lesson:T("A signed agreement turns a business-ending fight into a footnote. <b>This is why you always paper the deal.</b>","一份签好的协议，能把足以拖垮生意的争吵变成一个注脚。<b>这就是为什么一定要把约定写下来。</b>")};
         }
         if(!st.limited){
           var r=liabilityLoss(s,1200); s.flags.disputeUgly=true;
-          return {tone:"down", html:"With <b>nothing in writing</b>, a partner runs up debts and walks. Because partners are <b>jointly &amp; severally liable</b>, the full RM1,200 lands on <b>you</b> — and there are no agreed exit terms to enforce.", lesson:"No agreement + unlimited liability = you personally absorb your partner's mess."};
+          return {tone:"down", html:T("With <b>nothing in writing</b>, a partner runs up debts and walks. Because partners are <b>jointly &amp; severally liable</b>, the full RM1,200 lands on <b>you</b> — and there are no agreed exit terms to enforce.","<b>什么都没写下来</b>，一个合伙人欠了一堆债就走人。因为合伙人负<b>连带责任</b>，整整 RM1,200 全落在<b>你</b>头上——也没有约定的退出条款可执行。"), lesson:T("No agreement + unlimited liability = you personally absorb your partner's mess.","没协议 + 无限责任 = 合伙人捅的娄子由你个人买单。")};
         }
         s.money-=500; s.bizValue=Math.round(s.bizValue*0.6); s.flags.disputeUgly=true;
-        return {tone:"down", html:"With <b>no shareholders'/partnership agreement</b>, the split turns into a deadlock. Lawyers, a forced buy-out and lost momentum cost you RM500 and wipe out much of the business's value.", lesson:"Limited liability protects your <b>personal</b> assets — but with no agreement you can still lose the <b>business</b> to a dispute."};
+        return {tone:"down", html:T("With <b>no shareholders'/partnership agreement</b>, the split turns into a deadlock. Lawyers, a forced buy-out and lost momentum cost you RM500 and wipe out much of the business's value.","<b>没有股东／合伙协议</b>，拆伙变成僵局。律师费、被迫回购和失去的势头让你损失 RM500，还抹掉了生意的大部分价值。"), lesson:T("Limited liability protects your <b>personal</b> assets — but with no agreement you can still lose the <b>business</b> to a dispute.","有限责任保护你的<b>个人</b>财产——但没有协议，你仍可能因争议失去<b>生意本身</b>。")};
       }
       if(idx===0){
         s.money-=400;
-        if(RNG()>0.4){ return {tone:"up", html:"The upgrade pays off — faster service, more sales. <b>+RM800</b> value.", set:function(){s.bizValue+=800;}, lesson:"Reinvestment compounds when the timing's right."}; }
-        return {tone:"flat", html:"The upgrade helps a little, but demand is flat. <b>+RM250</b> value.", set:function(){s.bizValue+=250;}, lesson:"Not every reinvestment lands — keep some buffer."};
+        if(RNG()>0.4){ return {tone:"up", html:T("The upgrade pays off — faster service, more sales. <b>+RM800</b> value.","升级见效——服务更快、销量更高。价值 <b>+RM800</b>。"), set:function(){s.bizValue+=800;}, lesson:T("Reinvestment compounds when the timing's right.","时机对了，再投入会滚雪球。")}; }
+        return {tone:"flat", html:T("The upgrade helps a little, but demand is flat. <b>+RM250</b> value.","升级帮了点忙，但需求平淡。价值 <b>+RM250</b>。"), set:function(){s.bizValue+=250;}, lesson:T("Not every reinvestment lands — keep some buffer.","不是每笔再投入都会命中——留点缓冲。")};
       }
-      return {tone:"flat", html:"You hold your cash. Boring, but resilient.", set:function(){s.bizValue+=60;}, lesson:"Liquidity is its own kind of safety."};
+      return {tone:"flat", html:T("You hold your cash. Boring, but resilient.","你守住现金。无趣，但抗打。"), set:function(){s.bizValue+=60;}, lesson:T("Liquidity is its own kind of safety.","流动性本身就是一种安全。")};
     }},
 
   /* TAX SEASON (structure-differentiated) */
   { id:"tax",
-    render:function(s){ return { title:"Tax Season", flavor:"The taxman comes for everyone — but how you’re taxed depends on your structure.", options:[{t:"File your taxes →",h:"See the bill."}]};},
+    render:function(s){ return { title:T("Tax Season","报税季节"), flavor:T("The taxman comes for everyone — but how you’re taxed depends on your structure.","税务局对谁都不放过——但你怎么被征税，取决于你的结构。"), options:[{t:T("File your taxes →","报税 →"),h:T("See the bill.","看看账单。")}]};},
     resolve:function(s,idx){
       var st=STRUCTURES[s.structKey], profit=Math.max(0,s.money);
-      if(st.limited){ var t=Math.round(profit*0.12); s.money-=t; return {tone:"flat", html:"As a company/LLP you pay <b>"+fmt(t)+"</b> in entity-level tax on profits — and any money you draw out is taxed again personally.", lesson:"Companies are taxed as <b>separate entities</b>: plan for tax on profits AND on dividends/salary you take out."}; }
-      var t2=Math.round(profit*0.09); s.money-=t2; return {tone:"flat", html:"As a "+st.name+", the profit is <b>your</b> personal income — you pay <b>"+fmt(t2)+"</b> at your individual rate.", lesson:"Sole props and partnerships are taxed on the owner personally — simpler, and often lighter at small scale."};
+      if(st.limited){ var t=Math.round(profit*0.12); s.money-=t; return {tone:"flat", html:T("As a company/LLP you pay <b>"+fmt(t)+"</b> in entity-level tax on profits — and any money you draw out is taxed again personally.","身为公司／LLP，你就利润缴 <b>"+fmt(t)+"</b> 的实体层面税——而你提取出来的钱，还要再按个人缴一次。"), lesson:T("Companies are taxed as <b>separate entities</b>: plan for tax on profits AND on dividends/salary you take out.","公司作为<b>独立实体</b>被征税：既要规划利润的税，也要规划你提取的股息／薪金的税。")}; }
+      var t2=Math.round(profit*0.09); s.money-=t2; return {tone:"flat", html:T("As a "+st.name+", the profit is <b>your</b> personal income — you pay <b>"+fmt(t2)+"</b> at your individual rate.","身为"+SN(st)+"，利润就是<b>你的</b>个人收入——你按个人税率缴 <b>"+fmt(t2)+"</b>。"), lesson:T("Sole props and partnerships are taxed on the owner personally — simpler, and often lighter at small scale.","独资和合伙是按业主个人征税——更简单，在小规模时往往也更轻。")};
     }},
 
   /* R7 — SSM RECKONING + ECONOMY */
   { id:"reckoning",
-    render:function(s){ return { title:"Year-End Reckoning", flavor:"The year closes out. Regulators, the economy, and your earlier choices all come home to roost.",
-        options:[{t:"Face the music →",h:"Tally the year."}]};},
+    render:function(s){ return { title:T("Year-End Reckoning","年终清算"), flavor:T("The year closes out. Regulators, the economy, and your earlier choices all come home to roost.","一年到头。监管机构、经济大势，还有你之前的选择，全都回来找账。"),
+        options:[{t:T("Face the music →","面对现实 →"),h:T("Tally the year.","盘点这一年。")}]};},
     resolve:function(s,idx){
       var st=STRUCTURES[s.structKey], I=IDEAS[s.ideaKey]; var parts=[]; var lessons=[];
       if(s.flags.skipped){
         s.money-=1500; s.bizValue=Math.round(s.bizValue*0.7); s.flags.strikeOff=true;
-        parts.push("SSM issues a <b>compound</b> for your unfiled annual return and moves to <b>strike your entity off the register</b>. Fighting it costs RM1,500 and dents your business value.");
-        lessons.push("Skipped SSM filings trigger compounds and strike-off — the risk you took in Round 5.");
+        parts.push(T("SSM issues a <b>compound</b> for your unfiled annual return and moves to <b>strike your entity off the register</b>. Fighting it costs RM1,500 and dents your business value.","SSM 就你未申报的年报开出<b>罚单</b>，并着手<b>将你的实体从注册名册除名</b>。为此奔走花了 RM1,500，还削减了你的生意价值。"));
+        lessons.push(T("Skipped SSM filings trigger compounds and strike-off — the risk you took in Round 5.","跳过 SSM 申报会招来罚单和除名——正是你在第 5 回合冒的险。"));
       }
       if(st.limited && I.growth==="low" && I.risk==="low"){
         s.money-=400; s.flags.overkill=true;
-        parts.push("Running a "+st.name+" over a small, low-risk business means compliance overhead keeps <b>bleeding your thin margins</b> (−RM400).");
-        lessons.push("An over-heavy structure is its own mistake: you pay for protection and credibility you don't need.");
+        parts.push(T("Running a "+st.name+" over a small, low-risk business means compliance overhead keeps <b>bleeding your thin margins</b> (−RM400).","为一门小型、低风险的生意套上"+SN(st)+"，合规开销一直在<b>蚕食你本就微薄的利润</b>（−RM400）。"));
+        lessons.push(T("An over-heavy structure is its own mistake: you pay for protection and credibility you don't need.","过重的结构本身就是错误：你在为自己用不上的保护和公信力买单。"));
       }
       var swing=Math.round((RNG()*600)-200); s.money+=swing;
-      parts.push("The economy swings your way "+(swing>=0?"a little (+":"against you (−")+"RM"+Math.abs(swing)+").");
-      return {tone: (s.flags.strikeOff?"down":"flat"), html:parts.join(" "), lesson: lessons.length? lessons.join(" ") : "Every year brings surprises — a buffer helps you ride them out."};
+      parts.push(T("The economy swings your way "+(swing>=0?"a little (+":"against you (−")+"RM"+Math.abs(swing)+").","经济"+(swing>=0?"稍稍帮了你一把（+":"对你不利（−")+"RM"+Math.abs(swing)+"）。"));
+      return {tone: (s.flags.strikeOff?"down":"flat"), html:parts.join(" "), lesson: lessons.length? lessons.join(" ") : T("Every year brings surprises — a buffer helps you ride them out.","每一年都有意外——有缓冲才能挺过去。")};
     }},
 
   /* R8 — FINAL SEASON */
   { id:"final",
-    render:function(s){ return { title:"The Final Season", flavor:"One last push. Your accumulated reputation, assets and structure decide how strong you finish.",
-        options:[{t:"Close out the year →",h:"Reveal your result."}]};},
+    render:function(s){ return { title:T("The Final Season","最后一季"), flavor:T("One last push. Your accumulated reputation, assets and structure decide how strong you finish.","最后一搏。你累积的口碑、资产和结构，决定你收官时有多强。"),
+        options:[{t:T("Close out the year →","结束这一年 →"),h:T("Reveal your result.","揭晓你的成绩。")}]};},
     resolve:function(s,idx){
       var st=STRUCTURES[s.structKey], I=IDEAS[s.ideaKey];
       var payoff=Math.round((s.bizValue*0.4 + st.cred*120 + (I.growth==="high"?200:120)) * (0.85+RNG()*0.35));
       s.money+=payoff;
-      return {tone:"up", html:"Final-season earnings from everything you built: <b>+"+fmt(payoff)+"</b>.", lesson:"Your business value and credibility converted into real cash at the finish."};
+      return {tone:"up", html:T("Final-season earnings from everything you built: <b>+"+fmt(payoff)+"</b>.","你一手打造的一切，在最后一季变现：<b>+"+fmt(payoff)+"</b>。"), lesson:T("Your business value and credibility converted into real cash at the finish.","收官时，你的生意价值和公信力都变成了真金白银。")};
     }},
 ];
 
@@ -551,52 +580,72 @@ function idealStructure(ideaKey){
 /* ---------------- UI LAYER ---------------- */
 var S=null, stageIdx=0, awaiting=false;
 var app=document.getElementById('app');
+var VIEW=null;   // re-render hook for the language toggle
+
+function paintLang(){
+  document.getElementById('langBtn').textContent = LANG==='zh'?'EN':'中文';
+  document.getElementById('kick').textContent = T('MUCHEN CORPORATE SERVICES · BUSINESS SURVIVAL GAME','沐宸企业服务 · 商业生存游戏');
+  document.getElementById('roundLbl').textContent = T('Round','回合');
+  document.getElementById('onHandLbl').textContent = T('On hand','现金');
+  document.getElementById('foot').innerHTML = T(
+    'A training simulation — not financial or legal advice. Structure effects are simplified from the entity comparison in <b>“Business Essentials — What Directors Need to Know.”</b><br>Scores post to a shared live leaderboard. Verify real-world specifics against current SSM / Companies Act 2016 rules.<br>🍚 New: <a href="/nasi-lemak" style="color:var(--gold2);text-decoration:none;font-weight:700">Nasi Lemak Empire — the Business Vehicle game →</a>',
+    '这是培训模拟——并非财务或法律建议。结构影响取自 <b>《商业要点——董事须知》</b> 的实体对比并作简化。<br>成绩会上传到共享实时排行榜。实际规定请以现行 SSM／2016 年公司法令为准。<br>🍚 新游戏：<a href="/nasi-lemak" style="color:var(--gold2);text-decoration:none;font-weight:700">椰浆饭帝国——商业载体游戏 →</a>');
+}
+function toggleLang(){
+  LANG = LANG==='zh'?'en':'zh';
+  try{ localStorage.setItem('muchen_lang', LANG); }catch(e){}
+  paintLang();
+  if(VIEW) VIEW();
+}
 
 function money(){ document.getElementById('moneyN').textContent=fmt(S.money); document.getElementById('roundN').textContent=Math.min(stageIdx+1,STAGES.length)+" / "+STAGES.length; }
 
 function home(){
-  S=null; document.getElementById('hud').style.display='none';
+  VIEW=home; S=null; document.getElementById('hud').style.display='none';
   app.innerHTML='<div class="card">'
     +'<img class="cover" src="/rm500-cover.jpg" alt="RM500 Startup Challenge" onerror="this.style.display=\'none\'">'
-    +'<p class="lead"><b>Your family just handed you the last RM500 they have.</b> No safety net, no second chance. You want to build something. The idea is the easy part — the choice that quietly decides whether you thrive or lose your family\'s money is the one nobody teaches you: <b>what legal structure do you start with?</b></p>'
-    +'<p class="lead" style="margin-top:10px">Play through one year of decisions and disasters. At the end, your net worth goes on the leaderboard. Whoever reads their business best — and picks the right structure for it — wins.</p>'
-    +'<div class="nav"><button class="btn ghost" onclick="showBoard(true)">🏆 Leaderboard</button><button class="btn gold" onclick="enterName()">Start with RM500 →</button></div>'
+    +'<p class="lead">'+T('<b>Your family just handed you the last RM500 they have.</b> No safety net, no second chance. You want to build something. The idea is the easy part — the choice that quietly decides whether you thrive or lose your family\'s money is the one nobody teaches you: <b>what legal structure do you start with?</b>','<b>家人把最后的 RM500 交到你手上。</b>没有安全网，没有第二次机会。你想干出一番事业。点子是容易的部分——真正悄悄决定你成功还是赔光家人钱的，是没人教你的那个选择：<b>你要用哪种法律结构起步？</b>')+'</p>'
+    +'<p class="lead" style="margin-top:10px">'+T('Play through one year of decisions and disasters. At the end, your net worth goes on the leaderboard. Whoever reads their business best — and picks the right structure for it — wins.','走过一整年的抉择与灾难。结束时，你的净资产会登上排行榜。谁最看得懂自己的生意——并为它选对结构——谁就赢。')+'</p>'
+    +'<div class="nav"><button class="btn ghost" onclick="showBoard(true)">🏆 '+T('Leaderboard','排行榜')+'</button><button class="btn gold" onclick="enterName()">'+T('Start with RM500 →','用 RM500 开始 →')+'</button></div>'
     +'</div>';
 }
 
 function enterName(){
-  app.innerHTML='<div class="card"><h2 class="scene-title">Before we begin…</h2>'
-    +'<p class="lead">What\'s your name, founder? (This is how you\'ll appear on the leaderboard.)</p>'
-    +'<input class="name" id="nm" maxlength="22" placeholder="e.g. Aisha, Team Blue, Desk 3" />'
-    +'<div class="nav"><button class="btn ghost" onclick="home()">← Back</button><button class="btn primary" onclick="chooseIdea()">Next →</button></div></div>';
-  var el=document.getElementById('nm'); el.focus(); el.addEventListener('keydown',function(e){if(e.key==="Enter")chooseIdea();});
+  VIEW=enterName;
+  app.innerHTML='<div class="card"><h2 class="scene-title">'+T('Before we begin…','开始之前……')+'</h2>'
+    +'<p class="lead">'+T('What\'s your name, founder? (This is how you\'ll appear on the leaderboard.)','创办人，你叫什么名字？（这将是你在排行榜上的名字。）')+'</p>'
+    +'<input class="name" id="nm" maxlength="22" placeholder="'+T('e.g. Aisha, Team Blue, Desk 3','例如：Aisha、蓝队、3 号桌')+'" />'
+    +'<div class="nav"><button class="btn ghost" onclick="home()">'+T('← Back','← 返回')+'</button><button class="btn primary" onclick="chooseIdea()">'+T('Next →','下一步 →')+'</button></div></div>';
+  var el=document.getElementById('nm'); if(pendingName) el.value=pendingName; el.focus(); el.addEventListener('keydown',function(e){if(e.key==="Enter")chooseIdea();});
 }
 var pendingName="";
 function chooseIdea(){
   var v=(document.getElementById('nm')?document.getElementById('nm').value:"").trim();
   if(document.getElementById('nm')){ if(!v){document.getElementById('nm').focus();return;} pendingName=v; }
-  app.innerHTML='<div class="card"><h2 class="scene-title">Pick your hustle</h2>'
-    +'<p class="lead">Each idea carries a different mix of <b>risk</b> (chance of a costly disaster) and <b>growth</b> (how much scale and big-client potential it has). This shapes which structure will serve you best.</p>'
+  VIEW=chooseIdea;
+  app.innerHTML='<div class="card"><h2 class="scene-title">'+T('Pick your hustle','选一门生意')+'</h2>'
+    +'<p class="lead">'+T('Each idea carries a different mix of <b>risk</b> (chance of a costly disaster) and <b>growth</b> (how much scale and big-client potential it has). This shapes which structure will serve you best.','每个点子都有不同的<b>风险</b>（发生高价灾难的机率）和<b>成长</b>（规模与大客户潜力）组合。这决定了哪种结构最适合你。')+'</p>'
     +'<div class="grid">'+Object.keys(IDEAS).map(function(k){var I=IDEAS[k];
-        return '<div class="pick" onclick="pickIdea(\''+k+'\')"><div class="em">'+I.em+'</div><h3>'+I.name+'</h3>'
-          +'<div class="sub">'+I.blurb+'</div><div class="stats"><span class="st">Risk: '+I.risk+'</span><span class="st">Growth: '+I.growth+'</span></div></div>';
+        return '<div class="pick" onclick="pickIdea(\''+k+'\')"><div class="em">'+I.em+'</div><h3>'+IN(I)+'</h3>'
+          +'<div class="sub">'+T(I.blurb,I.blurbZh)+'</div><div class="stats"><span class="st">'+T('Risk: ','风险：')+riskZh(I.risk)+'</span><span class="st">'+T('Growth: ','成长：')+growthZh(I.growth)+'</span></div></div>';
       }).join('')+'</div>'
-    +'<div class="nav"><button class="btn ghost" onclick="enterName()">← Back</button><span></span></div></div>';
+    +'<div class="nav"><button class="btn ghost" onclick="enterName()">'+T('← Back','← 返回')+'</button><span></span></div></div>';
 }
 var pendingIdea="";
 function pickIdea(k){ pendingIdea=k; chooseStructure(); }
 
 function chooseStructure(){
-  var I=IDEAS[pendingIdea];
-  app.innerHTML='<div class="card"><h2 class="scene-title">Choose your legal structure</h2>'
-    +'<p class="lead">This is the big one. It decides your starting cash (setup costs come out of your RM500), whether your family\'s money is protected when disaster hits, whether you can raise money, and how much you\'ll pay to stay compliant. Choose for <b>'+I.em+' '+I.name+'</b> (risk: '+I.risk+', growth: '+I.growth+').</p>'
+  var I=IDEAS[pendingIdea]; VIEW=chooseStructure;
+  app.innerHTML='<div class="card"><h2 class="scene-title">'+T('Choose your legal structure','选择你的法律结构')+'</h2>'
+    +'<p class="lead">'+T('This is the big one. It decides your starting cash (setup costs come out of your RM500), whether your family\'s money is protected when disaster hits, whether you can raise money, and how much you\'ll pay to stay compliant. Choose for <b>'+I.em+' '+I.name+'</b> (risk: '+I.risk+', growth: '+I.growth+').','这是最关键的一步。它决定你的起步现金（注册费从 RM500 里扣）、灾难来临时家人的钱是否受保护、你能不能募资，以及维持合规要花多少。为 <b>'+I.em+' '+IN(I)+'</b>（风险：'+riskZh(I.risk)+'，成长：'+growthZh(I.growth)+'）做选择。')+'</p>'
     +'<div class="grid">'+Object.keys(STRUCTURES).map(function(k){var st=STRUCTURES[k];
-        var badge = st.needsPartners ? ('Setup '+fmt(st.setup)+' · needs co-founders') : ('Solo start cash '+fmt(500-st.setup));
-        return '<div class="pick" onclick="pickStruct(\''+k+'\')"><div class="em">'+st.em+'</div><h3>'+st.name+'</h3>'
-          +'<div class="sub">'+st.sub+'</div><div class="stats"><span class="st">'+badge+'</span>'
-          +st.stats.map(function(x){return '<span class="st">'+x+'</span>';}).join('')+'</div></div>';
+        var badge = st.needsPartners ? T('Setup '+fmt(st.setup)+' · needs co-founders','注册 '+fmt(st.setup)+' · 需要合伙人') : T('Solo start cash '+fmt(500-st.setup),'独资起步现金 '+fmt(500-st.setup));
+        var stats = LANG==='zh'? st.statsZh : st.stats;
+        return '<div class="pick" onclick="pickStruct(\''+k+'\')"><div class="em">'+st.em+'</div><h3>'+SN(st)+'</h3>'
+          +'<div class="sub">'+T(st.sub,st.subZh)+'</div><div class="stats"><span class="st">'+badge+'</span>'
+          +stats.map(function(x){return '<span class="st">'+x+'</span>';}).join('')+'</div></div>';
       }).join('')+'</div>'
-    +'<div class="nav"><button class="btn ghost" onclick="chooseIdea()">← Back</button><span></span></div></div>';
+    +'<div class="nav"><button class="btn ghost" onclick="chooseIdea()">'+T('← Back','← 返回')+'</button><span></span></div></div>';
 }
 var pendingStruct="", pendingPartners=0;
 function pickStruct(k){
@@ -607,38 +656,37 @@ function pickStruct(k){
 function startPlay(){ stageIdx=0; awaiting=false; document.getElementById('hud').style.display='flex'; money(); renderStage(); }
 
 function choosePartners(){
-  var st=STRUCTURES[pendingStruct];
-  app.innerHTML='<div class="card"><h2 class="scene-title">Find your co-founders</h2>'
-    +'<p class="lead">RM500 alone can\'t stand up a '+st.name+' — setup runs <b>'+fmt(st.setup)+'</b>'
-    +(st.key==="sdnbhd"?', far beyond your RM500':'')+', and it needs more than one owner. You pool capital with co-founders who each put in <b>RM500</b>. More co-founders = more cash to trade with, but a smaller slice of the business for you.</p>'
+  var st=STRUCTURES[pendingStruct]; VIEW=choosePartners;
+  app.innerHTML='<div class="card"><h2 class="scene-title">'+T('Find your co-founders','找你的合伙人')+'</h2>'
+    +'<p class="lead">'+T('RM500 alone can\'t stand up a '+st.name+' — setup runs <b>'+fmt(st.setup)+'</b>'+(st.key==="sdnbhd"?', far beyond your RM500':'')+', and it needs more than one owner. You pool capital with co-founders who each put in <b>RM500</b>. More co-founders = more cash to trade with, but a smaller slice of the business for you.','单靠 RM500 撑不起一个'+SN(st)+'——注册要 <b>'+fmt(st.setup)+'</b>'+(st.key==="sdnbhd"?'，远超你的 RM500':'')+'，而且需要不止一位股东。你和合伙人一起凑资本，每人各出 <b>RM500</b>。合伙人越多＝可周转的现金越多，但你分到的股份越小。')+'</p>'
     +'<div class="opts">'+st.partnerOpts.map(function(n){
         var pool=500*(1+n); var own=Math.round(100/(1+n));
-        return '<div class="opt" onclick="setPartners('+n+')"><div class="t">'+n+' co-founder'+(n>1?'s':'')+' &nbsp;·&nbsp; pool '+fmt(pool)+'</div><div class="h">You\'d own '+own+'% of the business. Pooled capital before setup: '+fmt(pool)+'.</div></div>';
+        return '<div class="opt" onclick="setPartners('+n+')"><div class="t">'+T(n+' co-founder'+(n>1?'s':'')+' &nbsp;·&nbsp; pool '+fmt(pool),n+' 位合伙人 &nbsp;·&nbsp; 凑 '+fmt(pool))+'</div><div class="h">'+T('You\'d own '+own+'% of the business. Pooled capital before setup: '+fmt(pool)+'.','你将持有生意的 '+own+'%。注册前的合资本金：'+fmt(pool)+'。')+'</div></div>';
       }).join('')+'</div>'
-    +'<div class="nav"><button class="btn ghost" onclick="chooseStructure()">← Back</button><span></span></div></div>';
+    +'<div class="nav"><button class="btn ghost" onclick="chooseStructure()">'+T('← Back','← 返回')+'</button><span></span></div></div>';
 }
 function setPartners(n){ pendingPartners=n; chooseAgreement(); }
 
 function chooseAgreement(){
-  var st=STRUCTURES[pendingStruct]; var pool=500*(1+pendingPartners);
+  var st=STRUCTURES[pendingStruct]; var pool=500*(1+pendingPartners); VIEW=chooseAgreement;
   var withCap=pool-st.setup-st.agreementFee, noCap=pool-st.setup;
-  app.innerHTML='<div class="card"><h2 class="scene-title">Do you sign an agreement?</h2>'
-    +'<p class="lead">Before you take everyone\'s money, decide how you\'ll run things together. A '+(st.equity?"shareholders&#39;":"partnership")+' agreement fixes the profit split, decision rights and what happens if someone wants out — but it costs <b>'+fmt(st.agreementFee)+'</b> to draft now. Skip it and you keep the cash… and hope you never fall out.</p>'
+  app.innerHTML='<div class="card"><h2 class="scene-title">'+T('Do you sign an agreement?','你要签协议吗？')+'</h2>'
+    +'<p class="lead">'+T('Before you take everyone\'s money, decide how you\'ll run things together. A '+(st.equity?"shareholders&#39;":"partnership")+' agreement fixes the profit split, decision rights and what happens if someone wants out — but it costs <b>'+fmt(st.agreementFee)+'</b> to draft now. Skip it and you keep the cash… and hope you never fall out.','在收下大家的钱之前，先定好你们怎么一起经营。一份'+(st.equity?'股东':'合伙')+'协议会写明分红、决策权，以及有人想退出时怎么办——但现在起草要花 <b>'+fmt(st.agreementFee)+'</b>。跳过就能省下这笔钱……然后祈祷你们永远不翻脸。')+'</p>'
     +'<div class="opts">'
-    +'<div class="opt" onclick="setAgreement(true)"><div class="t">✍️ Sign a proper agreement (−'+fmt(st.agreementFee)+')</div><div class="h">Working capital after setup: '+fmt(withCap)+'. Protects you if disputes arise later.</div></div>'
-    +'<div class="opt" onclick="setAgreement(false)"><div class="t">🤞 Skip it — a handshake will do</div><div class="h">Working capital after setup: '+fmt(noCap)+'. Cheaper now, dangerous if things go wrong.</div></div>'
+    +'<div class="opt" onclick="setAgreement(true)"><div class="t">'+T('✍️ Sign a proper agreement (−'+fmt(st.agreementFee)+')','✍️ 签一份正式协议（−'+fmt(st.agreementFee)+'）')+'</div><div class="h">'+T('Working capital after setup: '+fmt(withCap)+'. Protects you if disputes arise later.','注册后的营运资金：'+fmt(withCap)+'。日后起争议时保护你。')+'</div></div>'
+    +'<div class="opt" onclick="setAgreement(false)"><div class="t">'+T('🤞 Skip it — a handshake will do','🤞 跳过——握个手就行')+'</div><div class="h">'+T('Working capital after setup: '+fmt(noCap)+'. Cheaper now, dangerous if things go wrong.','注册后的营运资金：'+fmt(noCap)+'。现在省钱，出事时危险。')+'</div></div>'
     +'</div>'
-    +'<div class="nav"><button class="btn ghost" onclick="choosePartners()">← Back</button><span></span></div></div>';
+    +'<div class="nav"><button class="btn ghost" onclick="choosePartners()">'+T('← Back','← 返回')+'</button><span></span></div></div>';
 }
 function setAgreement(v){ S=newState(pendingName,pendingStruct,pendingIdea,pendingPartners,v); startPlay(); }
 
 function renderStage(){
-  awaiting=false;
+  awaiting=false; VIEW=renderStage;
   var stage=STAGES[stageIdx]; var v=stage.render(S); var I=IDEAS[S.ideaKey], st=STRUCTURES[S.structKey];
   money();
   var html='<div class="card">'
-    +'<div class="tagrow"><span class="tag n">'+st.em+' '+st.name+'</span><span class="tag g">'+I.em+' '+I.name+'</span>'
-      +(S.numPartners>0 ? '<span class="tag n">You own '+Math.round(S.ownership*100)+'% · '+(S.hasAgreement?'agreement ✍️':'no agreement 🤞')+'</span>' : '')+'</div>'
+    +'<div class="tagrow"><span class="tag n">'+st.em+' '+SN(st)+'</span><span class="tag g">'+I.em+' '+IN(I)+'</span>'
+      +(S.numPartners>0 ? '<span class="tag n">'+T('You own '+Math.round(S.ownership*100)+'% · '+(S.hasAgreement?'agreement ✍️':'no agreement 🤞'),'你持股 '+Math.round(S.ownership*100)+'% · '+(S.hasAgreement?'有协议 ✍️':'无协议 🤞'))+'</span>' : '')+'</div>'
     +'<h2 class="scene-title">'+v.title+'</h2>'
     +'<div class="scene-flavor">'+v.flavor+'</div>'
     +'<div class="opts" id="opts">'+v.options.map(function(o,i){
@@ -650,7 +698,7 @@ function renderStage(){
 }
 function journalHTML(){
   if(!S.log.length) return '';
-  return '<div class="journal"><h4>Your story so far</h4>'+S.log.map(function(e){
+  return '<div class="journal"><h4>'+T('Your story so far','你的经历')+'</h4>'+S.log.map(function(e){
     return '<div class="jrow"><span>'+e.title+'</span><span class="d '+(e.delta>0?'up':(e.delta<0?'down':''))+'">'+(e.delta===0?'':fmtDelta(e.delta))+'</span></div>';
   }).join('')+'</div>';
 }
@@ -666,12 +714,13 @@ function choose(idx){
   money();
   // render outcome then Next
   var toneClass = r.tone==='up'?'up':(r.tone==='down'?'down':'flat');
-  var deltaTxt = delta!==0 ? '<div class="delta">'+fmtDelta(delta)+' &nbsp;·&nbsp; On hand: '+fmt(S.money)+'</div>' : '<div class="delta">On hand: '+fmt(S.money)+'</div>';
+  var onHand=T('On hand: ','现金：');
+  var deltaTxt = delta!==0 ? '<div class="delta">'+fmtDelta(delta)+' &nbsp;·&nbsp; '+onHand+fmt(S.money)+'</div>' : '<div class="delta">'+onHand+fmt(S.money)+'</div>';
   var last=stageIdx>=STAGES.length-1;
   app.querySelector('#opts').outerHTML =
     '<div class="outcome '+toneClass+'">'+deltaTxt+'<div style="margin-top:6px">'+r.html+'</div>'
-    +(r.lesson?'<div class="lesson"><b>💡 Lesson:</b> '+r.lesson+'</div>':'')+'</div>'
-    +'<div class="nav"><span></span><button class="btn '+(last?'gold':'primary')+'" onclick="'+(last?'endGame()':'nextStage()')+'">'+(last?'See my result 🏁':'Continue →')+'</button></div>';
+    +(r.lesson?'<div class="lesson"><b>'+T('💡 Lesson:','💡 启示：')+'</b> '+r.lesson+'</div>':'')+'</div>'
+    +'<div class="nav"><span></span><button class="btn '+(last?'gold':'primary')+'" onclick="'+(last?'endGame()':'nextStage()')+'">'+(last?T('See my result 🏁','看我的成绩 🏁'):T('Continue →','继续 →'))+'</button></div>';
 }
 function nextStage(){ stageIdx++; renderStage(); }
 
@@ -683,10 +732,10 @@ function endGame(){
   saveBoard(localBoard);
   document.getElementById('hud').style.display='none';
   var neg = final<0;
-  var verdict = neg ? "You ended in the red — the business took your family's money down with it." :
-    final>=6000 ? "Outstanding — you built real wealth from RM500." :
-    final>=2500 ? "Solid — a healthy, surviving business." :
-    final>=500 ? "You made it through, modestly ahead." : "You survived, but barely broke even.";
+  function verdictText(){ return neg ? T("You ended in the red — the business took your family's money down with it.","你以负数收场——生意把家人的钱也一起拖了下去。") :
+    final>=6000 ? T("Outstanding — you built real wealth from RM500.","出色——你从 RM500 打造出真正的财富。") :
+    final>=2500 ? T("Solid — a healthy, surviving business.","扎实——一门健康、活下来的生意。") :
+    final>=500 ? T("You made it through, modestly ahead.","你撑过来了，略有盈余。") : T("You survived, but barely broke even.","你活下来了，但仅仅打平。"); }
 
   function renderFinal(board, syncing){
     var rank=board.findIndex(function(e){return e.ts===entry.ts && e.name===entry.name;})+1;
@@ -694,16 +743,17 @@ function endGame(){
     var medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
     app.innerHTML='<div class="card">'
       +'<div class="finalscore">'+(medal?'<div class="medal">'+medal+'</div>':'')
-      +'<div style="color:var(--mute);font-size:13px;letter-spacing:1px;text-transform:uppercase">'+S.name+'\'s final net worth</div>'
+      +'<div style="color:var(--mute);font-size:13px;letter-spacing:1px;text-transform:uppercase">'+T(S.name+'\'s final net worth',S.name+' 的最终净资产')+'</div>'
       +'<div class="big'+(neg?' neg':'')+'">'+fmt(final)+'</div>'
-      +'<div class="verdict">'+verdict+' &nbsp;·&nbsp; Rank #'+rank+' of '+board.length+'</div></div>'
+      +'<div class="verdict">'+verdictText()+' &nbsp;·&nbsp; '+T('Rank #'+rank+' of '+board.length,'第 '+rank+' 名，共 '+board.length+' 人')+'</div></div>'
       + debriefHTML(final)
-      + '<h4 style="margin:22px 0 0;color:var(--navy);font-family:Cambria,Georgia,serif">🏆 Leaderboard'+syncTag(syncing)+'</h4>'
+      + '<h4 style="margin:22px 0 0;color:var(--navy);font-family:Cambria,Georgia,serif">🏆 '+T('Leaderboard','排行榜')+syncTag(syncing)+'</h4>'
       + boardTable(board, entry.ts)
       + boardNote()
-      +'<div class="nav"><span></span><button class="btn gold" onclick="home()">Play again →</button></div>'
+      +'<div class="nav"><span></span><button class="btn gold" onclick="home()">'+T('Play again →','再玩一次 →')+'</button></div>'
       +'</div>';
   }
+  VIEW=function(){ renderFinal(loadBoard(), false); };
   // Show instantly with the local view, then sync the shared board in.
   renderFinal(localBoard, true);
   cloudPost(entry).then(function(board){
@@ -715,43 +765,49 @@ function endGame(){
 function debriefHTML(final){
   var f=S.flags, I=IDEAS[S.ideaKey], st=STRUCTURES[S.structKey], ideal=idealStructure(S.ideaKey);
   var pts=[];
-  if(f.lawsuitShielded) pts.push("When the lawsuit hit, your <b>limited liability shielded your family's money</b> — only the business was exposed.");
-  if(f.lawsuitPersonal) pts.push("The lawsuit reached <b>past the business into your family's savings</b> because you had <b>unlimited liability</b>. A shield would have capped the loss.");
-  if(f.bigClient) pts.push("Being a registered entity <b>won you the big client</b> a sole trader couldn't land.");
-  if(f.missedBigClient) pts.push("You <b>lost the big client</b> because your structure was too informal for a corporate buyer.");
-  if(f.investor) pts.push("You <b>raised RM4,000 in equity</b> — something only a company (Sdn Bhd) can do.");
-  if(f.loan) pts.push("With no shares to sell, you grew by taking on <b>personal debt</b>.");
-  if(f.disputeResolved) pts.push("When the co-founders clashed, your <b>signed agreement</b> settled it cheaply — the RM"+STRUCTURES[S.structKey].agreementFee+" you spent up front paid for itself many times over.");
-  if(f.disputeUgly) pts.push("You went in on a handshake, and the co-founder fallout had <b>no agreement</b> to fall back on — a costly, avoidable mess.");
-  if(f.sharkPain) pts.push("Borrowing from a loan shark was the fatal mistake — they <b>bypassed your limited liability</b> and came after you personally.");
-  else if(f.shark) pts.push("You danced with a loan shark and it dragged you down — informal debt ignores every legal protection a structure gives you.");
-  if(f.bankLine) pts.push("Your registered entity let you raise <b>legitimate</b> bank finance instead of predatory debt — a real structural advantage.");
-  if(f.argueDrag) pts.push("Everyday disagreements became costly deadlocks because nothing was written down.");
-  if(f.alignedByAgreement) pts.push("Your agreement's decision rules kept ordinary disputes from stalling the business.");
-  if(f.hired) pts.push("You took on staff to grow — which also meant taking on EPF, SOCSO and Employment Act duties.");
-  if(f.strikeOff) pts.push("Skipping your SSM filings led to a <b>compound and strike-off threat</b> — an expensive, avoidable mistake.");
-  if(f.overkill) pts.push("Your structure was <b>heavier than the business needed</b>, and compliance costs quietly ate your margins.");
-  if(S.numPartners>0) pts.push("With "+S.numPartners+" co-founder"+(S.numPartners>1?'s':'')+" you owned <b>"+Math.round(S.ownership*100)+"%</b> — more capital to start with, but a smaller slice of the final result.");
-  if(!pts.length) pts.push("You navigated the year without a defining structural moment — a calm run.");
+  if(f.lawsuitShielded) pts.push(T("When the lawsuit hit, your <b>limited liability shielded your family's money</b> — only the business was exposed.","官司来袭时，你的<b>有限责任护住了家人的钱</b>——只有生意本身暴露在风险中。"));
+  if(f.lawsuitPersonal) pts.push(T("The lawsuit reached <b>past the business into your family's savings</b> because you had <b>unlimited liability</b>. A shield would have capped the loss.","因为你负<b>无限责任</b>，官司<b>越过生意追进了家人的积蓄</b>。一层保护罩本可封顶这个损失。"));
+  if(f.bigClient) pts.push(T("Being a registered entity <b>won you the big client</b> a sole trader couldn't land.","正规注册的身份<b>为你赢得了大客户</b>——那是独资户拿不下的。"));
+  if(f.missedBigClient) pts.push(T("You <b>lost the big client</b> because your structure was too informal for a corporate buyer.","你<b>丢了大客户</b>，因为你的结构对企业买家来说太不正规。"));
+  if(f.investor) pts.push(T("You <b>raised RM4,000 in equity</b> — something only a company (Sdn Bhd) can do.","你<b>募得 RM4,000 股权资金</b>——这是只有公司（Sdn Bhd）才能做到的。"));
+  if(f.loan) pts.push(T("With no shares to sell, you grew by taking on <b>personal debt</b>.","没有股份可卖，你只能靠背上<b>个人债务</b>来成长。"));
+  if(f.disputeResolved) pts.push(T("When the co-founders clashed, your <b>signed agreement</b> settled it cheaply — the RM"+STRUCTURES[S.structKey].agreementFee+" you spent up front paid for itself many times over.","合伙人翻脸时，你签好的<b>协议</b>低成本地摆平了争议——你先前花的 RM"+STRUCTURES[S.structKey].agreementFee+" 早已回本好几倍。"));
+  if(f.disputeUgly) pts.push(T("You went in on a handshake, and the co-founder fallout had <b>no agreement</b> to fall back on — a costly, avoidable mess.","你靠握手成事，合伙人翻脸时<b>没有协议</b>可依靠——一场昂贵却本可避免的烂摊子。"));
+  if(f.sharkPain) pts.push(T("Borrowing from a loan shark was the fatal mistake — they <b>bypassed your limited liability</b> and came after you personally.","向高利贷借钱是致命错误——他们<b>绕过你的有限责任</b>，直接追你本人。"));
+  else if(f.shark) pts.push(T("You danced with a loan shark and it dragged you down — informal debt ignores every legal protection a structure gives you.","你和高利贷周旋，被它拖了下去——非正规债务无视结构给你的一切法律保护。"));
+  if(f.bankLine) pts.push(T("Your registered entity let you raise <b>legitimate</b> bank finance instead of predatory debt — a real structural advantage.","你的注册实体让你能获得<b>正规</b>银行融资，而非掠夺性债务——这是实实在在的结构优势。"));
+  if(f.argueDrag) pts.push(T("Everyday disagreements became costly deadlocks because nothing was written down.","因为什么都没写下来，日常分歧变成了昂贵的僵局。"));
+  if(f.alignedByAgreement) pts.push(T("Your agreement's decision rules kept ordinary disputes from stalling the business.","协议里的决策规则让普通争议没能拖垮生意。"));
+  if(f.hired) pts.push(T("You took on staff to grow — which also meant taking on EPF, SOCSO and Employment Act duties.","你请人来成长——这也意味着承担 EPF、SOCSO 和雇佣法令的责任。"));
+  if(f.strikeOff) pts.push(T("Skipping your SSM filings led to a <b>compound and strike-off threat</b> — an expensive, avoidable mistake.","跳过 SSM 申报招来了<b>罚单和除名威胁</b>——一个昂贵却本可避免的错误。"));
+  if(f.overkill) pts.push(T("Your structure was <b>heavier than the business needed</b>, and compliance costs quietly ate your margins.","你的结构<b>比生意所需的更重</b>，合规成本悄悄吃掉了你的利润。"));
+  if(S.numPartners>0) pts.push(T("With "+S.numPartners+" co-founder"+(S.numPartners>1?'s':'')+" you owned <b>"+Math.round(S.ownership*100)+"%</b> — more capital to start with, but a smaller slice of the final result.","有 "+S.numPartners+" 位合伙人，你持股 <b>"+Math.round(S.ownership*100)+"%</b>——起步资本更多，但最终成果分到的份额更小。"));
+  if(!pts.length) pts.push(T("You navigated the year without a defining structural moment — a calm run.","这一年你没遇到决定性的结构时刻——平稳的一程。"));
 
-  var matched = st.key===ideal.key || (ideal.key==="sdnbhd"&&st.key==="sdnbhd") ;
   // treat LLP as acceptable where ideal says "LLP (or Sdn Bhd)"
   var idealOk = (ideal.key===st.key) || (ideal.label.indexOf("LLP")>=0 && (st.key==="llp"||st.key==="sdnbhd"));
   var fitLine = idealOk
-    ? "✅ <b>Good fit.</b> A "+st.name+" suited a "+I.name.toLowerCase()+" ("+I.risk+" risk, "+I.growth+" growth)."
-    : "⚠️ <b>Mismatch.</b> For a "+I.name.toLowerCase()+" ("+I.risk+" risk, "+I.growth+" growth), the stronger choice was a <b>"+ideal.label+"</b> — because "+ideal.why;
+    ? T("✅ <b>Good fit.</b> A "+st.name+" suited a "+I.name.toLowerCase()+" ("+I.risk+" risk, "+I.growth+" growth).","✅ <b>选对了。</b>"+SN(st)+"很适合"+IN(I)+"（"+riskZh(I.risk)+"风险、"+growthZh(I.growth)+"成长）。")
+    : T("⚠️ <b>Mismatch.</b> For a "+I.name.toLowerCase()+" ("+I.risk+" risk, "+I.growth+" growth), the stronger choice was a <b>"+ideal.label+"</b> — because "+ideal.why,"⚠️ <b>不匹配。</b>对"+IN(I)+"（"+riskZh(I.risk)+"风险、"+growthZh(I.growth)+"成长）来说，更好的选择是 <b>"+idealLabelZh(ideal)+"</b>——因为"+idealWhyZh(ideal));
 
-  return '<div class="debrief"><h4>What your structure did to your year</h4><ul>'
+  return '<div class="debrief"><h4>'+T('What your structure did to your year','你的结构如何左右了这一年')+'</h4><ul>'
     + pts.map(function(p){return '<li>'+p+'</li>';}).join('')
     + '</ul><div class="ideal">'+fitLine+'</div></div>';
 }
+function idealLabelZh(ideal){ return ({sdnbhd:"私人有限公司 (Sdn Bhd)", llp:"有限责任合伙 LLP（或 Sdn Bhd）", sole:"独资经营"})[ideal.key] || ideal.label; }
+function idealWhyZh(ideal){ return ({
+  sdnbhd_hh:"高风险又高成长，既需要责任保护罩，也需要募资能力。",
+  llp:"风险高但规模小的生意，需要有限责任保护，却不必背上公司那么重的负担。",
+  sdnbhd_lh:"可扩张的生意需要对大客户的公信力，以及获取股权融资的渠道。",
+  sole:"小型、低风险、低成长的生意，最好保持便宜又简单——更重的结构只会徒增成本。"
+})[ideal.key==='sdnbhd' ? (ideal.why.indexOf('scalable')>=0?'sdnbhd_lh':'sdnbhd_hh') : ideal.key] || ideal.why; }
 
 function boardTable(board, myTs){
   var rows=board.slice(0,12).map(function(e,i){
     var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
     return '<tr class="'+(e.ts===myTs?'me':'')+'"><td>'+medal+'</td><td>'+e.name+'</td><td>'+e.structEm+' '+e.structure+'</td><td>'+e.ideaEm+'</td><td class="sc">'+fmt(e.score)+'</td></tr>';
   }).join('');
-  return '<div class="lbwrap"><table class="lb"><tr><th>#</th><th>Founder</th><th>Structure</th><th>Biz</th><th style="text-align:right">Net worth</th></tr>'+rows+'</table></div>';
+  return '<div class="lbwrap"><table class="lb"><tr><th>#</th><th>'+T('Founder','创办人')+'</th><th>'+T('Structure','结构')+'</th><th>'+T('Biz','生意')+'</th><th style="text-align:right">'+T('Net worth','净资产')+'</th></tr>'+rows+'</table></div>';
 }
 function loadBoard(){ try{return JSON.parse(localStorage.getItem('rm500_leaderboard')||'[]');}catch(e){return [];} }
 function saveBoard(b){ try{localStorage.setItem('rm500_leaderboard', JSON.stringify(b.slice(0,50)));}catch(e){} }
@@ -768,35 +824,37 @@ function cloudPost(entry){
     .then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); })
     .then(function(j){ CLOUD_ON=true; return (j&&j.board)||[]; });
 }
-function syncTag(on){ return on ? ' <span style="font-size:12px;color:var(--mute);font-weight:400">· syncing…</span>' : ''; }
+function syncTag(on){ return on ? ' <span style="font-size:12px;color:var(--mute);font-weight:400">'+T('· syncing…','· 同步中…')+'</span>' : ''; }
 function boardNote(){
   return CLOUD_ON
-    ? '<p class="lead" style="font-size:13px;color:var(--mute);margin-top:10px">🌐 Live shared leaderboard — every founder who plays on any device appears here.</p>'
-    : '<p class="lead" style="font-size:13px;color:var(--mute);margin-top:10px">📵 Offline — showing this device only. Scores will join the shared board once you\'re back online.</p>';
+    ? '<p class="lead" style="font-size:13px;color:var(--mute);margin-top:10px">'+T('🌐 Live shared leaderboard — every founder who plays on any device appears here.','🌐 实时共享排行榜——任何设备上玩过的创办人都会出现在这里。')+'</p>'
+    : '<p class="lead" style="font-size:13px;color:var(--mute);margin-top:10px">'+T('📵 Offline — showing this device only. Scores will join the shared board once you\'re back online.','📵 离线——只显示本设备。恢复联网后成绩会加入共享排行榜。')+'</p>';
 }
 /* Host-only reset: open the site with ?admin=YOUR_ADMIN_KEY to reveal the button. */
 function adminKey(){ try{return new URLSearchParams(location.search).get('admin')||'';}catch(e){return '';} }
-function adminBtn(){ return adminKey() ? '<button class="btn ghost" onclick="hostReset()">🗑 Clear shared board (host)</button>' : '<span></span>'; }
+function adminBtn(){ return adminKey() ? '<button class="btn ghost" onclick="hostReset()">'+T('🗑 Clear shared board (host)','🗑 清空共享排行榜（主持人）')+'</button>' : '<span></span>'; }
 function hostReset(){
-  if(!confirm('Clear the shared leaderboard for EVERYONE? This cannot be undone.')) return;
+  if(!confirm(T('Clear the shared leaderboard for EVERYONE? This cannot be undone.','要为所有人清空共享排行榜吗？此操作无法撤销。'))) return;
   fetch('/api/scores?key='+encodeURIComponent(adminKey()),{method:'DELETE'})
     .then(function(r){ if(!r.ok) throw new Error('http '+r.status); saveBoard([]); showBoard(true); })
-    .catch(function(){ alert('Reset failed — check that ADMIN_KEY is set in Vercel and the ?admin= key matches.'); });
+    .catch(function(){ alert(T('Reset failed — check that ADMIN_KEY is set in Vercel and the ?admin= key matches.','重置失败——请检查 Vercel 是否设置了 ADMIN_KEY，且 ?admin= 的钥匙是否匹配。')); });
 }
 
 function showBoard(fromHome){
+  VIEW=function(){ showBoard(fromHome); };
   document.getElementById('hud').style.display='none';
   function render(board, syncing){
-    app.innerHTML='<div class="card"><h2 class="scene-title">🏆 Leaderboard'+syncTag(syncing)+'</h2>'
-      +(board.length? boardTable(board,-1) : '<p class="lead">No games played yet. Be the first founder on the board.</p>')
+    app.innerHTML='<div class="card"><h2 class="scene-title">🏆 '+T('Leaderboard','排行榜')+syncTag(syncing)+'</h2>'
+      +(board.length? boardTable(board,-1) : '<p class="lead">'+T('No games played yet. Be the first founder on the board.','还没有人玩过。成为榜上第一位创办人吧。')+'</p>')
       + boardNote()
-      +'<div class="nav">'+adminBtn()+'<button class="btn gold" onclick="home()">'+(fromHome?'← Back':'Play')+'</button></div></div>';
+      +'<div class="nav">'+adminBtn()+'<button class="btn gold" onclick="home()">'+(fromHome?T('← Back','← 返回'):T('Play','开始'))+'</button></div></div>';
   }
   render(loadBoard(), true);
   cloudGet().then(function(board){ saveBoard(board); render(board,false); })
             .catch(function(){ render(loadBoard(),false); });
 }
 
+paintLang();
 home();
 </script>
 <audio id="bgm" src="/henesys-floral-life.mp3" loop preload="auto"></audio>

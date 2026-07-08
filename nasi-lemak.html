@@ -1403,9 +1403,7 @@ function finale(){
   var nw = netWorth();
   var entry = { name:S.name, vk:S.vk, vehicle:VEHICLES[S.vk].name, em:VEHICLES[S.vk].em,
     listed:S.listed, market:S.market, score:nw, ts:Date.now() };
-  var board = loadBoard(); board.push(entry); board.sort(function(a,b){return b.score-a.score;}); saveBoard(board);
-  var rank = board.findIndex(function(e){return e.ts===entry.ts && e.name===entry.name;})+1;
-  var medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
+  var localBoard = loadBoard(); localBoard.push(entry); localBoard.sort(function(a,b){return b.score-a.score;}); saveBoard(localBoard);
 
   function verdictText(){ return S.listed ? T('You built a listed company — the top of the ladder.','你建成了一家上市公司——阶梯的顶端。') :
     nw>=700000 ? T('A serious, valuable business.','一门认真、有价值的生意。') :
@@ -1413,7 +1411,10 @@ function finale(){
     nw>=80000 ? T('A modest living built from a stall.','从一个小摊建起的一份不错生计。') :
     nw>0 ? T('You survived, but growth stayed capped.','你活下来了，但成长始终受限。') : T('The venture ended underwater.','这门生意以资不抵债收场。'); }
 
-  function renderFinale(){
+  function renderFinale(board, syncing){
+    var rank = board.findIndex(function(e){return e.ts===entry.ts && e.name===entry.name;})+1;
+    if(rank<=0) rank=board.length;
+    var medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
     app.innerHTML = '<div class="card">'
       + '<div class="finalscore">'
       +   (medal?'<div class="medal">'+medal+'</div>':'')
@@ -1424,16 +1425,20 @@ function finale(){
       + breakdownHTML(nw)
       + debriefHTML()
       + ladderHTML()
-      + '<h4 style="margin:22px 0 0;color:var(--navy);font-family:Cambria,Georgia,serif">🏆 '+T('Leaderboard','排行榜')+syncTag(!CLOUD_READY)+'</h4>'
+      + '<h4 style="margin:22px 0 0;color:var(--navy);font-family:Cambria,Georgia,serif">🏆 '+T('Leaderboard','排行榜')+syncTag(syncing)+'</h4>'
       + boardTable(board, entry.ts)
       + boardNote()
       + '<div class="nav"><span></span><button class="btn gold" onclick="home()">'+T('Play again →','再玩一次 →')+'</button></div>'
       + '</div>';
     window.scrollTo(0,0);
   }
-  VIEW = renderFinale;
-  renderFinale();
-  cloudSubmit(entry);
+  VIEW = function(){ renderFinale(loadBoard(), false); };
+  // Show instantly with the local view, then sync the shared board in.
+  renderFinale(localBoard, true);
+  cloudPost(entry).then(function(board){
+    if(board && board.length){ saveBoard(board); renderFinale(board, false); }
+    else renderFinale(localBoard, false);
+  }).catch(function(){ renderFinale(localBoard, false); });
 }
 
 function breakdownHTML(nw){
@@ -1511,17 +1516,27 @@ function ladderHTML(){
 /* ============================================================
    Leaderboard — localStorage now, shared cloud when wired
    ============================================================ */
-var CLOUD_READY = false;
 function loadBoard(){ try{return JSON.parse(localStorage.getItem('nasilemak_leaderboard')||'[]');}catch(e){return [];} }
 function saveBoard(b){ try{localStorage.setItem('nasilemak_leaderboard', JSON.stringify(b.slice(0,50)));}catch(e){} }
-function syncTag(off){ return ''; } // reserved for future cloud "syncing…" hint
-function boardNote(){
-  return CLOUD_READY
-    ? '<p class="lead" style="font-size:13px;margin-top:10px">🌐 '+T('Live shared leaderboard — every founder who plays appears here.','实时共享排行榜——每位玩过的创办人都会出现在这里。')+'</p>'
-    : '<p class="lead" style="font-size:13px;margin-top:10px">📱 '+T('Saved on this device. Ask Muchen to switch on the shared board for a live seminar ranking.','保存在本设备。想在研讨会现场做实时排名，请让沐宸开启共享排行榜。')+'</p>';
+
+/* ---------- Shared cloud leaderboard (falls back to this-browser storage) ---------- */
+var CLOUD_ON=false;
+function cloudGet(){
+  return fetch('/api/scores?game=nasilemak',{cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); })
+    .then(function(j){ CLOUD_ON=true; return (j&&j.board)||[]; });
 }
-/* Placeholder so wiring a shared backend later is a one-liner; safe no-op today. */
-function cloudSubmit(entry){ /* POST to /api/scores?game=nasilemak once the shared board is enabled */ }
+function cloudPost(entry){
+  return fetch('/api/scores?game=nasilemak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)})
+    .then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); })
+    .then(function(j){ CLOUD_ON=true; return (j&&j.board)||[]; });
+}
+function syncTag(on){ return on ? ' <span style="font-size:12px;color:var(--mute);font-weight:400">'+T('· syncing…','· 同步中…')+'</span>' : ''; }
+function boardNote(){
+  return CLOUD_ON
+    ? '<p class="lead" style="font-size:13px;margin-top:10px">🌐 '+T('Live shared leaderboard — every founder who plays on any device appears here.','实时共享排行榜——任何设备上玩过的创办人都会出现在这里。')+'</p>'
+    : '<p class="lead" style="font-size:13px;margin-top:10px">📵 '+T('Offline — showing this device only. Scores will join the shared board once you\'re back online.','离线——只显示本设备。恢复联网后成绩会加入共享排行榜。')+'</p>';
+}
 
 function boardTable(board, myTs){
   var rows = board.slice(0,12).map(function(e,i){
@@ -1534,12 +1549,16 @@ function boardTable(board, myTs){
 function showBoard(fromHome){
   VIEW = function(){ showBoard(fromHome); };
   document.getElementById('hud').style.display='none';
-  var board = loadBoard();
-  app.innerHTML = '<div class="card"><h2 class="scene-title">🏆 '+T('Leaderboard','排行榜')+'</h2>'
-    + (board.length? boardTable(board,-1) : '<p class="lead">'+T('No games played yet. Be the first to build an empire.','还没有人玩过。成为第一个建起帝国的人吧。')+'</p>')
-    + boardNote()
-    + '<div class="nav"><span></span><button class="btn gold" onclick="home()">'+(fromHome?T('← Back','← 返回'):T('Play','开始'))+'</button></div></div>';
-  window.scrollTo(0,0);
+  function render(board, syncing){
+    app.innerHTML = '<div class="card"><h2 class="scene-title">🏆 '+T('Leaderboard','排行榜')+syncTag(syncing)+'</h2>'
+      + (board.length? boardTable(board,-1) : '<p class="lead">'+T('No games played yet. Be the first to build an empire.','还没有人玩过。成为第一个建起帝国的人吧。')+'</p>')
+      + boardNote()
+      + '<div class="nav"><span></span><button class="btn gold" onclick="home()">'+(fromHome?T('← Back','← 返回'):T('Play','开始'))+'</button></div></div>';
+    window.scrollTo(0,0);
+  }
+  render(loadBoard(), true);
+  cloudGet().then(function(board){ saveBoard(board); render(board,false); })
+            .catch(function(){ render(loadBoard(),false); });
 }
 
 /* ============================================================

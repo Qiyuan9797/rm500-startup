@@ -71,7 +71,29 @@ Every finished game posts its score to a **shared** leaderboard that everyone se
 **Resetting the board between sessions (host only, optional):**
 
 - In Vercel → **Settings → Environment Variables**, add `ADMIN_KEY` = some secret of your choice, and redeploy.
-- Then open the site as `…/?admin=YOUR_SECRET` — a **"Clear shared board"** button appears on the leaderboard. Without `ADMIN_KEY` set, no one can wipe the board (safe by default).
+- Then open the site as `…/?admin=YOUR_SECRET` — a **"Clear shared board"** button appears on the RM500 leaderboard. Without `ADMIN_KEY` set, no one can wipe the board (safe by default).
+
+### Nasi Lemak Empire — its own shared board (`?game=nasilemak`)
+
+The same `api/scores.js` function is game-aware: Nasi Lemak posts to `/api/scores?game=nasilemak`, backed by a separate **`nasi_scores`** table (RM500 keeps its own `scores` table, untouched). Run this **once** in the Supabase SQL Editor to switch it on:
+
+```sql
+create table if not exists public.nasi_scores (
+  id         bigint generated always as identity primary key,
+  name       text not null,
+  vk         text,          -- vehicle key (enterprise / partnership / llp / sdnbhd)
+  vehicle    text,          -- display name
+  em         text,          -- emoji
+  listed     boolean default false,
+  market     text,          -- LEAP / ACE / Main, if listed
+  score      integer not null,
+  ts         bigint,
+  created_at timestamptz default now()
+);
+create index if not exists nasi_scores_score_idx on public.nasi_scores (score desc);
+```
+
+Until the table exists, the game silently falls back to a this-device board (it never breaks). Host reset for this board: `DELETE /api/scores?game=nasilemak&key=YOUR_ADMIN_KEY`.
 
 ## Kopi Talk — seminar recap (`/coffee-talk`)
 

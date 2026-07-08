@@ -95,6 +95,28 @@ create index if not exists nasi_scores_score_idx on public.nasi_scores (score de
 
 Until the table exists, the game silently falls back to a this-device board (it never breaks). Host reset for this board: `DELETE /api/scores?game=nasilemak&key=YOUR_ADMIN_KEY`.
 
+### Boardroom Betrayal — its own shared board (`?game=shareholder`)
+
+Same idea: Boardroom Betrayal posts to `/api/scores?game=shareholder`, backed by a separate **`shareholder_scores`** table. Run this **once** in the Supabase SQL Editor:
+
+```sql
+create table if not exists public.shareholder_scores (
+  id         bigint generated always as identity primary key,
+  name       text not null,
+  ak         text,          -- archetype key (visionary / money / operator / angel)
+  arch       text,          -- archetype display name
+  em         text,          -- emoji
+  listed     boolean default false,
+  tag        text,          -- ending emoji (👑 / ⚖️ / 💀 / …)
+  score      integer not null,
+  ts         bigint,
+  created_at timestamptz default now()
+);
+create index if not exists shareholder_scores_score_idx on public.shareholder_scores (score desc);
+```
+
+Until the table exists, it falls back to a this-device board. Host reset: `DELETE /api/scores?game=shareholder&key=YOUR_ADMIN_KEY`.
+
 ## Kopi Talk — seminar recap (`/coffee-talk`)
 
 A **choose-your-reply** game that lets participants practise the **Signal → Service → Question** method from *"Spotting Prospects Through Corporate Knowledge."* You sit for coffee with a Malaysian business owner (café / startup / family business / app founder) who drops prospect *signals* in casual chat. Each turn you pick one of three replies — ask a sharp diagnostic question (spot it), nod along (notice it), or launch into a hard sell (the cardinal sin the seminar warns against). At the end you get a built-in scorecard: signals caught vs missed, the Muchen service each maps to, a technique verdict, a /100 score, and a local leaderboard.

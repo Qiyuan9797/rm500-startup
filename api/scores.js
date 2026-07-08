@@ -75,6 +75,31 @@ const GAMES = {
       ts: Number(b.ts) || Date.now(),
     }),
   },
+  // Boardroom Betrayal — its own table & columns (archetype, ending tag).
+  shareholder: {
+    table: process.env.SHAREHOLDER_SCORES_TABLE || 'shareholder_scores',
+    select: 'name,ak,arch,em,listed,tag,score,ts',
+    toEntry: (row) => ({
+      name: row.name,
+      ak: row.ak,
+      arch: row.arch,
+      em: row.em,
+      listed: !!row.listed,
+      tag: row.tag,
+      score: Number(row.score),
+      ts: Number(row.ts),
+    }),
+    toRow: (b, score) => ({
+      name: clean(b.name, 22) || 'Anon',
+      ak: clean(b.ak, 20),
+      arch: clean(b.arch, 40),
+      em: clean(b.em, 8),
+      listed: !!b.listed,
+      tag: clean(b.tag, 8),
+      score,
+      ts: Number(b.ts) || Date.now(),
+    }),
+  },
 };
 
 function gameOf(req) {

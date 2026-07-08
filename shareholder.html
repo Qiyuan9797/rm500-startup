@@ -633,11 +633,12 @@ function finale(){
   var nw = realized;
   var entry = { name:S.name, ak:S.ak, arch:ARCHES[S.ak].name, em:ARCHES[S.ak].em,
     listed:!!f.boughtThem, tag:endEmoji, score:nw, ts:Date.now() };
-  var board = loadBoard(); board.push(entry); board.sort(function(a,b){return b.score-a.score;}); saveBoard(board);
-  var rank = board.findIndex(function(e){return e.ts===entry.ts && e.name===entry.name;})+1;
-  var medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
+  var localBoard = loadBoard(); localBoard.push(entry); localBoard.sort(function(a,b){return b.score-a.score;}); saveBoard(localBoard);
 
-  function render(){
+  function render(board, syncing){
+    var rank = board.findIndex(function(e){return e.ts===entry.ts && e.name===entry.name;})+1;
+    if(rank<=0) rank=board.length;
+    var medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
     app.innerHTML = '<div class="card">'
       + '<div class="finalscore">'
       +   (medal?'<div class="medal">'+medal+'</div>':'<div class="medal">'+endEmoji+'</div>')
@@ -647,14 +648,20 @@ function finale(){
       + '</div>'
       + breakdownHTML(nw, fair, legal)
       + debriefHTML()
-      + '<h4 style="margin:22px 0 0;color:var(--navy);font-family:Cambria,Georgia,serif">🏆 '+T('Leaderboard','排行榜')+'</h4>'
+      + '<h4 style="margin:22px 0 0;color:var(--navy);font-family:Cambria,Georgia,serif">🏆 '+T('Leaderboard','排行榜')+syncTag(syncing)+'</h4>'
       + boardTable(board, entry.ts)
-      + '<p class="lead" style="font-size:13px;margin-top:10px">📱 '+T('Saved on this device. Ask Muchen to switch on the shared board for a live seminar ranking.','保存在本设备。想在研讨会现场做实时排名，请让沐宸开启共享排行榜。')+'</p>'
+      + boardNote()
       + '<div class="nav"><span></span><button class="btn gold" onclick="home()">'+T('Play again →','再玩一次 →')+'</button></div>'
       + '</div>';
     window.scrollTo(0,0);
   }
-  VIEW = render; render();
+  VIEW = function(){ render(loadBoard(), false); };
+  // Show instantly with the local view, then sync the shared board in.
+  render(localBoard, true);
+  cloudPost(entry).then(function(board){
+    if(board && board.length){ saveBoard(board); render(board, false); }
+    else render(localBoard, false);
+  }).catch(function(){ render(localBoard, false); });
 }
 
 function breakdownHTML(nw, fair, legal){
@@ -683,9 +690,26 @@ function debriefHTML(){
     + '</ul><div class="ideal">'+fit+'</div></div>';
 }
 
-/* ---------- Leaderboard (local) ---------- */
+/* ---------- Leaderboard (shared cloud, falls back to this-browser storage) ---------- */
 function loadBoard(){ try{return JSON.parse(localStorage.getItem('shareholder_leaderboard')||'[]');}catch(e){return [];} }
 function saveBoard(b){ try{localStorage.setItem('shareholder_leaderboard', JSON.stringify(b.slice(0,50)));}catch(e){} }
+var CLOUD_ON=false;
+function cloudGet(){
+  return fetch('/api/scores?game=shareholder',{cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); })
+    .then(function(j){ CLOUD_ON=true; return (j&&j.board)||[]; });
+}
+function cloudPost(entry){
+  return fetch('/api/scores?game=shareholder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)})
+    .then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); })
+    .then(function(j){ CLOUD_ON=true; return (j&&j.board)||[]; });
+}
+function syncTag(on){ return on ? ' <span style="font-size:12px;color:var(--mute);font-weight:400">'+T('· syncing…','· 同步中…')+'</span>' : ''; }
+function boardNote(){
+  return CLOUD_ON
+    ? '<p class="lead" style="font-size:13px;margin-top:10px">🌐 '+T('Live shared leaderboard — every player on any device appears here.','实时共享排行榜——任何设备上的玩家都会出现在这里。')+'</p>'
+    : '<p class="lead" style="font-size:13px;margin-top:10px">📵 '+T('Offline — showing this device only. Scores will join the shared board once you\'re back online.','离线——只显示本设备。恢复联网后成绩会加入共享排行榜。')+'</p>';
+}
 function boardTable(board, myTs){
   var rows = board.slice(0,12).map(function(e,i){
     var medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
@@ -697,11 +721,16 @@ function boardTable(board, myTs){
 function showBoard(fromHome){
   VIEW=function(){ showBoard(fromHome); };
   document.getElementById('hud').style.display='none';
-  var board = loadBoard();
-  app.innerHTML = '<div class="card"><h2 class="scene-title">🏆 '+T('Leaderboard','排行榜')+'</h2>'
-    + (board.length? boardTable(board,-1) : '<p class="lead">'+T('No games played yet. Be the first to survive the boardroom.','还没有人玩过。成为第一个从董事会活下来的人吧。')+'</p>')
-    + '<div class="nav"><span></span><button class="btn gold" onclick="home()">'+(fromHome?T('← Back','← 返回'):T('Play','开始'))+'</button></div></div>';
-  window.scrollTo(0,0);
+  function render(board, syncing){
+    app.innerHTML = '<div class="card"><h2 class="scene-title">🏆 '+T('Leaderboard','排行榜')+syncTag(syncing)+'</h2>'
+      + (board.length? boardTable(board,-1) : '<p class="lead">'+T('No games played yet. Be the first to survive the boardroom.','还没有人玩过。成为第一个从董事会活下来的人吧。')+'</p>')
+      + boardNote()
+      + '<div class="nav"><span></span><button class="btn gold" onclick="home()">'+(fromHome?T('← Back','← 返回'):T('Play','开始'))+'</button></div></div>';
+    window.scrollTo(0,0);
+  }
+  render(loadBoard(), true);
+  cloudGet().then(function(board){ saveBoard(board); render(board,false); })
+            .catch(function(){ render(loadBoard(),false); });
 }
 
 /* ============================================================
